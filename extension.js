@@ -4,13 +4,13 @@ const vscode = require('vscode');
 const PushCommand = require('./src/PushCommand');
 
 exports.activate = (context) => {
-	var push = new PushCommand();
+	var cmd = new PushCommand();
 
 	context.subscriptions.concat([
-		vscode.commands.registerCommand('extension.upload', push.upload),
-		vscode.commands.registerCommand('extension.download', push.download),
-		vscode.commands.registerCommand('extension.uploadFolder', push.upload),
-		vscode.commands.registerCommand('extension.downloadFolder', push.download)
+		vscode.commands.registerCommand('extension.upload', cmd.upload),
+		vscode.commands.registerCommand('extension.download', cmd.download),
+		vscode.commands.registerCommand('extension.uploadFolder', cmd.upload),
+		vscode.commands.registerCommand('extension.downloadFolder', cmd.download)
 	]);
 };
 

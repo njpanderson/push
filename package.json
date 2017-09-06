@@ -1,73 +1,105 @@
 {
-    "name": "push",
-    "displayName": "Push",
-    "description": "SFTP & FTP Syncing",
-    "version": "0.0.1",
-    "publisher": "njpanderson",
-    "engines": {
-        "vscode": "^1.14.0"
-    },
-    "categories": [
-        "Other"
-    ],
-    "activationEvents": [
-        "onCommand:extension.upload",
-        "onCommand:extension.download",
-        "onCommand:extension.uploadFolder",
-        "onCommand:extension.downloadFolder"
-    ],
-    "main": "./extension",
-    "contributes": {
-        "commands": [{
-            "command": "extension.upload",
-            "title": "Upload File"
-        }, {
-            "command": "extension.download",
-            "title": "Download File"
-        }, {
-            "command": "extension.uploadFolder",
-            "title": "Upload Folder"
-        }, {
-            "command": "extension.downloadFolder",
-            "title": "Download Folder"
-        }],
-        "menus": {
-            "explorer/context": [{
-                "when": "!explorerResourceIsFolder",
-                "command": "extension.upload",
-                "group": "njp-push@1"
-            }, {
-                "when": "!explorerResourceIsFolder",
-                "command": "extension.download",
-                "group": "njp-push@2"
-            }, {
-                "when": "explorerResourceIsFolder",
-                "command": "extension.uploadFolder",
-                "group": "njp-push@3"
-            }, {
-                "when": "explorerResourceIsFolder",
-                "command": "extension.downloadFolder",
-                "group": "njp-push@4"
-            }],
-            "commandPalette": [{
-                "command": "extension.uploadFolder",
-                "when": "false"
-            },{
-                "command": "extension.downloadFolder",
-                "when": "false"
-            }]
+  "name": "push",
+  "displayName": "Push",
+  "description": "SFTP & FTP Syncing",
+  "version": "0.0.1",
+  "publisher": "njpanderson",
+  "engines": {
+    "vscode": "^1.14.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:extension.upload",
+    "onCommand:extension.download",
+    "onCommand:extension.uploadFolder",
+    "onCommand:extension.downloadFolder"
+  ],
+  "main": "./extension",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Push",
+      "properties": {
+        "njpPush.settingsFilename": {
+          "type": "string",
+          "default": ".push.settings.json",
+          "description": "Defines the push settings JSON filename"
+        },
+        "njpPush.privateKey": {
+          "type": "string",
+          "default": "",
+          "description": "Defines the default SSH key file for SFTP"
         }
+      }
     },
-    "scripts": {
-        "postinstall": "node ./node_modules/vscode/bin/install",
-        "test": "node ./node_modules/vscode/bin/test"
-    },
-    "devDependencies": {
-        "typescript": "^2.0.3",
-        "vscode": "^1.0.0",
-        "mocha": "^2.3.3",
-        "eslint": "^3.6.0",
-        "@types/node": "^6.0.40",
-        "@types/mocha": "^2.2.32"
+    "commands": [
+      {
+        "command": "extension.upload",
+        "title": "Upload File"
+      },
+      {
+        "command": "extension.download",
+        "title": "Download File"
+      },
+      {
+        "command": "extension.uploadFolder",
+        "title": "Upload Folder"
+      },
+      {
+        "command": "extension.downloadFolder",
+        "title": "Download Folder"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "!explorerResourceIsFolder",
+          "command": "extension.upload",
+          "group": "njp-push@1"
+        },
+        {
+          "when": "!explorerResourceIsFolder",
+          "command": "extension.download",
+          "group": "njp-push@2"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "extension.uploadFolder",
+          "group": "njp-push@3"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "extension.downloadFolder",
+          "group": "njp-push@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "extension.uploadFolder",
+          "when": "false"
+        },
+        {
+          "command": "extension.downloadFolder",
+          "when": "false"
+        }
+      ]
     }
+  },
+  "scripts": {
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "node ./node_modules/vscode/bin/test"
+  },
+  "devDependencies": {
+    "typescript": "^2.0.3",
+    "vscode": "^1.0.0",
+    "mocha": "^2.3.3",
+    "eslint": "^3.6.0",
+    "@types/node": "^6.0.40",
+    "@types/mocha": "^2.2.32"
+  },
+  "dependencies": {
+    "ssh2-sftp-client": "^1.1.0"
+  }
 }
