@@ -14,7 +14,7 @@ class ServiceBase {
 		for (key in spec) {
 			if (spec.hasOwnProperty(key)) {
 				if (!settings[key]) {
-					vscode.window.showErrorMessage(
+					this.showError(
 						`Server setting file for type ${this.type} missing required setting: "${key}".` +
 						` Please resolve before continuing.`
 					);
@@ -24,6 +24,14 @@ class ServiceBase {
 		}
 
 		return true;
+	}
+
+	showError(error) {
+		if (typeof error !== "string") {
+			error = error.message;
+		}
+
+		vscode.window.showErrorMessage(`${this.type}: ${error}`);
 	}
 
 	/**

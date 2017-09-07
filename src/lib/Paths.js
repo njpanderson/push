@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 const fs = require('fs');
+const path = require('path');
 
 class Paths {
 	/**
@@ -16,8 +17,32 @@ class Paths {
 	 * Return a path without a trailing slash
 	 * @param {string} path
 	 */
-	stripTrailingSlash(path) {
-		return path.replace(/\/$/, '');
+	stripTrailingSlash(dir) {
+		return dir.replace(/\/$/, '');
+	}
+
+	isDirectory(dir) {
+		const stats = fs.statSync(dir);
+		return stats.isDirectory();
+	}
+
+	/**
+	 * Iterates over each segment of a path, invoking an iterator function with
+	 * a cumulative portion of that path.
+	 * @param {string} dir
+	 * @param {function} iterator
+	 */
+	iterateDirectoryPath(dir, iterator) {
+		let segment_dir = '';
+
+		dir = path.dirname(dir);
+		dir = dir.replace(/^\//, '')
+		dir = dir.split('/');
+
+		dir.forEach((segment) => {
+			segment_dir += `/${segment}`;
+			iterator(segment_dir);
+		});
 	}
 
 	/**

@@ -1,4 +1,7 @@
 const SFTPClient = require('ssh2-sftp-client');
+const vscode = require('vscode');
+const fs = require('fs');
+const path = require('path');
 
 const ServiceBase = require('./Base');
 const Paths = require('../lib/Paths');
@@ -8,10 +11,11 @@ class ServiceSFTP extends ServiceBase {
 		super(config);
 
 		this.type = 'SFTP';
+		this.client = null;
 
 		settings = Object.assign({}, {
 			host: '',
-			port: '22',
+			port: 22,
 			username: '',
 			password: '',
 			privateKey: '',
@@ -21,15 +25,12 @@ class ServiceSFTP extends ServiceBase {
 		if (
 			this.validateServiceSettings({
 				host: true,
-				port: true,
 				username: true,
 				root: true
 			}, settings)
 		) {
 			this.settings = settings;
 			this.paths = new Paths();
-			this.client = new SFTPClient();
-			this.connect();
 		}
 	}
 
@@ -38,26 +39,58 @@ class ServiceSFTP extends ServiceBase {
 			host: this.settings.host,
 			port: this.settings.port,
 			username: this.settings.username,
-			password: this.settings.password,
-			privateKey: this.settings.privateKey || this.config.privateKey
+			privateKey: this.getPrivateKey(this.settings.privateKey || this.config.privateKey)
 		};
 
-		console.log(this.settings.host, this.settings.username);
-		return;
+		if (this.settings.password) {
+			options.password = this.settings.password;
+		}
 
-		this.client.connect(options).then(() => {
-			console.log(this.client.list(this.settings.root));
-		}).then((data) => {
-			console.log(data, 'the data info');
-		}).catch((err) => {
-			console.error(err, 'catch error');
-		});
+		console.log(options);
+
+		if (!this.client) {
+			this.client = new SFTPClient();
+
+			return this.client.connect(options)
+				.then(() => {
+					console.log(`SFTP client connected to host ${options.host}:${options.port}`);
+				})
+				.catch((error) => {
+					this.showError(error)
+				});
+		} else {
+			return Promise.resolve(this.client);
+		}
 	}
 
 	put(src) {
-		if (this.settings) {
-			console.log('SFTP#put', this.settings.host, this.settings.username);
-			console.log(src, this.paths.replaceWorkspaceWithRoot(src, this.settings.root));
+		let dest = this.paths.replaceWorkspaceWithRoot(src, this.settings.root);
+
+		return this.connect().then(() => {
+			return this.mkDir(path.dirname(dest), true)
+		})
+		.then(() => {
+			return this.client.put(src, dest)
+		})
+		.then(() => {
+			console.log('uploaded?');
+		})
+		.catch((error) => {
+			this.showError(error);
+		});
+	}
+
+	get(src) {
+		return true;
+	}
+
+	mkDir(dest, recursive = false) {
+		return this.client.mkdir(dest, recursive);
+	}
+
+	getPrivateKey(file) {
+		if (fs.existsSync(file)) {
+			return fs.readFileSync(file, 'UTF-8');
 		}
 	}
 };

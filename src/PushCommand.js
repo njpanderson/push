@@ -1,5 +1,3 @@
-const vscode = require('vscode');
-
 const Push = require('./Push');
 
 /**
@@ -11,6 +9,9 @@ class PushCommand {
 		this.download = this.download.bind(this);
 
 		this._push = new Push();
+		this._queue = {
+			command: []
+		};
 	}
 
 	/**
@@ -18,38 +19,47 @@ class PushCommand {
 	 * @param {string} method - Method name to execute
 	 * @param {object} uriContext - Contextual file URI (or blank if none)
 	 */
-	_route(method, uriContext, args) {
-		let settings;
-
-		if ((
-			settings = this._push.model
-				.setUriContext(uriContext)
-		)) {
-			if (!this._push.model.service) {
-				// Show a service error
-				vscode.window.showErrorMessage(
-					`A transfer service was not defined within the settings file at ${settings.file}`
-				);
-
-				return;
+	_route(method, uriContext, args, runImmediately = false, queueName = 'command') {
+		// Queue the push method
+		this._queue[queueName].push(() => {
+			// Set the current URI context
+			console.log(`Running queue entry ${method}...`);
+			if (this._push.model.setUriContext(uriContext)) {
+				// Apply the method
+				return this._push[method].apply(this._push, args);
 			}
+		});
 
-			this._push[method].apply(this._push, args);
+		if (runImmediately) {
+			return this.execQueue(queueName);
+		}
+	}
+
+	/**
+	 * Invokes all stored functions within the queue, returning a promise
+	 * @param {string} queueName='command' - Name of the queue to run
+	 */
+	execQueue(queueName = 'command') {
+		if (this._queue[queueName]) {
+			console.log(`Running ${this._queue[queueName].length} task(s) in queue...`);
+
+			this._queue[queueName].forEach((item) => item());
+
+			return Promise.all(this._queue[queueName])
+				.then(() => {
+					this._queue[queueName] = [];
+				});
 		} else {
-			// No settings for this context - show an error
-			vscode.window.showErrorMessage(
-				`A settings file could not be found within your project. Have you ` +
-				`created a file with the name "${this._push.getConfig('settingsFilename')}" yet?`
-			);
+			return Promise.reject(`Queue name ${queueName} not found.`);
 		}
 	}
 
 	upload(src) {
-		this._route('upload', src);
+		return this._route('upload', src, [], true);
 	}
 
 	download(src) {
-		this._route('download', src);
+		return this._route('download', src, [], true);
 	}
 }
 
