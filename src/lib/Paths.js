@@ -10,7 +10,19 @@ class Paths {
 	 */
 	replaceWorkspaceWithRoot(path, root) {
 		return this.stripTrailingSlash(root) + '/' +
-			path.replace(vscode.workspace.rootPath + '/', '');
+			path.replace(this.getCurrentWorkspaceRootPath() + '/', '');
+		}
+
+	getCurrentWorkspaceRootPath() {
+		if (vscode.workspace.workspaceFolders.length) {
+			return vscode.workspace.workspaceFolders[0].uri.path;
+		}
+
+		if (vscode.window.activeTextEditor) {
+			return path.dirname(vscode.window.activeTextEditor.document.uri);
+		}
+
+		return '';
 	}
 
 	/**
@@ -52,10 +64,11 @@ class Paths {
 	 * @param {string} startDir
 	 */
 	findFile(file, startDir) {
-		let loop = 0;
+		let loop = 0,
+			rootPath = this.getCurrentWorkspaceRootPath();
 
 		while(!fs.existsSync(startDir + '/' + file)) {
-			if (startDir === vscode.workspace.rootPath || loop === 50) {
+			if (startDir === rootPath || loop === 50) {
 				// dir matches root path or hard loop limit reached
 				return null;
 			}
