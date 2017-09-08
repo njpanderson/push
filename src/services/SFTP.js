@@ -65,6 +65,30 @@ class ServiceSFTP extends ServiceBase {
 
 	put(src) {
 		let dest = this.paths.replaceWorkspaceWithRoot(src, this.settings.root);
+		console.log(`put ${src}`);
+		this.progress = 'Uploading a file...';
+
+		// vscode.window.withProgress({
+		// 	location: vscode.ProgressLocation.Window,
+		// 	title: 'Uploading'
+		// }, (progress) => {
+		// 	return new Promise((resolve) => {
+		// 		setTimeout(() => {
+		// 			progress.report({ message: 50 });
+		// 			console.log('step1');
+		// 		}, 3000);
+
+		// 		setTimeout(() => {
+		// 			progress.report({ message: 75 });
+		// 			console.log('step2');
+		// 		}, 6000);
+
+		// 		setTimeout(() => {
+		// 			console.log('step3');
+		// 			resolve();
+		// 		}, 9000);
+		// 	});
+		// });
 
 		return this.connect().then(() => {
 			return this.mkDir(path.dirname(dest), true)
@@ -74,6 +98,7 @@ class ServiceSFTP extends ServiceBase {
 		})
 		.then(() => {
 			console.log('uploaded?');
+			this.progress = null;
 		})
 		.catch((error) => {
 			this.showError(error);

@@ -5,6 +5,7 @@ class ServiceBase {
 		this.diff = false;
 		this.settings = false;
 		this.type = '';
+		this.progress = null;
 		this.config = config;
 	}
 

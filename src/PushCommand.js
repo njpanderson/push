@@ -1,3 +1,5 @@
+const vscode = require('vscode');
+
 const Push = require('./Push');
 
 /**
@@ -40,15 +42,39 @@ class PushCommand {
 	 * @param {string} queueName='command' - Name of the queue to run
 	 */
 	execQueue(queueName = 'command') {
+		let progressInterval;
+
 		if (this._queue[queueName]) {
 			console.log(`Running ${this._queue[queueName].length} task(s) in queue...`);
 
-			this._queue[queueName].forEach((item) => item());
+			vscode.window.withProgress({
+				location: vscode.ProgressLocation.Window,
+				title: 'Push'
+			}, (progress) => {
+				return new Promise((resolve) => {
+					console.log('Progress queue');
+					progress.report({ message: 'Processing' });
 
-			return Promise.all(this._queue[queueName])
-				.then(() => {
-					this._queue[queueName] = [];
+					progressInterval = setInterval(() => {
+						console.log('Tick');
+						if (this.push.model.service.progress !== null) {
+							progress.report({ message: 'Processing ' + this.push.model.service.progress });
+						} else {
+							progress.report({ message: 'Processing' });
+						}
+					}, 10);
+
+					this._queue[queueName].forEach((item) => item());
+
+					return Promise.all(this._queue[queueName])
+						.then(() => {
+							console.log('Queue done');
+							clearInterval(progressInterval);
+							this._queue[queueName] = [];
+							resolve();
+						});
 				});
+			});
 		} else {
 			return Promise.reject(`Queue name ${queueName} not found.`);
 		}
