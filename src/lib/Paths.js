@@ -63,7 +63,7 @@ class Paths {
 	 * @param {string} file
 	 * @param {string} startDir
 	 */
-	findFile(file, startDir) {
+	findFileInAncestors(file, startDir) {
 		let loop = 0,
 			rootPath = this.getCurrentWorkspaceRootPath();
 
@@ -78,6 +78,24 @@ class Paths {
 		}
 
 		return startDir + '/' + file;
+	}
+
+	/**
+	 * Retrieves a source file based on the workspace of the command.
+	 * @param {object} uri - Source file URI
+	 */
+	getFileSrc(uri) {
+		if (uri) {
+			return uri;
+		}
+
+		// uri is not set or does not exist. attempt to get from the editor
+		if (vscode.window.activeTextEditor) {
+			return vscode.window.activeTextEditor &&
+				vscode.window.activeTextEditor.document.uri;
+		}
+
+		return '';
 	}
 }
 

@@ -1,12 +1,23 @@
 const vscode = require('vscode');
 
 class ServiceBase {
-	constructor(config) {
-		this.diff = false;
-		this.settings = false;
+	constructor() {
 		this.type = '';
 		this.progress = null;
+		this.serviceDefaults = {};
+		this.config = {};
+	}
+
+	destructor() {
+		this.config = null;
+	}
+
+	setConfig(config) {
 		this.config = config;
+	}
+
+	mergeWithDefaults(settings) {
+		return Object.assign({}, this.serviceDefaults, settings);
 	}
 
 	validateServiceSettings(spec, settings) {

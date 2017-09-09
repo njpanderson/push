@@ -1,5 +1,4 @@
 const SFTPClient = require('ssh2-sftp-client');
-const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 
@@ -7,46 +6,50 @@ const ServiceBase = require('./Base');
 const Paths = require('../lib/Paths');
 
 class ServiceSFTP extends ServiceBase {
-	constructor(config, settings) {
-		super(config);
+	constructor() {
+		super();
 
 		this.type = 'SFTP';
 		this.client = null;
 
-		settings = Object.assign({}, {
+		this.paths = new Paths();
+
+		// Define SFTP defaults
+		this.serviceDefaults = {
 			host: '',
 			port: 22,
 			username: '',
 			password: '',
 			privateKey: '',
 			root: '/'
-		}, settings);
+		};
 
-		if (
-			this.validateServiceSettings({
-				host: true,
-				username: true,
-				root: true
-			}, settings)
-		) {
-			this.settings = settings;
-			this.paths = new Paths();
+		// Define SFTP validation rules
+		this.serviceValidation = {
+			host: true,
+			username: true,
+			root: true
+		};
+	}
+
+	destructor() {
+		if (this.client) {
+			this.client.end();
+			this.client = null;
 		}
 	}
 
 	connect() {
 		let options = {
-			host: this.settings.host,
-			port: this.settings.port,
-			username: this.settings.username,
-			privateKey: this.getPrivateKey(this.settings.privateKey || this.config.privateKey)
+			host: this.config.service.host,
+			port: this.config.service.port,
+			username: this.config.service.username,
+			privateKey: this._getPrivateKey(this.config.service.privateKey || this.config.privateKey)
 		};
 
-		if (this.settings.password) {
-			options.password = this.settings.password;
+		if (this.config.service.password) {
+			options.password = this.config.service.password;
 		}
-
-		console.log(options);
 
 		if (!this.client) {
 			this.client = new SFTPClient();
@@ -64,40 +67,20 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	put(src) {
-		let dest = this.paths.replaceWorkspaceWithRoot(src, this.settings.root);
+		let dest = this.paths.replaceWorkspaceWithRoot(src, this.config.service.root);
 		console.log(`put ${src}`);
 		this.progress = 'Uploading a file...';
 
-		// vscode.window.withProgress({
-		// 	location: vscode.ProgressLocation.Window,
-		// 	title: 'Uploading'
-		// }, (progress) => {
-		// 	return new Promise((resolve) => {
-		// 		setTimeout(() => {
-		// 			progress.report({ message: 50 });
-		// 			console.log('step1');
-		// 		}, 3000);
-
-		// 		setTimeout(() => {
-		// 			progress.report({ message: 75 });
-		// 			console.log('step2');
-		// 		}, 6000);
-
-		// 		setTimeout(() => {
-		// 			console.log('step3');
-		// 			resolve();
-		// 		}, 9000);
-		// 	});
-		// });
-
 		return this.connect().then(() => {
+			console.log('Connected!');
 			return this.mkDir(path.dirname(dest), true)
 		})
 		.then(() => {
-			return this.client.put(src, dest)
+			console.log(`Putting ${src} to ${dest}...`);
+			return this.client.put(src, dest);
 		})
 		.then(() => {
-			console.log('uploaded?');
+			console.log('Uploaded!');
 			this.progress = null;
 		})
 		.catch((error) => {
@@ -106,6 +89,7 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	get(src) {
+		console.log(src);
 		return true;
 	}
 
@@ -113,7 +97,7 @@ class ServiceSFTP extends ServiceBase {
 		return this.client.mkdir(dest, recursive);
 	}
 
-	getPrivateKey(file) {
+	_getPrivateKey(file) {
 		if (fs.existsSync(file)) {
 			return fs.readFileSync(file, 'UTF-8');
 		}
