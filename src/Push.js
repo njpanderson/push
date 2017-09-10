@@ -33,7 +33,6 @@ class Push {
 		// Create event handlers
 		vscode.workspace.onDidChangeConfiguration(this.setConfig);
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		console.log('Push initialised.');
 	}
 
 	setConfig() {
@@ -191,6 +190,14 @@ class Push {
 		} else {
 			callback(results);
 		}
+	}
+
+	/**
+	 * Sorts a queue by the settings hash.
+	 * @param {string} queueName
+	 */
+	sortQueue(queueName) {
+		// TODO:
 	}
 
 	queueForUpload(uri) {
