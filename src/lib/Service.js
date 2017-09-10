@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const ServiceSFTP = require('../services/SFTP');
 const Paths = require('../lib/Paths');
+const utils = require('../lib/utils');
 
 class Service {
 	constructor() {
@@ -37,7 +38,7 @@ class Service {
 
 		if (!this.activeService) {
 			// Show a service error
-			vscode.window.showErrorMessage(
+			utils.showError(
 				`A transfer service was not defined within the settings file` +
 				` at ${this.config.settingsFilename}`
 			);

@@ -4,6 +4,7 @@ const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
+const utils = require('./lib/utils');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -13,9 +14,8 @@ class Push {
 		this.upload = this.upload.bind(this);
 		this.download = this.download.bind(this);
 		this.setConfig = this.setConfig.bind(this);
-		this.uploadQueue = this.uploadQueue.bind(this);
+		this.execUploadQueue = this.execUploadQueue.bind(this);
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
-		// this.checkServiceSettingsChange = this.checkServiceSettingsChange.bind(this);
 
 		this.settings = new ServiceSettings();
 		this.service = new Service();
@@ -82,7 +82,7 @@ class Push {
 			return newConfig;
 		} else {
 			// No settings for this context - show an error
-			vscode.window.showErrorMessage(
+			utils.showError(
 				`A settings file could not be found within your project. Have you ` +
 				`created a file with the name "${this.config.settingsFilename}" yet?`
 			);
@@ -135,34 +135,39 @@ class Push {
 		});
 
 		if (runImmediately) {
-			return queue.exec(this.service.getStateProgress);
+			return this.execQueue(queueName);
 		}
 	}
 
 	queueForUpload(uri) {
 		uri = this.paths.getFileSrc(uri);
 
-		return this.route({
+		return this.route([{
 			method: 'put',
 			uriContext: uri,
 			args: [this.paths.getNormalPath(uri)]
-		}, false, Push.queueNames.saved);
+		}], false, Push.queueNames.upload);
+	}
+
+	execQueue(queueName) {
+		return this.getQueue(queueName)
+			.exec(this.service.getStateProgress)
+			.then((report) => {
+				if (report) {
+					// TODO: handle a report
+				}
+
+				utils.showMessage('Queue complete.');
+			})
+			.catch(utils.showWarning);
+	}
+
+	execUploadQueue() {
+		return this.execQueue(Push.queueNames.upload);
 	}
 
 	upload(uri) {
 		return this.transfer('put', uri);
-	}
-
-	uploadQueue() {
-		const queue = this.getQueue(Push.queueNames.saved);
-
-		if (queue.tasks.length) {
-			return queue.exec(this.service.getStateProgress);
-		} else {
-			vscode.window.showWarningMessage(
-				`The upload queue is currently empty. No items were uploaded.`
-			);
-		}
 	}
 
 	download(uri) {
@@ -197,7 +202,7 @@ class Push {
 
 Push.queueNames = {
 	default: 'default',
-	saved: 'saved'
+	upload: 'upload'
 };
 
 module.exports = Push;

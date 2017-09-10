@@ -13,7 +13,7 @@ exports.activate = (context) => {
 		vscode.commands.registerCommand('extension.download', push.download),
 		vscode.commands.registerCommand('extension.uploadFolder', push.upload),
 		vscode.commands.registerCommand('extension.downloadFolder', push.download),
-		vscode.commands.registerCommand('extension.uploadQueuedItems', push.uploadQueue)
+		vscode.commands.registerCommand('extension.uploadQueuedItems', push.execUploadQueue)
 	]);
 };
 

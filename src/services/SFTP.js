@@ -90,18 +90,15 @@ class ServiceSFTP extends ServiceBase {
 		return new Promise((resolve) => {
 			if (this.clients[hash]) {
 				// Return the existing client instance
-				console.log(`Using existing client (${hash})`);
 				this.clients[hash].lastUsed = date.getTime();
 
 				// Resolve with an existing client connection
 				resolve(this.clients[hash]);
 			} else {
 				// Create a new client, removing old ones in case there are too many
-				console.log(`Creating client instance (${hash})`);
 				keys = Object.keys(this.clients);
 
 				if (keys.length === this.maxClients) {
-					console.log(`Removing ${keys.length - (this.maxClients - 1)} old clients`);
 					// Remove old clients
 					keys.sort((a, b) => {
 						return this.clients[a].lastUsed - this.clients[b].lastUsed;
@@ -140,7 +137,6 @@ class ServiceSFTP extends ServiceBase {
 		if (this.clients[hash]) {
 			return this.clients[hash].sftp.end()
 				.then(() => {
-					console.log(`Removing client ${hash}`)
 					this.clients[hash] = null;
 					delete this.clients[hash];
 				});
@@ -168,7 +164,6 @@ class ServiceSFTP extends ServiceBase {
 			return client.put(src, dest);
 		})
 		.then(() => {
-			console.log('Uploaded!');
 			this.setProgress(false);
 		})
 		.catch((error) => {

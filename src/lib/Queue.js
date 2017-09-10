@@ -17,10 +17,10 @@ class Queue {
 	exec(progressFn) {
 		let progressInterval;
 
-		if (this.tasks) {
+		if (this.tasks && this.tasks.length) {
 			console.group(`Running ${this.tasks.length} task(s) in queue...`);
 
-			vscode.window.withProgress({
+			return vscode.window.withProgress({
 				location: vscode.ProgressLocation.Window,
 				title: 'Push'
 			}, (progress) => {
@@ -42,7 +42,6 @@ class Queue {
 							console.log('Queue complete', results);
 							console.groupEnd();
 							clearInterval(progressInterval);
-							this.tasks = [];
 							resolve();
 						}
 					);
@@ -58,15 +57,21 @@ class Queue {
 	 * @param {array} queue
 	 * @param {function} callback
 	 * @param {array} results
-	 * @param {number} [index]
 	 */
-	execQueueItems(callback, results = [], index = 0) {
-		if (index < this.tasks.length) {
-			console.log(`Invoking queue item ${index}...`);
-			this.tasks[index]()
+	execQueueItems(callback, results = []) {
+		let task;
+
+		if (this.tasks.length) {
+			console.log(`Invoking queue item 0 of ${this.tasks.length}...`);
+			task = this.tasks.shift();
+
+			task()
 				.then((result) => {
+					// Add to results
 					results.push(result);
-					this.execQueueItems(callback, results, index + 1);
+
+					// Loop
+					this.execQueueItems(callback, results);
 				})
 				.catch((error) => {
 					throw error;
