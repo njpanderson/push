@@ -1,9 +1,9 @@
 const vscode = require('vscode');
-const path = require('path');
 
 const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
 const Paths = require('./lib/Paths');
+const Queue = require('./lib/Queue');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -23,9 +23,7 @@ class Push {
 
 		this.config = null;
 
-		this.queue = {
-			default: []
-		};
+		this.queues = {};
 
 		// Set initial config
 		this.setConfig();
@@ -38,8 +36,10 @@ class Push {
 	setConfig() {
 		this.config = Object.assign({}, vscode.workspace.getConfiguration(
 			'njpPush',
-			vscode.window.activeTextEditor.document.uri
+			vscode.window.activeTextEditor &&
+				vscode.window.activeTextEditor.document.uri
 		));
+		console.log(`Config set. testConfigItem: "${this.config.testConfigItem}"`);
 	}
 
 	/**
@@ -65,8 +65,8 @@ class Push {
 	 */
 	addServiceSettings(uriContext) {
 		const settings = this.settings.getServerJSON(
-				uriContext,
-				this.config.settingsFilename
+			uriContext,
+			this.config.settingsFilename
 		);
 
 		// Make a duplicate to avoid changing the original config
@@ -91,128 +91,73 @@ class Push {
 		}
 	}
 
-	/**
-	 * Routes to a service method after doing required up-front work.
-	 * @param {string} method - Method name to execute
-	 */
-	route(method, uriContext, args, runImmediately = false, queueName = Push.queueNames.default) {
-		// Cheque named queue exists
-		if (!this.queue[queueName]) {
-			this.queue[queueName] = [];
+	getQueue(queueName) {
+		if (!this.queues[queueName]) {
+			this.queues[queueName] = new Queue();
 		}
 
-		// Add queue item with contextual config
-		this.queue[queueName].push(() => {
-			let config;
+		return this.queues[queueName];
+	}
 
-			if (uriContext) {
-				// Add service settings to the current configuration
-				config = this.addServiceSettings(uriContext);
-			} else {
-				throw new Error('No uriContext set from route source.');
-			}
+	/**
+	 * @param {array} tasks - Tasks to execute. Must contain the properties detailed below.
+	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately.
+	 * @description
+	 * Routes to a service method after doing required up-front work.
+	 *
+	 * ### Task properties:
+	 * - `method` (`string`): Method to run.
+	 * - `uriContext` (`uri`): URI context for the method.
+	 * - `args` (`array`): Array of arguments to send to the method.
+	 */
+	route(tasks = [], runImmediately = false, queueName = Push.queueNames.default) {
+		const queue = this.getQueue(queueName);
 
-			if (config) {
-				console.log(`Running queue entry ${method}...`);
+		tasks.forEach(({ method, uriContext, args }) => {
+			// Add queue item with contextual config
+			queue.addTask(() => {
+				let config;
 
-				// Execute the service method, returning any results and/or promises
-				return this.service.exec(method, config, args);
-			}
+				if (uriContext) {
+					// Add service settings to the current configuration
+					config = this.addServiceSettings(uriContext);
+				} else {
+					throw new Error('No uriContext set from route source.');
+				}
+
+				if (config) {
+					console.log(`Running queue entry ${method}...`);
+
+					// Execute the service method, returning any results and/or promises
+					return this.service.exec(method, config, args);
+				}
+			});
 		});
 
 		if (runImmediately) {
-			return this.execQueue(queueName);
+			return queue.exec(this.service.getStateProgress);
 		}
-	}
-
-	/**
-	 * Invokes all stored functions within the queue, returning a promise
-	 * @param {string} queueName='default' - Name of the queue to run
-	 */
-	execQueue(queueName = Push.queueNames.default) {
-		let progressInterval;
-
-		if (this.queue[queueName]) {
-			console.group(`Running ${this.queue[queueName].length} task(s) in queue...`);
-
-			vscode.window.withProgress({
-				location: vscode.ProgressLocation.Window,
-				title: 'Push'
-			}, (progress) => {
-				return new Promise((resolve) => {
-					progress.report({ message: 'Processing' });
-
-					progressInterval = setInterval(() => {
-						let state;
-
-						if ((state = this.service.getStateProgress())) {
-							progress.report({ message: `Processing ${state}` });
-						} else {
-							progress.report({ message: 'Processing' });
-						}
-					}, 10);
-
-					this.execQueueItems(
-						this.queue[queueName],
-						(results) => {
-							console.log('Queue complete');
-							console.groupEnd();
-							clearInterval(progressInterval);
-							this.queue[queueName] = [];
-							resolve();
-						}
-					);
-				});
-			});
-		} else {
-			return Promise.reject(`Queue name ${queueName} not found.`);
-		}
-	}
-
-	/**
-	 * Executes all items within a queue in serial and invokes the callback on completion.
-	 * @param {array} queue
-	 * @param {function} callback
-	 * @param {array} results
-	 * @param {number} [index]
-	 */
-	execQueueItems(queue, callback, results = [], index = 0) {
-		if (index < queue.length) {
-			console.log(`Invoking queue item ${index}...`);
-			queue[index]()
-				.then((result) => {
-					results.push(result);
-					this.execQueueItems(queue, callback, results, index + 1);
-				})
-				.catch((error) => {
-					throw error;
-				});
-		} else {
-			callback(results);
-		}
-	}
-
-	/**
-	 * Sorts a queue by the settings hash.
-	 * @param {string} queueName
-	 */
-	sortQueue(queueName) {
-		// TODO:
 	}
 
 	queueForUpload(uri) {
 		uri = this.paths.getFileSrc(uri);
-		return this.route('put', uri, [uri.path], false, Push.queueNames.saved);
+
+		return this.route({
+			method: 'put',
+			uriContext: uri,
+			args: [this.paths.getNormalPath(uri)]
+		}, false, Push.queueNames.saved);
 	}
 
 	upload(uri) {
-		uri = this.paths.getFileSrc(uri);
-		return this.route('put', uri, [uri.path], true);
+		return this.transfer('put', uri);
 	}
 
 	uploadQueue() {
-		if (this.queue[Push.queueNames.saved] && this.queue[Push.queueNames.saved].length) {
-			return this.execQueue(Push.queueNames.saved);
+		const queue = this.getQueue(Push.queueNames.saved);
+
+		if (queue.tasks.length) {
+			return queue.exec(this.service.getStateProgress);
 		} else {
 			vscode.window.showWarningMessage(
 				`The upload queue is currently empty. No items were uploaded.`
@@ -221,8 +166,32 @@ class Push {
 	}
 
 	download(uri) {
+		return this.transfer('get', uri);
+	}
+
+	transfer(method, uri) {
 		uri = this.paths.getFileSrc(uri);
-		return this.route('get', uri, [uri.path], true);
+
+		if (this.paths.isDirectory(uri)) {
+			return this.paths.getDirectoryContentsAsFiles(uri)
+				.then((files) => {
+					let tasks = files.map((uri) => {
+						return {
+							method,
+							uriContext: uri,
+							args: [this.paths.getNormalPath(uri)]
+						};
+					});
+
+					this.route(tasks, true);
+				});
+		} else {
+			return this.route([{
+				method,
+				uriContext: uri,
+				args: [this.paths.getNormalPath(uri)]
+			}], true);
+		}
 	}
 }
 

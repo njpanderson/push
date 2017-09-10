@@ -5,6 +5,8 @@ const Paths = require('../lib/Paths');
 
 class Service {
 	constructor() {
+		this.getStateProgress = this.getStateProgress.bind(this);
+
 		this.services = {
 			SFTP: ServiceSFTP
 		};

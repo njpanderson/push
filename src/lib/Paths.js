@@ -40,6 +40,14 @@ class Paths {
 		return '';
 	}
 
+	getNormalPath(uri) {
+		if (typeof uri === 'string') {
+			return uri;
+		}
+
+		return uri.fsPath || uri.path;
+	}
+
 	/**
 	 * Return a path without a trailing slash.
 	 * @param {string} path
@@ -53,8 +61,14 @@ class Paths {
 	 * @param {string} dir
 	 */
 	isDirectory(dir) {
-		const stats = fs.statSync(dir);
+		const stats = fs.statSync(this.getNormalPath(dir));
 		return stats.isDirectory();
+	}
+
+	getDirectoryContentsAsFiles(dir) {
+		dir = this.getNormalPath(dir);
+		dir = dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
+		return vscode.workspace.findFiles(`${dir}/**/*`);
 	}
 
 	/**
