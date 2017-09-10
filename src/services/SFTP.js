@@ -11,6 +11,7 @@ class ServiceSFTP extends ServiceBase {
 
 		this.type = 'SFTP';
 		this.client = null;
+		this.currentSettingsHash = null;
 
 		this.paths = new Paths();
 
@@ -51,12 +52,14 @@ class ServiceSFTP extends ServiceBase {
 			options.password = this.config.service.password;
 		}
 
-		if (!this.client) {
+		// If there is no client instance or the service settings hash has changed
+		if (!this.client || this.config.serviceSettingsHash !== this.currentSettingsHash) {
 			this.client = new SFTPClient();
 
 			return this.client.connect(options)
 				.then(() => {
 					console.log(`SFTP client connected to host ${options.host}:${options.port}`);
+					this.currentSettingsHash = this.config.serviceSettingsHash;
 				})
 				.catch((error) => {
 					this.showError(error)
@@ -67,12 +70,15 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	put(src) {
-		let dest = this.paths.replaceWorkspaceWithRoot(src, this.config.service.root);
-		console.log(`put ${src}`);
-		this.progress = 'Uploading a file...';
+		let dest = this.paths.replaceServiceContextWithRoot(
+			src,
+			this.config.serviceFilename,
+			this.config.service.root
+		);
+
+		this.setProgress(`${path.basename(dest)}...`);
 
 		return this.connect().then(() => {
-			console.log('Connected!');
 			return this.mkDir(path.dirname(dest), true)
 		})
 		.then(() => {
@@ -81,7 +87,7 @@ class ServiceSFTP extends ServiceBase {
 		})
 		.then(() => {
 			console.log('Uploaded!');
-			this.progress = null;
+			this.setProgress(false);
 		})
 		.catch((error) => {
 			this.showError(error);

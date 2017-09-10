@@ -11,10 +11,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:extension.upload",
-    "onCommand:extension.download",
-    "onCommand:extension.uploadFolder",
-    "onCommand:extension.downloadFolder"
+    "*"
   ],
   "main": "./extension",
   "contributes": {
@@ -31,6 +28,16 @@
           "type": "string",
           "default": "",
           "description": "Defines the default SSH key file for SFTP"
+        },
+        "njpPush.uploadQueue": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the upload queue for deferred uploads on save"
+        },
+        "njpPush.testConfigItem": {
+          "type": "string",
+          "default": "",
+          "description": "A test config item"
         }
       }
     },
@@ -50,6 +57,10 @@
       {
         "command": "extension.downloadFolder",
         "title": "Download Folder"
+      },
+      {
+        "command": "extension.uploadQueuedItems",
+        "title": "Upload queued items"
       }
     ],
     "menus": {

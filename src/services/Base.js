@@ -12,14 +12,39 @@ class ServiceBase {
 		this.config = null;
 	}
 
-	setConfig(config) {
-		this.config = config;
+	setProgress(state) {
+		this.progress = state || null;
 	}
 
+	/**
+	 * Sets the current configuration for the service, merging the defaults with it if set.
+	 * @param {object} config
+	 */
+	setConfig(config) {
+		this.config = config;
+
+		if (this.config.service) {
+			// Merge service specific default options
+			this.config.service = this.mergeWithDefaults(
+				this.config.service
+			);
+		}
+	}
+
+	/**
+	 * Merges the service specific default settings with supplied object
+	 * @param {object} settings
+	 */
 	mergeWithDefaults(settings) {
 		return Object.assign({}, this.serviceDefaults, settings);
 	}
 
+	/**
+	 * Validates the supplied `settings` object against `spec` specification.
+	 * @param {object} spec - Settings specification.
+	 * @param {*} settings - Settings to be validated.
+	 * @returns {boolean} `true` if the settings are valid, `false` otherwise.
+	 */
 	validateServiceSettings(spec, settings) {
 		let key;
 
@@ -27,7 +52,7 @@ class ServiceBase {
 			if (spec.hasOwnProperty(key)) {
 				if (!settings[key]) {
 					this.showError(
-						`Server setting file for type ${this.type} missing required setting: "${key}".` +
+						`Service setting file for type ${this.type} missing required setting: "${key}".` +
 						` Please resolve before continuing.`
 					);
 					return false;

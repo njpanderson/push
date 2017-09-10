@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const Paths = require('../lib/Paths');
 
@@ -17,9 +18,10 @@ class ServiceSettings {
 	 */
 	getServerJSON(uri, settingsFilename) {
 		const file = this.paths.findFileInAncestors(
-			settingsFilename,
-			path.dirname(uri.path)
-		);
+				settingsFilename,
+				path.dirname(uri.path)
+			),
+			hash = crypto.createHash('sha256');
 
 		let fileContents, newFile;
 
@@ -36,10 +38,13 @@ class ServiceSettings {
 
 					this.settingsCache = fileContents;
 
+					hash.update(file + '\n' + fileContents);
+
 					return {
 						file,
 						data: JSON.parse(fileContents),
-						newFile
+						newFile,
+						hash: hash.digest('hex')
 					};
 				} catch(e) {
 					return null;

@@ -11,9 +11,28 @@ class Service {
 
 		this.activeService = null;
 		this.paths = new Paths();
+		this.config = {};
+	}
+
+	setConfig(config) {
+		let restart = (config.serviceName !== this.config.serviceName);
+
+		this.config = config;
+
+		if (restart) {
+			// Service name is different or set - instantiate.
+			this.restartServiceInstance();
+		}
+	}
+
+	getStateProgress() {
+		return (this.activeService && this.activeService.progress) || null;
 	}
 
 	exec(method, config, args = []) {
+		// Set the current service configuration
+		this.setConfig(config);
+
 		if (!this.activeService) {
 			// Show a service error
 			vscode.window.showErrorMessage(
@@ -25,15 +44,10 @@ class Service {
 		}
 
 		if (this.activeService) {
-			// Run the service method with arguments (after `method`).
-			this.activeService.setConfig(config);
+			// Set the active service's config
+			this.activeService.setConfig(this.config);
 
-			if (this.activeService.config.service) {
-				this.activeService.config.service = this.activeService.mergeWithDefaults(
-					this.activeService.config.service
-				);
-			}
-
+			// Run the service method with supplied arguments
 			return this.activeService[method].apply(
 				this.activeService,
 				args
@@ -44,24 +58,25 @@ class Service {
 	/**
 	 * Restarts the currently active service instance
 	 */
-	restartServiceInstance(config) {
+	restartServiceInstance() {
 		// (Re)instantiate service
 		this.activeService = null;
 
-		if (config.serviceName && config.service) {
-			console.log(`Reinstantiating service provider ${config.serviceName}`);
+		if (this.config.serviceName && this.config.service) {
+			console.log(`Instantiating service provider "${this.config.serviceName}"`);
 
 			if (this.activeService) {
+				// Run service destructor
 				this.activeService.destructor();
 			}
 
 			// Instantiate
-			this.activeService = new this.services[config.serviceName]();
+			this.activeService = new this.services[this.config.serviceName]();
 
 			// Invoke settings validation
 			this.activeService.validateServiceSettings(
 				this.activeService.serviceValidation,
-				config.service
+				this.config.service
 			);
 		}
 	}

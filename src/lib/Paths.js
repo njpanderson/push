@@ -4,15 +4,30 @@ const path = require('path');
 
 class Paths {
 	/**
-	 * Takes a path and returns it, replacing the portion above the workspace
-	 * root with the supplied root
-	 * @param {string} path
+	 * Replaces the current workspace root path with `root` within the `dir` string.
+	 * @param {string} dir - Dir to perform replacement on.
+	 * @param {string} root - Root path to use instead.
 	 */
-	replaceWorkspaceWithRoot(path, root) {
+	replaceWorkspaceWithRoot(dir, root) {
 		return this.stripTrailingSlash(root) + '/' +
-			path.replace(this.getCurrentWorkspaceRootPath() + '/', '');
-		}
+			dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
+	}
 
+	/**
+	 * Replaces the directory of `serviceFilename` with `root` within the `dir` string.
+	 * @param {string} dir - Dir to perform replacement on.
+	 * @param {string} serviceFilename - Contextually active service settings filename. (e.g:
+	 * .push.settings.json)
+	 * @param {string} root - Root path to use instead.
+	 */
+	replaceServiceContextWithRoot(dir, serviceFilename, root) {
+		return this.stripTrailingSlash(root) + '/' +
+			dir.replace(path.dirname(serviceFilename) + '/', '');
+	}
+
+	/**
+	 * Retrieves the current workspace root path from the active workspace.
+	 */
 	getCurrentWorkspaceRootPath() {
 		if (vscode.workspace.workspaceFolders.length) {
 			return vscode.workspace.workspaceFolders[0].uri.path;
@@ -26,13 +41,17 @@ class Paths {
 	}
 
 	/**
-	 * Return a path without a trailing slash
+	 * Return a path without a trailing slash.
 	 * @param {string} path
 	 */
 	stripTrailingSlash(dir) {
 		return dir.replace(/\/$/, '');
 	}
 
+	/**
+	 * Returns whether the supplied path is a directory. A shortcut for the fs.statSync method.
+	 * @param {string} dir
+	 */
 	isDirectory(dir) {
 		const stats = fs.statSync(dir);
 		return stats.isDirectory();
