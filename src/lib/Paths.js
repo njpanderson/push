@@ -4,28 +4,6 @@ const path = require('path');
 
 class Paths {
 	/**
-	 * Replaces the current workspace root path with `root` within the `dir` string.
-	 * @param {string} dir - Dir to perform replacement on.
-	 * @param {string} root - Root path to use instead.
-	 */
-	replaceWorkspaceWithRoot(dir, root) {
-		return this.stripTrailingSlash(root) + '/' +
-			dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
-	}
-
-	/**
-	 * Replaces the directory of `serviceFilename` with `root` within the `dir` string.
-	 * @param {string} dir - Dir to perform replacement on.
-	 * @param {string} serviceFilename - Contextually active service settings filename. (e.g:
-	 * .push.settings.json)
-	 * @param {string} root - Root path to use instead.
-	 */
-	replaceServiceContextWithRoot(dir, serviceFilename, root) {
-		return this.stripTrailingSlash(root) + '/' +
-			dir.replace(path.dirname(serviceFilename) + '/', '');
-	}
-
-	/**
 	 * Retrieves the current workspace root path from the active workspace.
 	 */
 	getCurrentWorkspaceRootPath() {
@@ -68,7 +46,7 @@ class Paths {
 	getDirectoryContentsAsFiles(dir) {
 		dir = this.getNormalPath(dir);
 		dir = dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
-		return vscode.workspace.findFiles(`${dir}/**/*`);
+		return vscode.workspace.findFiles(`${dir}/*/**/*`);
 	}
 
 	/**

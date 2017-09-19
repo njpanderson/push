@@ -63,7 +63,7 @@ class Push {
 	 * current configuration, then returns the configuration.
 	 * @param {uri} uriContext
 	 */
-	addServiceSettings(uriContext) {
+	configWithServiceSettings(uriContext) {
 		const settings = this.settings.getServerJSON(
 			uriContext,
 			this.config.settingsFilename
@@ -113,14 +113,22 @@ class Push {
 	route(tasks = [], runImmediately = false, queueName = Push.queueNames.default) {
 		const queue = this.getQueue(queueName);
 
-		tasks.forEach(({ method, uriContext, args }) => {
+		// Add initial init to a new queue
+		if (queue.tasks.length === 0) {
+			queue.addTask(() => {
+				return this.service.activeService &&
+					this.service.activeService.init();
+			});
+		}
+
+		tasks.forEach(({ method, actionTaken, uriContext, args }) => {
 			// Add queue item with contextual config
 			queue.addTask(() => {
 				let config;
 
 				if (uriContext) {
 					// Add service settings to the current configuration
-					config = this.addServiceSettings(uriContext);
+					config = this.configWithServiceSettings(uriContext);
 				} else {
 					throw new Error('No uriContext set from route source.');
 				}
@@ -131,7 +139,7 @@ class Push {
 					// Execute the service method, returning any results and/or promises
 					return this.service.exec(method, config, args);
 				}
-			});
+			}, actionTaken);
 		});
 
 		if (runImmediately) {
@@ -144,6 +152,7 @@ class Push {
 
 		return this.route([{
 			method: 'put',
+			actionTaken: 'uploaded',
 			uriContext: uri,
 			args: [this.paths.getNormalPath(uri)]
 		}], false, Push.queueNames.upload);
@@ -151,40 +160,43 @@ class Push {
 
 	execQueue(queueName) {
 		return this.getQueue(queueName)
-			.exec(this.service.getStateProgress)
-			.then((report) => {
-				if (report) {
-					// TODO: handle a report
-				}
-
-				utils.showMessage('Queue complete.');
-			})
-			.catch(utils.showWarning);
+			.exec(this.service.getStateProgress);
 	}
 
 	execUploadQueue() {
 		return this.execQueue(Push.queueNames.upload);
 	}
 
+	/**
+	 * Uploads a single file or directory by its Uri.
+	 * @param {Uri} uri
+	 */
 	upload(uri) {
-		return this.transfer('put', uri);
-	}
+		const method = 'put',
+			actionTaken = 'uploaded';
 
-	download(uri) {
-		return this.transfer('get', uri);
-	}
+		let src;
 
-	transfer(method, uri) {
+		// Get Uri from file/selection, src from Uri
 		uri = this.paths.getFileSrc(uri);
+		src = this.paths.getNormalPath(uri);
 
-		if (this.paths.isDirectory(uri)) {
-			return this.paths.getDirectoryContentsAsFiles(uri)
+		if (this.paths.isDirectory(src)) {
+			return this.paths.getDirectoryContentsAsFiles(src)
 				.then((files) => {
 					let tasks = files.map((uri) => {
 						return {
 							method,
+							actionTaken,
 							uriContext: uri,
-							args: [this.paths.getNormalPath(uri)]
+							args: [
+								this.paths.getNormalPath(uri),
+								this.service.exec(
+									'convertLocalToRemote',
+									this.configWithServiceSettings(uri),
+									[this.paths.getNormalPath(uri)]
+								)
+							]
 						};
 					});
 
@@ -193,10 +205,22 @@ class Push {
 		} else {
 			return this.route([{
 				method,
+				actionTaken,
 				uriContext: uri,
-				args: [this.paths.getNormalPath(uri)]
+				args: [
+					src,
+					this.service.exec(
+						'convertLocalToRemote',
+						this.configWithServiceSettings(uri),
+						[src]
+					)
+				]
 			}], true);
 		}
+	}
+
+	download(uri) {
+		let src = this.paths.getNormalPath(this.paths.getFileSrc(uri));
 	}
 }
 

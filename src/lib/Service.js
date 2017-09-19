@@ -32,18 +32,22 @@ class Service {
 		return (this.activeService && this.activeService.progress) || null;
 	}
 
+	/**
+	 * Invokes a method within the active transfer service.
+	 * @param {string} method - Method name to invoke.
+	 * @param {object} config - Current configuration state.
+	 * @param {array} args - Arguments to send to the method, as an array.
+	 */
 	exec(method, config, args = []) {
 		// Set the current service configuration
 		this.setConfig(config);
 
 		if (!this.activeService) {
 			// Show a service error
-			utils.showError(
+			throw new Error(
 				`A transfer service was not defined within the settings file` +
 				` at ${this.config.settingsFilename}`
 			);
-
-			return;
 		}
 
 		if (this.activeService) {

@@ -1,15 +1,53 @@
 const vscode = require('vscode');
 
-module.exports = {
+const utils = {
 	showMessage: (message) => {
-		vscode.window.showInformationMessage(`Push: ${message}`);
+		utils.displayErrorOrString('showInformationMessage', message);
 	},
 
 	showError: (message) => {
-		vscode.window.showErrorMessage(`Push: ${message}`);
+		utils.displayErrorOrString('showErrorMessage', message);
 	},
 
 	showWarning: (message) => {
-		vscode.window.showWarningMessage(`Push: ${message}`);
+		utils.displayErrorOrString('showWarningMessage', message);
+	},
+
+	displayErrorOrString(method, data) {
+		if (data instanceof Error) {
+			vscode.window[method](`Push: ${data.message}`);
+		} else {
+			vscode.window[method](`Push: ${data}`);
+		}
+	},
+
+	showFileCollisionPicker(name, mismatchedTypes = false, callback) {
+		let options = [
+				utils.collisionOpts.skip,
+				utils.collisionOpts.rename
+			],
+			placeHolder = `The file ${name} already exists.`;
+
+		if (!mismatchedTypes) {
+			options.push(utils.collisionOpts.overwrite);
+		} else {
+			placeHolder = `The file ${name} already exists and is of a different type.`
+		}
+
+		return vscode.window.showQuickPick(
+			options,
+			{
+				placeHolder,
+				onDidSelectItem: callback
+			}
+		)
 	}
 };
+
+utils.collisionOpts = {
+	skip: { label: 'Skip', detail: 'Skip uploading the file (default)' },
+	overwrite: { label: 'Overwrite', detail: 'Replace the target file with the source file' },
+	rename: { label: 'Rename', detail: 'Keep both files by renaming the source file' }
+}
+
+module.exports = utils;

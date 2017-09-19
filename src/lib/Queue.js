@@ -1,12 +1,26 @@
 const vscode = require('vscode');
 
+const utils = require('../lib/utils');
+
 class Queue {
 	constructor() {
 		this.running = false;
 		this.tasks = [];
 	}
 
-	addTask(task) {
+	/**
+	 * Adds a task to the queue
+	 * @param {function} fn - Function to add.
+	 * @param {string} [actionTaken] - Name of the function/operation performed in
+	 * past tense (i.e. "uploaded").
+	 */
+	addTask(fn, actionTaken) {
+		let task = { fn };
+
+		if (actionTaken) {
+			task.actionTaken = actionTaken;
+		}
+
 		this.tasks.push(task);
 	}
 
@@ -42,7 +56,7 @@ class Queue {
 							console.log('Queue complete', results);
 							console.groupEnd();
 							clearInterval(progressInterval);
-							resolve();
+							resolve(results);
 						}
 					);
 				});
@@ -58,27 +72,87 @@ class Queue {
 	 * @param {function} callback
 	 * @param {array} results
 	 */
-	execQueueItems(callback, results = []) {
+	execQueueItems(callback, results) {
 		let task;
+
+		if (!results) {
+			results = {
+				success: {},
+				fail: {}
+			};
+		}
 
 		if (this.tasks.length) {
 			console.log(`Invoking queue item 0 of ${this.tasks.length}...`);
 			task = this.tasks.shift();
 
-			task()
+			task.fn()
 				.then((result) => {
-					// Add to results
-					results.push(result);
+					// Function/Promise was resolved
+					if (result !== false) {
+						// Add to success list if the result from the function is anything
+						// other than `false`
+						console.log('Task result', result);
+						if (task.actionTaken) {
+							if (!results.success[task.actionTaken]) {
+								results.success[task.actionTaken] = [];
+							}
+
+							results.success[task.actionTaken].push(result);
+						}
+					}
 
 					// Loop
 					this.execQueueItems(callback, results);
 				})
 				.catch((error) => {
-					throw error;
+					// Function/Promise was rejected
+					if (error instanceof Error) {
+						// Assume thrown errors should stop the queue & alert the user
+						utils.showError(error);
+
+						// Empty tasks array
+						this.tasks = [];
+
+						// Trigger callback
+						callback(results);
+					} else if (typeof error === 'string') {
+						// Add basic error string to fail list
+						if (!results.fail[task.actionTaken]) {
+							results.fail[task.actionTaken] = [];
+						}
+
+						results.fail[task.actionTaken].push(error);
+					}
 				});
 		} else {
+			this.reportQueueResults(results);
 			callback(results);
 		}
+	}
+
+	reportQueueResults(results) {
+		let actionTaken, extra = [
+			'Queue complete.'
+		];
+
+		for (actionTaken in results.fail) {
+			if (results.fail[actionTaken].length === 1) {
+				extra.push(`${results.fail[actionTaken].length} item failed.`);
+			} else {
+				extra.push(`${results.fail[actionTaken].length} items failed.`);
+			}
+		}
+
+		for (actionTaken in results.success) {
+			if (results.success[actionTaken].length === 1) {
+				extra.push(`${results.success[actionTaken].length} item ${actionTaken}.`);
+			} else {
+				extra.push(`${results.success[actionTaken].length} items ${actionTaken}.`);
+			}
+		}
+
+		utils.showMessage(extra.join(' '));
 	}
 };
 

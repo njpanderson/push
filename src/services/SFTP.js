@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ServiceBase = require('./Base');
-const Paths = require('../lib/Paths');
+const utils = require('../lib/utils');
+const PathCache = require('../lib/PathCache');
 
 class ServiceSFTP extends ServiceBase {
 	constructor() {
@@ -13,8 +14,7 @@ class ServiceSFTP extends ServiceBase {
 		this.clients = {};
 		this.currentSettingsHash = null;
 		this.maxClients = 2;
-
-		this.paths = new Paths();
+		this.pathCache = new PathCache();
 
 		// Define SFTP defaults
 		this.serviceDefaults = {
@@ -23,7 +23,8 @@ class ServiceSFTP extends ServiceBase {
 			username: '',
 			password: '',
 			privateKey: '',
-			root: '/'
+			root: '/',
+			timeZoneOffset: 0
 		};
 
 		// Define SFTP validation rules
@@ -37,6 +38,13 @@ class ServiceSFTP extends ServiceBase {
 	destructor() {
 		Object.keys(this.clients).forEach((hash) => {
 			this.removeClient(hash);
+		});
+	}
+
+	init() {
+		return new Promise((resolve) => {
+			this.pathCache.clear();
+			resolve();
 		});
 	}
 
@@ -67,12 +75,15 @@ class ServiceSFTP extends ServiceBase {
 							return client.sftp;
 						})
 						.catch((error) => {
-							this.showError(error)
+							utils.showError(error)
 						});
 				} else {
 					// Existing client - just return it
 					return Promise.resolve(client.sftp);
 				}
+			})
+			.catch((error) => {
+				utils.showError(error);
 			});
 	}
 
@@ -145,44 +156,197 @@ class ServiceSFTP extends ServiceBase {
 		}
 	}
 
-	put(src) {
-		let dest = this.paths.replaceServiceContextWithRoot(
-				src,
-				this.config.serviceFilename,
-				this.config.service.root
-			),
+	put(src, dest) {
+		let dir = path.dirname(dest),
+			filename = path.basename(dest),
 			client;
 
-		this.setProgress(`${path.basename(dest)}...`);
+		console.log(`#put: ${src} >> ${dest}`);
+
+		this.setProgress(`${filename}...`);
 
 		return this.connect().then((connection) => {
+			console.log('- Make directories');
 			client = connection;
-			return this.mkDir(path.dirname(dest), true);
+			return this.mkDirRecursive(dir);
 		})
 		.then(() => {
-			console.log(`Putting ${src} to ${dest}...`);
-			return client.put(src, dest);
+			console.log(`- Collision check for ${dest}...`);
+			return this.checkCollision(src, dest);
 		})
-		.then(() => {
+		.then((option) => {
+			console.log(`- Upload stage...`)
+			// Figure out what to do based on the collision (if any)
+			if (option == true) {
+				// No collision, just keep going
+				console.log(`Putting ${src} to ${dest}...`);
+				return client.put(src, dest);
+			} else {
+				switch (option) {
+					case utils.collisionOpts.skip:
+						console.log(`Skipping ${dest}...`);
+						return false;
+
+					case utils.collisionOpts.overwrite:
+						console.log(`Putting ${src} to ${dest}...`);
+						return client.put(src, dest);
+
+					case utils.collisionOpts.rename:
+						console.log(`Renaming ${dest}...`);
+						return this.list(dir)
+							.then((dirContents) => {
+								return this.put(
+									src,
+									dir + '/' + this.getNonCollidingName(filename, dirContents)
+								);
+							});
+				}
+
+				return false;
+			}
+		})
+		.then((result) => {
 			this.setProgress(false);
+			return result;
 		})
 		.catch((error) => {
-			this.showError(error);
+			this.setProgress(false);
+			throw error;
 		});
 	}
 
 	get(src) {
-		console.log(src);
-		return true;
+		throw new Error('Get not implemented');
 	}
 
-	mkDir(dest, recursive = false) {
+	mkDirRecursive(dest) {
+		let baseDest, recursiveDest, dirList;
+
+		if (dest === this.config.service.root) {
+			// Resolve the promise immediately as the root directory must exist
+			return Promise.resolve();
+		}
+
+		if (dest.startsWith(this.config.service.root)) {
+			baseDest = dest.replace(this.config.service.root + '/', '');
+			recursiveDest = baseDest.split('/');
+			dirList = [];
+
+			// First, create a directory list for the Promise loop to iterate over
+			recursiveDest.reduce((acc, current) => {
+				let dir = (acc === '' ? current : (acc + '/' + current));
+
+				if (dir !== '') {
+					dirList.push(this.config.service.root + '/' + dir);
+				}
+
+				return dir;
+			}, '');
+
+			return this.mkDirByList(dirList);
+		}
+
+		return Promise.reject('Directory is outside of root and cannot be created.');
+	}
+
+	mkDirByList(list) {
+		let dir = list.shift();
+
+		if (dir !== undefined) {
+			return this.mkDir(dir)
+				.then(() => {
+					return this.mkDirByList(list);
+				})
+				.catch((error) => {
+					throw error;
+				});
+		}
+
+		return Promise.resolve();
+	}
+
+	/**
+	 * Recursively creates direcotories up to and including the basename of the given path.
+	 * Will reject on an incompatible collision.
+	 * @param {string} dest - Destination directory to create
+	 */
+	mkDir(dest) {
 		return this.connect().then((connection) => {
-			return connection.mkdir(dest, recursive);
+			return this.list(path.dirname(dest))
+				.then(() => {
+					let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest);
+
+					if (existing === null) {
+						connection.mkdir(dest)
+							.then(() => {
+								let date = new Date();
+								// Add dir to cache
+								// TODO: maybe replace with a cache clear on the directory above?
+								this.pathCache.addCachedFile(
+									PathCache.sources.REMOTE,
+									dest,
+									(date.getTime() / 1000),
+									'd'
+								);
+							});
+					} else if (existing.type === 'f') {
+						return Promise.reject(new Error(
+							'Directory could not be created' +
+							' (a file with the same name exists on the remote!)'
+						));
+					}
+				});
 		})
 		.catch((error) => {
-			this.showError(error);
+			throw error;
 		});
+	}
+
+	list(dir) {
+		if (this.pathCache.dirIsCached(PathCache.sources.REMOTE, dir)) {
+			// console.log(`Retrieving cached file list for "${dir}"...`);
+			return Promise.resolve(this.pathCache.getDir(PathCache.sources.REMOTE, dir));
+		} else {
+			// console.log(`Retrieving live file list for "${dir}"...`);
+			return this.connect()
+				.then((connection) => {
+					return connection.list(dir)
+						.then((list) => {
+							// console.log(`Caching path list for "${dir}"...`);
+							if (list) {
+								list.forEach((item) => {
+									this.pathCache.addCachedFile(
+										PathCache.sources.REMOTE,
+										dir + '/' + item.name,
+										(item.modifyTime / 1000),
+										(item.type === 'd' ? 'd' : 'f')
+									);
+								});
+							}
+
+							return this.pathCache.getDir(PathCache.sources.REMOTE, dir);
+						});
+				});
+		}
+	}
+
+	checkCollision(src, dest) {
+		const filename = path.basename(dest),
+			dir = path.dirname(dest);
+
+		return this.list(dir)
+			.then(() => {
+				const srcStat = fs.statSync(src);
+
+				let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest),
+					srcType = (srcStat.isDirectory() ? 'd' : 'f');
+
+				if (existing) {
+					return utils.showFileCollisionPicker(filename, (existing.type !== srcType));
+				}
+
+				return true;
+			});
 	}
 
 	_getPrivateKey(file) {
