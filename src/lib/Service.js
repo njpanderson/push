@@ -66,16 +66,24 @@ class Service {
 	 * Restarts the currently active service instance
 	 */
 	restartServiceInstance() {
-		// (Re)instantiate service
-		this.activeService = null;
-
 		if (this.config.serviceName && this.config.service) {
-			console.log(`Instantiating service provider "${this.config.serviceName}"`);
-
 			if (this.activeService) {
 				// Run service destructor
-				this.activeService.destructor();
+				this.activeService.destructor()
+					.then(() => {
+						this.activeService = null;
+						this.startServiceInstance();
+					});
+			} else {
+				this.activeService = null;
+				this.startServiceInstance();
 			}
+		}
+	}
+
+	startServiceInstance() {
+		if (this.config.serviceName && this.config.service) {
+			console.log(`Instantiating service provider "${this.config.serviceName}"`);
 
 			// Instantiate
 			this.activeService = new this.services[this.config.serviceName]();

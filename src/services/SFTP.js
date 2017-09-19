@@ -36,8 +36,12 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	destructor() {
-		Object.keys(this.clients).forEach((hash) => {
-			this.removeClient(hash);
+		return new Promise((resolve) => {
+			Object.keys(this.clients).forEach((hash) => {
+				this.removeClient(hash);
+			});
+
+			resolve();
 		});
 	}
 
@@ -72,7 +76,20 @@ class ServiceSFTP extends ServiceBase {
 					return client.sftp.connect(options)
 						.then(() => {
 							console.log(`SFTP client connected to host ${options.host}:${options.port}`);
-							return client.sftp;
+							return client;
+						})
+						.then((client) => {
+							// Attempt to list the root path to ensure it exists
+							return client.sftp.list(this.config.service.root)
+								.then(() => {
+									return client.sftp;
+								})
+								.catch(() => {
+									utils.showError(
+										`SFTP could not find or access the root path. Please check` +
+										` the "${this.config.settingsFilename}" settings file.`
+									);
+								});
 						})
 						.catch((error) => {
 							utils.showError(error)

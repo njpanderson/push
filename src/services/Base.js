@@ -14,6 +14,7 @@ class ServiceBase {
 
 	destructor() {
 		this.config = null;
+		return Promise.resolve();
 	}
 
 	setProgress(state) {
@@ -128,18 +129,32 @@ class ServiceBase {
 	 * Base service file upload method.
 	 * @param {string} src - File source path
 	 * @param {string} dest - File destination path
+	 * @returns {promise}
 	 */
 	put() {
-		throw new Error('Service #put method is not yet defined.');
+		throw new Error('Service #put method is not yet implemented!');
 	}
 
 	/**
 	 * Base service file download method.
 	 * @param {string} src - File source path
 	 * @param {string} dest - File destination path
+	 * @returns {promise}
 	 */
 	get() {
-		throw new Error('Service #get method is not yet defined.');
+		throw new Error('Service #get method is not yet implemented!');
+	}
+
+	/**
+	 * @param {string} dir - Directory to list.
+	 * @description
+	 * Base service directory listing method.
+	 * Should return a promise either resolving to a list in the format given by
+	 * PathCache#getDir(), or rejecting if the directory passed could not be found.
+	 * @returns {promise}
+	 */
+	list() {
+		throw new Error('Service #list method is not yet implemented!');
 	}
 };
 
