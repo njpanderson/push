@@ -1,8 +1,5 @@
-const vscode = require('vscode');
-
 const ServiceSFTP = require('../services/SFTP');
 const Paths = require('../lib/Paths');
-const utils = require('../lib/utils');
 
 class Service {
 	constructor() {

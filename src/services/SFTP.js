@@ -173,26 +173,26 @@ class ServiceSFTP extends ServiceBase {
 		}
 	}
 
+	/**
+	 * Put a single file to the SFTP server.
+	 * @param {string} src
+	 * @param {string} dest
+	 */
 	put(src, dest) {
 		let dir = path.dirname(dest),
 			filename = path.basename(dest),
 			client;
 
-		console.log(`#put: ${src} >> ${dest}`);
-
 		this.setProgress(`${filename}...`);
 
 		return this.connect().then((connection) => {
-			console.log('- Make directories');
 			client = connection;
 			return this.mkDirRecursive(dir);
 		})
 		.then(() => {
-			console.log(`- Collision check for ${dest}...`);
 			return this.checkCollision(src, dest);
 		})
 		.then((option) => {
-			console.log(`- Upload stage...`)
 			// Figure out what to do based on the collision (if any)
 			if (option == true) {
 				// No collision, just keep going
@@ -200,6 +200,9 @@ class ServiceSFTP extends ServiceBase {
 				return client.put(src, dest);
 			} else {
 				switch (option) {
+					case utils.collisionOpts.stop:
+						throw utils.errors.stop;
+
 					case utils.collisionOpts.skip:
 						console.log(`Skipping ${dest}...`);
 						return false;

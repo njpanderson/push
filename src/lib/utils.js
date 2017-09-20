@@ -24,7 +24,8 @@ const utils = {
 	showFileCollisionPicker(name, mismatchedTypes = false, callback) {
 		let options = [
 				utils.collisionOpts.skip,
-				utils.collisionOpts.rename
+				utils.collisionOpts.rename,
+				utils.collisionOpts.stop
 			],
 			placeHolder = `The file ${name} already exists.`;
 
@@ -46,8 +47,13 @@ const utils = {
 
 utils.collisionOpts = {
 	skip: { label: 'Skip', detail: 'Skip uploading the file (default)' },
+	stop: { label: 'Stop', detail: 'Stop transfer and empty current queue' },
 	overwrite: { label: 'Overwrite', detail: 'Replace the target file with the source file' },
 	rename: { label: 'Rename', detail: 'Keep both files by renaming the source file' }
 }
+
+utils.errors = {
+	stop: new Error('Transfer cancelled')
+};
 
 module.exports = utils;

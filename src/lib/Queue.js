@@ -34,6 +34,7 @@ class Queue {
 		if (this.tasks && this.tasks.length) {
 			console.group(`Running ${this.tasks.length} task(s) in queue...`);
 
+			// Start progress interface
 			return vscode.window.withProgress({
 				location: vscode.ProgressLocation.Window,
 				title: 'Push'
@@ -41,16 +42,20 @@ class Queue {
 				return new Promise((resolve) => {
 					progress.report({ message: 'Processing' });
 
+					// Create an interval to monitor the progressFn function return value
 					progressInterval = setInterval(() => {
 						let state;
 
 						if (typeof progressFn === 'function' && (state = progressFn())) {
+							// Value is defined - write to progress
 							progress.report({ message: `Processing ${state}` });
 						} else {
+							// No value - just use a generic progress
 							progress.report({ message: 'Processing' });
 						}
 					}, 10);
 
+					// Execute all queue items in serial
 					this.execQueueItems(
 						(results) => {
 							console.log('Queue complete', results);
@@ -68,13 +73,13 @@ class Queue {
 
 	/**
 	 * Executes all items within a queue in serial and invokes the callback on completion.
-	 * @param {array} queue
-	 * @param {function} callback
-	 * @param {array} results
+	 * @param {function} callback - Callback to invoke once the queue is empty
+	 * @param {array} results - Results object, populated by queue tasks
 	 */
 	execQueueItems(callback, results) {
 		let task;
 
+		// Initialise the results object
 		if (!results) {
 			results = {
 				success: {},
@@ -84,8 +89,10 @@ class Queue {
 
 		if (this.tasks.length) {
 			console.log(`Invoking queue item 0 of ${this.tasks.length}...`);
+			// Shift a task off the tasks array
 			task = this.tasks.shift();
 
+			// Invoke the function for this task, then get the result
 			task.fn()
 				.then((result) => {
 					// Function/Promise was resolved
@@ -109,7 +116,11 @@ class Queue {
 					// Function/Promise was rejected
 					if (error instanceof Error) {
 						// Assume thrown errors should stop the queue & alert the user
-						utils.showError(error);
+						if (error === utils.errors.stop) {
+							utils.showWarning(error);
+						} else {
+							utils.showError(error);
+						}
 
 						// Empty tasks array
 						this.tasks = [];
@@ -117,7 +128,7 @@ class Queue {
 						// Trigger callback
 						callback(results);
 					} else if (typeof error === 'string') {
-						// Add basic error string to fail list
+						// Add basic error string to fail list, but don't stop
 						if (!results.fail[task.actionTaken]) {
 							results.fail[task.actionTaken] = [];
 						}
@@ -126,11 +137,16 @@ class Queue {
 					}
 				});
 		} else {
+			// Task queue is empty - send the resuts to the callback and report internally
 			this.reportQueueResults(results);
 			callback(results);
 		}
 	}
 
+	/**
+	 * Shows a message, reporting on the queue state once completed.
+	 * @param {object} results
+	 */
 	reportQueueResults(results) {
 		let actionTaken, extra = [
 			'Queue complete.'
