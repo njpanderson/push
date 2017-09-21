@@ -12,7 +12,6 @@ class ServiceSFTP extends ServiceBase {
 
 		this.type = 'SFTP';
 		this.clients = {};
-		this.currentSettingsHash = null;
 		this.maxClients = 2;
 		this.pathCache = new PathCache();
 
@@ -46,10 +45,7 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	init() {
-		return new Promise((resolve) => {
-			this.pathCache.clear();
-			resolve();
-		});
+		return this.pathCache.clear();
 	}
 
 	/**

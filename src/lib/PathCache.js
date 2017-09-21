@@ -115,21 +115,25 @@ class PathCache {
 	}
 
 	clear(source, dir) {
-		if (!source) {
-			// Clear entire cache
-			this.cache = {};
-		}
-
-		if (this.cache[source]) {
-			// Clear one source
-			if (dir && this.cache[source][dir]) {
-				this.cache[source][dir] = null;
-				delete this.cache[source][dir];
-			} else if (!dir) {
-				this.cache[source] = null;
-				delete this.cache[source];
+		return new Promise((resolve) => {
+			if (!source) {
+				// Clear entire cache
+				this.cache = {};
 			}
-		}
+
+			if (this.cache[source]) {
+				// Clear one source
+				if (dir && this.cache[source][dir]) {
+					this.cache[source][dir] = null;
+					delete this.cache[source][dir];
+				} else if (!dir) {
+					this.cache[source] = null;
+					delete this.cache[source];
+				}
+			}
+
+			resolve();
+		});
 	}
 };
 
