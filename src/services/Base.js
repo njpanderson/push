@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const path = require('path');
 
+const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
 
 class ServiceBase {
@@ -129,6 +130,52 @@ class ServiceBase {
 	init() {
 		console.log('Base service init (empty)');
 		return Promise.resolve(true);
+	}
+
+	mkDirRecursive(dest, root) {
+		let baseDest, recursiveDest, dirList;
+
+		if (dest === root) {
+			// Resolve the promise immediately as the root directory must exist
+			return Promise.resolve();
+		}
+
+		if (dest.startsWith(root)) {
+			baseDest = dest.replace(root + '/', '');
+			recursiveDest = baseDest.split('/');
+			dirList = [];
+
+			// First, create a directory list for the Promise loop to iterate over
+			recursiveDest.reduce((acc, current) => {
+				let dir = (acc === '' ? current : (acc + '/' + current));
+
+				if (dir !== '') {
+					dirList.push(root + '/' + dir);
+				}
+
+				return dir;
+			}, '');
+
+			return this.mkDirByList(dirList);
+		}
+
+		return Promise.reject('Directory is outside of root and cannot be created.');
+	}
+
+	mkDirByList(list) {
+		let dir = list.shift();
+
+		if (dir !== undefined) {
+			return this.mkDir(dir)
+				.then(() => {
+					return this.mkDirByList(list);
+				})
+				.catch((error) => {
+					throw error;
+				});
+		}
+
+		return Promise.resolve();
 	}
 
 	/**

@@ -34,10 +34,16 @@
           "default": true,
           "description": "Enable the upload queue for deferred uploads on save"
         },
-        "njpPush.testConfigItem": {
-          "type": "string",
-          "default": "",
-          "description": "A test config item"
+        "njpPush.ignoreGlobs": {
+          "type": "array",
+          "default": [
+            "**/.DS_Store",
+            "**/Thumbs.db",
+            "**/desktop.ini",
+            "**/.git/*",
+            "**/.svn/*"
+          ],
+          "description": "An array of regular expressions to match against ignored paths"
         }
       }
     },

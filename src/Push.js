@@ -33,13 +33,28 @@ class Push {
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
 	}
 
+	/**
+	 * Sets the current configuration for the active workspace.
+	 */
 	setConfig() {
+		let settingsGlob;
+
 		this.config = Object.assign({}, vscode.workspace.getConfiguration(
 			'njpPush',
 			vscode.window.activeTextEditor &&
 				vscode.window.activeTextEditor.document.uri
-		));
-		console.log(`Config set. testConfigItem: "${this.config.testConfigItem}"`);
+			));
+
+		// Augment configuration with computed settings
+		if (Array.isArray(this.config.ignoreGlobs)) {
+			settingsGlob = `**/${this.config.settingsFilename}`;
+			this.config.ignoreGlobs.push(settingsGlob);
+
+			// Ensure glob list only contains unique values
+			this.config.ignoreGlobs = utils.uniqArray(this.config.ignoreGlobs);
+
+			console.log(this.config);
+		}
 	}
 
 	/**
@@ -182,15 +197,17 @@ class Push {
 		uri = this.paths.getFileSrc(uri);
 
 		if (this.paths.isDirectory(uri)) {
-			return this.paths.getDirectoryContentsAsFiles(uri)
+			return this.paths.getDirectoryContentsAsFiles(uri, this.config.ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
+						uri = vscode.Uri.parse(uri);
+
 						return {
 							method,
 							actionTaken,
 							uriContext: uri,
 							args: [
-								this.paths.getNormalPath(uri),
+								uri,
 								this.service.exec(
 									'convertUriToRemote',
 									this.configWithServiceSettings(uri),
@@ -200,22 +217,32 @@ class Push {
 						};
 					});
 
-					this.route(tasks, true);
+					return this.route(tasks, true);
 				});
 		} else {
-			return this.route([{
-				method,
-				actionTaken,
-				uriContext: uri,
-				args: [
-					uri,
-					this.service.exec(
-						'convertUriToRemote',
-						this.configWithServiceSettings(uri),
-						[uri]
-					)
-				]
-			}], true);
+			return this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+				.then((filteredUri) => {
+					if (filteredUri !== false) {
+						return this.route([{
+							method,
+							actionTaken,
+							uriContext: filteredUri,
+							args: [
+								filteredUri,
+								this.service.exec(
+									'convertUriToRemote',
+									this.configWithServiceSettings(filteredUri),
+									[filteredUri]
+								)
+							]
+						}], true);
+					} else {
+						utils.showWarning(
+							`Cannot upload file "${this.paths.getBaseName(uri)}" -` +
+							` It matches one of the defined ignoreGlobs filters.`
+						);
+					}
+				});
 		}
 	}
 

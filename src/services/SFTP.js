@@ -184,7 +184,7 @@ class ServiceSFTP extends ServiceBase {
 
 		return this.connect().then((connection) => {
 			client = connection;
-			return this.mkDirRecursive(destDir);
+			return this.mkDirRecursive(destDir, this.config.service.root);
 		})
 		.then(() => {
 			return this.checkCollision(dest, src);
@@ -234,52 +234,6 @@ class ServiceSFTP extends ServiceBase {
 
 	get(src) {
 		throw new Error('Get not implemented');
-	}
-
-	mkDirRecursive(dest) {
-		let baseDest, recursiveDest, dirList;
-
-		if (dest === this.config.service.root) {
-			// Resolve the promise immediately as the root directory must exist
-			return Promise.resolve();
-		}
-
-		if (dest.startsWith(this.config.service.root)) {
-			baseDest = dest.replace(this.config.service.root + '/', '');
-			recursiveDest = baseDest.split('/');
-			dirList = [];
-
-			// First, create a directory list for the Promise loop to iterate over
-			recursiveDest.reduce((acc, current) => {
-				let dir = (acc === '' ? current : (acc + '/' + current));
-
-				if (dir !== '') {
-					dirList.push(this.config.service.root + '/' + dir);
-				}
-
-				return dir;
-			}, '');
-
-			return this.mkDirByList(dirList);
-		}
-
-		return Promise.reject('Directory is outside of root and cannot be created.');
-	}
-
-	mkDirByList(list) {
-		let dir = list.shift();
-
-		if (dir !== undefined) {
-			return this.mkDir(dir)
-				.then(() => {
-					return this.mkDirByList(list);
-				})
-				.catch((error) => {
-					throw error;
-				});
-		}
-
-		return Promise.resolve();
 	}
 
 	/**

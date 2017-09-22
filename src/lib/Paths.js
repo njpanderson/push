@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
+const Glob = require('glob').Glob;
 
 class Paths {
 	/**
@@ -53,10 +54,65 @@ class Paths {
 		return false;
 	}
 
-	getDirectoryContentsAsFiles(dir) {
-		dir = this.getNormalPath(dir);
-		dir = dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
-		return vscode.workspace.findFiles(`${dir}/*/**/*`);
+	getGlobOptions(extend = {}) {
+		return Object.assign({
+			dot: true,
+			nodir: true
+		}, extend);
+	}
+
+	/**
+	 * Recursively returns the contents of a directory.
+	 * @param {Uri} uri - Uri of directory to glob for paths
+	 */
+	getDirectoryContentsAsFiles(uri, ignoreGlobs = []) {
+		let dir = this.getNormalPath(uri);
+
+		return new Promise((resolve, reject) => {
+			new Glob(
+				`${dir}/**/*`,
+				this.getGlobOptions({
+					ignore: ignoreGlobs
+				}),
+				(error, matches) => {
+					if (error) {
+						reject(error);
+					}
+
+					resolve(matches);
+				}
+			);
+		});
+
+		// dir = this.getNormalPath(dir);
+		// dir = dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
+		// return vscode.workspace.findFiles(`${dir}/*/**/*`);
+	}
+
+	filterUriByGlobs(uri, ignoreGlobs = []) {
+		return new Promise((resolve, reject) => {
+			if (!Array.isArray(ignoreGlobs) || !ignoreGlobs.length) {
+				resolve(uri);
+			}
+
+			new Glob(
+				`${this.getNormalPath(uri)}`,
+				this.getGlobOptions({
+					ignore: ignoreGlobs
+				}),
+				(error, matches) => {
+					if (error) {
+						reject(error);
+					}
+
+					if (matches.length) {
+						resolve(vscode.Uri.parse(matches[0]));
+					} else {
+						resolve(false);
+					}
+				}
+			)
+		});
 	}
 
 	/**
@@ -117,6 +173,10 @@ class Paths {
 		}
 
 		return '';
+	}
+
+	getBaseName(uri) {
+		return path.basename(this.getNormalPath(uri));
 	}
 }
 
