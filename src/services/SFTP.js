@@ -171,29 +171,30 @@ class ServiceSFTP extends ServiceBase {
 
 	/**
 	 * Put a single file to the SFTP server.
-	 * @param {string} src
-	 * @param {string} dest
+	 * @param {uri} src - Source Uri.
+	 * @param {string} dest - Destination pathname.
 	 */
 	put(src, dest) {
-		let dir = path.dirname(dest),
-			filename = path.basename(dest),
+		let destDir = path.dirname(dest),
+			destFilename = path.basename(dest),
+			srcPath = this.paths.getNormalPath(src),
 			client;
 
-		this.setProgress(`${filename}...`);
+		this.setProgress(`${destFilename}...`);
 
 		return this.connect().then((connection) => {
 			client = connection;
-			return this.mkDirRecursive(dir);
+			return this.mkDirRecursive(destDir);
 		})
 		.then(() => {
-			return this.checkCollision(src, dest);
+			return this.checkCollision(dest, src);
 		})
 		.then((option) => {
 			// Figure out what to do based on the collision (if any)
 			if (option == true) {
 				// No collision, just keep going
-				console.log(`Putting ${src} to ${dest}...`);
-				return client.put(src, dest);
+				console.log(`Putting ${srcPath} to ${dest}...`);
+				return client.put(srcPath, dest);
 			} else {
 				switch (option) {
 					case utils.collisionOpts.stop:
@@ -204,16 +205,16 @@ class ServiceSFTP extends ServiceBase {
 						return false;
 
 					case utils.collisionOpts.overwrite:
-						console.log(`Putting ${src} to ${dest}...`);
-						return client.put(src, dest);
+						console.log(`Putting ${srcPath} to ${dest}...`);
+						return client.put(srcPath, dest);
 
 					case utils.collisionOpts.rename:
 						console.log(`Renaming ${dest}...`);
-						return this.list(dir)
+						return this.list(destDir)
 							.then((dirContents) => {
 								return this.put(
 									src,
-									dir + '/' + this.getNonCollidingName(filename, dirContents)
+									destDir + '/' + this.getNonCollidingName(destFilename, dirContents)
 								);
 							});
 				}
@@ -318,6 +319,10 @@ class ServiceSFTP extends ServiceBase {
 		});
 	}
 
+	/**
+	 * Return a list of the remote directory.
+	 * @param {string} dir - Remote directory to list
+	 */
 	list(dir) {
 		if (this.pathCache.dirIsCached(PathCache.sources.REMOTE, dir)) {
 			// console.log(`Retrieving cached file list for "${dir}"...`);
@@ -346,19 +351,26 @@ class ServiceSFTP extends ServiceBase {
 		}
 	}
 
-	checkCollision(src, dest) {
-		const filename = path.basename(dest),
-			dir = path.dirname(dest);
+	/**
+	 * Checks for a potential file collision between the remote `dest` pathname and
+	 * the target location. Will display a collision picker if this occurs.
+	 * @param {string} dest - Destination pathname.
+	 * @param {uri} src - Source Uri. Used to compare modified times
+	 */
+	// TODO: Compare modified times!
+	checkCollision(dest, src) {
+		const destFilename = path.basename(dest),
+			destDir = path.dirname(dest);
 
-		return this.list(dir)
+		return this.list(destDir)
 			.then(() => {
-				const srcStat = fs.statSync(src);
+				const srcStat = fs.statSync(this.paths.getNormalPath(src));
 
 				let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest),
 					srcType = (srcStat.isDirectory() ? 'd' : 'f');
 
 				if (existing) {
-					return utils.showFileCollisionPicker(filename, (existing.type !== srcType));
+					return utils.showFileCollisionPicker(destFilename, (existing.type !== srcType));
 				}
 
 				return true;

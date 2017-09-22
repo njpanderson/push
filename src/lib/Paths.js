@@ -18,7 +18,11 @@ class Paths {
 		return '';
 	}
 
-	getNormalPath(uri) {
+	getNormalPath(uri, requiredScheme) {
+		if (requiredScheme !== undefined && uri.scheme !== requiredScheme) {
+			return false;
+		}
+
 		if (typeof uri === 'string') {
 			return uri;
 		}
@@ -39,8 +43,14 @@ class Paths {
 	 * @param {string} dir
 	 */
 	isDirectory(dir) {
-		const stats = fs.statSync(this.getNormalPath(dir));
-		return stats.isDirectory();
+		dir = this.getNormalPath(dir, 'file');
+
+		if (dir) {
+			const stats = fs.statSync(this.getNormalPath(dir));
+			return stats.isDirectory();
+		}
+
+		return false;
 	}
 
 	getDirectoryContentsAsFiles(dir) {

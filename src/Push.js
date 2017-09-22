@@ -154,13 +154,16 @@ class Push {
 			method: 'put',
 			actionTaken: 'uploaded',
 			uriContext: uri,
-			args: [this.paths.getNormalPath(uri)]
+			args: [uri]
 		}], false, Push.queueNames.upload);
 	}
 
 	execQueue(queueName) {
 		return this.getQueue(queueName)
-			.exec(this.service.getStateProgress);
+			.exec(this.service.getStateProgress)
+				.catch((error) => {
+					throw error;
+				});
 	}
 
 	execUploadQueue() {
@@ -175,14 +178,11 @@ class Push {
 		const method = 'put',
 			actionTaken = 'uploaded';
 
-		let src;
-
 		// Get Uri from file/selection, src from Uri
 		uri = this.paths.getFileSrc(uri);
-		src = this.paths.getNormalPath(uri);
 
-		if (this.paths.isDirectory(src)) {
-			return this.paths.getDirectoryContentsAsFiles(src)
+		if (this.paths.isDirectory(uri)) {
+			return this.paths.getDirectoryContentsAsFiles(uri)
 				.then((files) => {
 					let tasks = files.map((uri) => {
 						return {
@@ -192,9 +192,9 @@ class Push {
 							args: [
 								this.paths.getNormalPath(uri),
 								this.service.exec(
-									'convertLocalToRemote',
+									'convertUriToRemote',
 									this.configWithServiceSettings(uri),
-									[this.paths.getNormalPath(uri)]
+									[uri]
 								)
 							]
 						};
@@ -208,19 +208,19 @@ class Push {
 				actionTaken,
 				uriContext: uri,
 				args: [
-					src,
+					uri,
 					this.service.exec(
-						'convertLocalToRemote',
+						'convertUriToRemote',
 						this.configWithServiceSettings(uri),
-						[src]
+						[uri]
 					)
 				]
 			}], true);
 		}
 	}
 
-	download(uri) {
-		let src = this.paths.getNormalPath(this.paths.getFileSrc(uri));
+	download(file) {
+		// let src = this.paths.getNormalPath(this.paths.getFileSrc(uri));
 	}
 }
 

@@ -127,6 +127,8 @@ class Queue {
 
 						// Trigger callback
 						callback(results);
+
+						throw error;
 					} else if (typeof error === 'string') {
 						// Add basic error string to fail list, but don't stop
 						if (!results.fail[task.actionTaken]) {

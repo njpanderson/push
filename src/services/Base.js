@@ -1,3 +1,4 @@
+const vscode = require('vscode');
 const path = require('path');
 
 const Paths = require('../lib/Paths');
@@ -69,21 +70,26 @@ class ServiceBase {
 	}
 
 	/**
-	 * Converts a local path to a remote path given the local `file` filename.
-	 * @param {string} file - File/directory to perform replacement on.
+	 * Converts a local path to a remote path given the local `uri` Uri object.
+	 * @param {uri} uri - VSCode URI to perform replacement on.
 	 */
-	convertLocalToRemote(file) {
+	convertUriToRemote(uri) {
+		let file = this.paths.getNormalPath(uri);
+
 		return this.paths.stripTrailingSlash(this.config.service.root) + '/' +
 			file.replace(path.dirname(this.config.serviceFilename) + '/', '');
 	}
 
 	/**
-	 * Converts a local path to a remote path given the local `file` filename.
-	 * @param {string} file - File/directory to perform replacement on.
+	 * Converts a remote path to a local path given the remote `file` pathname.
+	 * @param {string} file - Remote pathname to perform replacement on.
+	 * @returns {uri} A qualified Uri object.
 	 */
-	convertRemoteToLocal(file) {
-		return path.dirname(this.config.serviceFilename) + '/' +
-			file.replace(this.paths.stripTrailingSlash(this.config.service.root) + '/', '');
+	convertRemoteToUri(file) {
+		return vscode.Uri.parse(
+			path.dirname(this.config.serviceFilename) + '/' +
+			file.replace(this.paths.stripTrailingSlash(this.config.service.root) + '/', '')
+		);
 	}
 
 	/**
