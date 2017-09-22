@@ -119,16 +119,21 @@ class PathCache {
 			if (!source) {
 				// Clear entire cache
 				this.cache = {};
+				this.indices = {};
 			}
 
 			if (this.cache[source]) {
 				// Clear one source
 				if (dir && this.cache[source][dir]) {
 					this.cache[source][dir] = null;
+					this.indices[source][dir] = null;
 					delete this.cache[source][dir];
+					delete this.indices[source][dir];
 				} else if (!dir) {
 					this.cache[source] = null;
+					this.indices[source] = null;
 					delete this.cache[source];
+					delete this.indices[source];
 				}
 			}
 
