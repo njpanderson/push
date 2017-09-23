@@ -248,7 +248,7 @@ class ServiceSFTP extends ServiceBase {
 					let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest);
 
 					if (existing === null) {
-						connection.mkdir(dest)
+						return connection.mkdir(dest)
 							.then(() => {
 								let date = new Date();
 								// Add dir to cache
