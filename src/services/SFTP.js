@@ -3,17 +3,23 @@ const fs = require('fs');
 const path = require('path');
 
 const ServiceBase = require('./Base');
+const File = require('./File');
 const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
+
+const SRC_REMOTE = PathCache.sources.REMOTE;
 
 class ServiceSFTP extends ServiceBase {
 	constructor() {
 		super();
 
+		this.mkDir = this.mkDir.bind(this);
+
 		this.type = 'SFTP';
 		this.clients = {};
 		this.maxClients = 2;
 		this.pathCache = new PathCache();
+		this.file = new File();
 
 		// Define SFTP defaults
 		this.serviceDefaults = {
@@ -46,6 +52,17 @@ class ServiceSFTP extends ServiceBase {
 
 	init() {
 		return this.pathCache.clear();
+	}
+
+	setConfig(config) {
+		super.setConfig(config);
+
+		// Set configuration for file class
+		this.file.setConfig({
+			service: {
+				root: this.paths.getCurrentWorkspaceRootPath()
+			}
+		})
 	}
 
 	/**
@@ -184,7 +201,11 @@ class ServiceSFTP extends ServiceBase {
 
 		return this.connect().then((connection) => {
 			client = connection;
-			return this.mkDirRecursive(destDir, this.config.service.root);
+			return this.mkDirRecursive(
+				destDir,
+				this.config.service.root,
+				this.mkDir
+			);
 		})
 		.then(() => {
 			return this.checkCollision(dest, src);
@@ -232,31 +253,71 @@ class ServiceSFTP extends ServiceBase {
 		});
 	}
 
-	get(src) {
-		throw new Error('Get not implemented');
+	/**
+	 * @param {uri} dest - Destination Uri.
+	 * @param {string} src - Source filename.
+	 * @description
+	 * Get a single file from the SFTP server.
+	 *
+	 * **Note:** The arguments to `get` are reversed from `put` in order to be able
+	 * to utilise this method alongside put in a more re-usable way.
+	 */
+	get(dest, src) {
+		let destPath = this.paths.getNormalPath(dest),
+			srcDir = path.dirname(src),
+			srcFilename = path.basename(src),
+			client;
+
+		this.setProgress(`${srcFilename}...`);
+
+		return this.connect()
+			.then((connection) => {
+				// List the source directory in order to cache the file data
+				client = connection;
+				return this.list(srcDir);
+			})
+			.then(() => {
+				return this.getMimeCharset(src);
+			})
+			.then((charset) => {
+				// Use the File class to put a file from the source to the dest
+				return client.get(src, true, charset === 'binary' ? null : 'utf8')
+					.then((stream) => {
+						return this.file.put(
+							this.pathCache.extendStream(stream, SRC_REMOTE, src),
+							destPath
+						);
+					})
+					.catch((error) => {
+						throw(error.message);
+					});
+			})
+			.catch((error) => {
+				this.setProgress(false);
+				throw(error);
+			});
 	}
 
 	/**
-	 * Recursively creates direcotories up to and including the basename of the given path.
+	 * Creates a single directory at the specified remote destination.
 	 * Will reject on an incompatible collision.
-	 * @param {string} dest - Destination directory to create
+	 * @param {string} dir - Destination directory to create
 	 */
-	mkDir(dest) {
+	mkDir(dir) {
 		return this.connect().then((connection) => {
-			return this.list(path.dirname(dest))
+			return this.list(path.dirname(dir))
 				.then(() => {
-					let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest);
+					let existing = this.pathCache.getFileByPath(SRC_REMOTE, dir);
 
 					if (existing === null) {
-						return connection.mkdir(dest)
+						return connection.mkdir(dir)
 							.then(() => {
-								let date = new Date();
 								// Add dir to cache
 								// TODO: maybe replace with a cache clear on the directory above?
 								this.pathCache.addCachedFile(
-									PathCache.sources.REMOTE,
-									dest,
-									(date.getTime() / 1000),
+									SRC_REMOTE,
+									dir,
+									((new Date()).getTime() / 1000),
 									'd'
 								);
 							});
@@ -278,9 +339,9 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {string} dir - Remote directory to list
 	 */
 	list(dir) {
-		if (this.pathCache.dirIsCached(PathCache.sources.REMOTE, dir)) {
+		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
 			// console.log(`Retrieving cached file list for "${dir}"...`);
-			return Promise.resolve(this.pathCache.getDir(PathCache.sources.REMOTE, dir));
+			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 		} else {
 			// console.log(`Retrieving live file list for "${dir}"...`);
 			return this.connect()
@@ -291,7 +352,7 @@ class ServiceSFTP extends ServiceBase {
 							if (list) {
 								list.forEach((item) => {
 									this.pathCache.addCachedFile(
-										PathCache.sources.REMOTE,
+										SRC_REMOTE,
 										dir + '/' + item.name,
 										(item.modifyTime / 1000),
 										(item.type === 'd' ? 'd' : 'f')
@@ -299,32 +360,32 @@ class ServiceSFTP extends ServiceBase {
 								});
 							}
 
-							return this.pathCache.getDir(PathCache.sources.REMOTE, dir);
+							return this.pathCache.getDir(SRC_REMOTE, dir);
 						});
 				});
 		}
 	}
 
 	/**
-	 * Checks for a potential file collision between the remote `dest` pathname and
-	 * the target location. Will display a collision picker if this occurs.
-	 * @param {string} dest - Destination pathname.
-	 * @param {uri} src - Source Uri. Used to compare modified times
+	 * Checks for a potential file collision between the `remote` pathname and
+	 * the `local` Uri. Will display a collision picker if this occurs.
+	 * @param {string} remote - Remote pathname.
+	 * @param {uri} local - Local Uri.
 	 */
 	// TODO: Compare modified times!
-	checkCollision(dest, src) {
-		const destFilename = path.basename(dest),
-			destDir = path.dirname(dest);
+	checkCollision(remote, local) {
+		const remoteFilename = path.basename(remote),
+			remoteDir = path.dirname(remote);
 
-		return this.list(destDir)
+		return this.list(remoteDir)
 			.then(() => {
-				const srcStat = fs.statSync(this.paths.getNormalPath(src));
+				const localStat = fs.statSync(this.paths.getNormalPath(local)),
+					remoteStat = this.pathCache.getFileByPath(SRC_REMOTE, remote);
 
-				let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest),
-					srcType = (srcStat.isDirectory() ? 'd' : 'f');
+				let localType = (localStat.isDirectory() ? 'd' : 'f');
 
-				if (existing) {
-					return utils.showFileCollisionPicker(destFilename, (existing.type !== srcType));
+				if (remoteStat) {
+					return utils.showFileCollisionPicker(remoteFilename, (remoteStat.type !== localType));
 				}
 
 				return true;
@@ -336,6 +397,65 @@ class ServiceSFTP extends ServiceBase {
 			return fs.readFileSync(file, 'UTF-8');
 		}
 	}
+
+	/**
+	 * @param {string} file - Remote file to test.
+	 * @description
+	 * Retrieves the mime data from a file. Uses the `file` command on an SFTP server.
+	 * Falls back to extension based checking.
+	 */
+	getMimeCharset(file) {
+		return this.connect().then((connection) => {
+			return new Promise((resolve, reject) => {
+				connection.client.exec(`file --mime ${file}`, (error, stream) => {
+					let totalData = '', totalErrorData = '';
+
+					if (error) {
+						reject(error);
+					}
+
+					stream.on('close', (code) => {
+						let charsetMatch = totalData.match(/charset=([^\s\n]+)/);
+
+						if (totalErrorData ||
+							!totalData ||
+							charsetMatch === null ||
+							code !== 0) {
+							resolve(this.getBasicMimeCharset(file));
+						} else {
+							resolve(charsetMatch[1]);
+						}
+					}).on('data', (data) => {
+						totalData += data;
+					}).stderr.on('data', (data) => {
+						totalErrorData += data;
+					});
+				});
+			});
+		});
+	}
+
+	/**
+	 * Performs a basic check for charset based on file extension alone.
+	 * @param {string} file - Remote file to test.
+	 */
+	getBasicMimeCharset(file) {
+		const ext = path.extname(file);
+
+		if (ServiceSFTP.encodingByExtension.utf8.indexOf(ext) !== -1) {
+			return 'utf8';
+		}
+
+		return 'binary';
+	}
 };
+
+ServiceSFTP.encodingByExtension = {
+	'utf8': [
+		'.txt', '.html', '.shtml', '.js', '.jsx', '.css', '.less', '.sass',
+		'.php', '.asp', '.aspx', '.svg', '.sql', '.rb', '.py', '.log', '.sh', '.bat',
+		'.pl', '.cgi', '.htaccess'
+	]
+}
 
 module.exports = ServiceSFTP;

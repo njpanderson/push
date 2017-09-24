@@ -190,14 +190,35 @@ class Push {
 	 * @param {Uri} uri
 	 */
 	upload(uri) {
-		const method = 'put',
-			actionTaken = 'uploaded';
+		return this.transfer(uri, 'put');
+	}
+
+	/**
+	 * Downloads a single file or directory by its Uri.
+	 * @param {Uri} uri
+	 */
+	download(uri) {
+		return this.transfer(uri, 'get');
+	}
+
+	transfer(uri, method) {
+		let ignoreGlobs = [], action, actionTaken;
 
 		// Get Uri from file/selection, src from Uri
 		uri = this.paths.getFileSrc(uri);
 
+		if (method === 'put') {
+			// Filter Uri(s) by the ignore globs when uploading
+			ignoreGlobs = this.config.ignoreGlobs;
+			action = 'upload';
+			actionTaken = 'uploaded';
+		} else {
+			action = 'download';
+			actionTaken = 'downloaded';
+		}
+
 		if (this.paths.isDirectory(uri)) {
-			return this.paths.getDirectoryContentsAsFiles(uri, this.config.ignoreGlobs)
+			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
 						uri = vscode.Uri.parse(uri);
@@ -220,7 +241,7 @@ class Push {
 					return this.route(tasks, true);
 				});
 		} else {
-			return this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+			return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 				.then((filteredUri) => {
 					if (filteredUri !== false) {
 						return this.route([{
@@ -238,16 +259,12 @@ class Push {
 						}], true);
 					} else {
 						utils.showWarning(
-							`Cannot upload file "${this.paths.getBaseName(uri)}" -` +
+							`Cannot ${action} file "${this.paths.getBaseName(uri)}" -` +
 							` It matches one of the defined ignoreGlobs filters.`
 						);
 					}
 				});
 		}
-	}
-
-	download(file) {
-		// let src = this.paths.getNormalPath(this.paths.getFileSrc(uri));
 	}
 }
 

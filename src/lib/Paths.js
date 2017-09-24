@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const Glob = require('glob').Glob;
 
+const ExtendedStream = require('./ExtendedStream');
+
 class Paths {
 	/**
 	 * Retrieves the current workspace root path from the active workspace.
@@ -29,6 +31,18 @@ class Paths {
 		}
 
 		return uri.fsPath || uri.path;
+	}
+
+	getPathFromStreamOrUri(src) {
+		if (src instanceof vscode.Uri) {
+			return this.getNormalPath(src);
+		} else if (src instanceof ExtendedStream) {
+			return src.read.path;
+		} else if (typeof src === 'string') {
+			return src;
+		} else {
+			throw new Error('Paths#getPathFromStreamOrUri - src source could not be determined.');
+		}
 	}
 
 	/**

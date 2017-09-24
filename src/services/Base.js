@@ -132,43 +132,50 @@ class ServiceBase {
 		return Promise.resolve(true);
 	}
 
-	mkDirRecursive(dest, root) {
-		let baseDest, recursiveDest, dirList;
+	/**
+	 * Recursively create a directory path using a callback function.
+	 * @param {string} dir - Directory to create. Must contain the root path.
+	 * @param {string} root - Root path, for validation
+	 * @param {function} fnDir - Callback function. Invoked for each new directory
+	 * required during creation.
+	 */
+	mkDirRecursive(dir, root, fnDir) {
+		let baseDir, recursiveDir, dirList;
 
-		if (dest === root) {
+		if (dir === root) {
 			// Resolve the promise immediately as the root directory must exist
 			return Promise.resolve();
 		}
 
-		if (dest.startsWith(root)) {
-			baseDest = dest.replace(root + '/', '');
-			recursiveDest = baseDest.split('/');
+		if (dir.startsWith(root)) {
+			baseDir = dir.replace(root + '/', '');
+			recursiveDir = baseDir.split('/');
 			dirList = [];
 
 			// First, create a directory list for the Promise loop to iterate over
-			recursiveDest.reduce((acc, current) => {
-				let dir = (acc === '' ? current : (acc + '/' + current));
+			recursiveDir.reduce((acc, current) => {
+				let pathname = (acc === '' ? current : (acc + '/' + current));
 
-				if (dir !== '') {
-					dirList.push(root + '/' + dir);
+				if (pathname !== '') {
+					dirList.push(root + '/' + pathname);
 				}
 
-				return dir;
+				return pathname;
 			}, '');
 
-			return this.mkDirByList(dirList);
+			return this.mkDirByList(dirList, fnDir);
 		}
 
 		return Promise.reject('Directory is outside of root and cannot be created.');
 	}
 
-	mkDirByList(list) {
+	mkDirByList(list, fnDir) {
 		let dir = list.shift();
 
 		if (dir !== undefined) {
-			return this.mkDir(dir)
+			return fnDir(dir)
 				.then(() => {
-					return this.mkDirByList(list);
+					return this.mkDirByList(list, fnDir);
 				})
 				.catch((error) => {
 					throw error;

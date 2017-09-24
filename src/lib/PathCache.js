@@ -1,5 +1,7 @@
 const path = require('path');
 
+const ExtendedStream = require('./ExtendedStream');
+
 class PathCache {
 	constructor() {
 		// Path cache
@@ -139,6 +141,23 @@ class PathCache {
 
 			resolve();
 		});
+	}
+
+	/**
+	 * Extends a stream with cached data about a file
+	 * @param {Readable} stream
+	 * @param {string} filename
+	 */
+	extendStream(stream, source, filename) {
+		let file = this.getFileByPath(source, filename);
+
+		if (file !== null) {
+			return new ExtendedStream(
+				{ read: stream },
+				file,
+				filename
+			);
+		}
 	}
 };
 

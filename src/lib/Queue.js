@@ -136,6 +136,9 @@ class Queue {
 						}
 
 						results.fail[task.actionTaken].push(error);
+
+						// Loop
+						this.execQueueItems(callback, results);
 					}
 				});
 		} else {
@@ -150,9 +153,10 @@ class Queue {
 	 * @param {object} results
 	 */
 	reportQueueResults(results) {
-		let actionTaken, extra = [
-			'Queue complete.'
-		];
+		let actionTaken,
+			extra = [
+				'Queue complete.'
+			];
 
 		for (actionTaken in results.fail) {
 			if (results.fail[actionTaken].length === 1) {
@@ -170,7 +174,11 @@ class Queue {
 			}
 		}
 
-		utils.showMessage(extra.join(' '));
+		if ((Object.keys(results.fail)).length) {
+			utils.showWarning(extra.join(' '));
+		} else {
+			utils.showMessage(extra.join(' '));
+		}
 	}
 };
 
