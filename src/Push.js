@@ -162,14 +162,28 @@ class Push {
 		}
 	}
 
+	/**
+	 * Queues a single file to be uploaded within the deferred queue.
+	 * @param {uri} uri - File Uri to queue
+	 */
 	queueForUpload(uri) {
+		let remoteUri;
+
 		uri = this.paths.getFileSrc(uri);
+
+		if (this.service) {
+			remoteUri = this.service.exec(
+				'convertUriToRemote',
+				this.configWithServiceSettings(uri),
+				[uri]
+			);
+		}
 
 		return this.route([{
 			method: 'put',
 			actionTaken: 'uploaded',
 			uriContext: uri,
-			args: [uri]
+			args: [uri, remoteUri]
 		}], false, Push.queueNames.upload);
 	}
 
