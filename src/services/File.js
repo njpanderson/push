@@ -18,7 +18,9 @@ class File extends ServiceBase {
 
 		// Define File defaults
 		this.serviceDefaults = {
-			root: '/'
+			root: '/',
+			timeZoneOffset: 0,
+			testCollisionTimeDiffs: true
 		};
 
 		// Define File validation rules
@@ -43,7 +45,7 @@ class File extends ServiceBase {
 
 	/**
 	 * Put a single file to the SFTP server.
-	 * @param {uri} src - Source Uri.
+	 * @param {uri|stream.Readable} src - Source Uri or Readable stream instance.
 	 * @param {string} dest - Destination pathname.
 	 */
 	put(src, dest) {
@@ -166,7 +168,7 @@ class File extends ServiceBase {
 						this.pathCache.addCachedFile(
 							PathCache.sources.REMOTE,
 							pathname,
-							((new Date(stats.mtime)).getTime() / 1000),
+							(stats.mtime.getTime() / 1000),
 							(stats.isDirectory() ? 'd' : 'f')
 						);
 					});
@@ -190,22 +192,37 @@ class File extends ServiceBase {
 
 		return this.list(remoteDir)
 			.then(() => {
-				let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, remote),
-					localStat, localType;
+				let remoteStat = this.pathCache.getFileByPath(PathCache.sources.REMOTE, remote),
+					localStat, localType, localMTime, timediff;
 
 				if (local instanceof vscode.Uri) {
 					localStat = fs.statSync(this.paths.getNormalPath(local));
 					localType = (localStat.isDirectory() ? 'd' : 'f');
+					localMTime = (localStat.mtime.getTime() / 1000);
 				} else if (local instanceof ExtendedStream) {
 					localType = local.fileData.type;
+					localMTime = local.fileData.modified;
 				} else {
 					throw new Error(
 						'Argument `local` is neither a readable stream or a filename.'
 					);
 				}
 
-				if (existing) {
-					return utils.showFileCollisionPicker(remoteFilename, (existing.type !== localType));
+				timediff = (
+					localMTime -
+					(remoteStat.modified + this.config.service.timeZoneOffset)
+				);
+
+				if (remoteStat &&
+					(
+						(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
+						!this.config.service.testCollisionTimeDiffs
+					)) {
+					// Remote file exists and difference means local file is older
+					return utils.showFileCollisionPicker(
+						remoteFilename,
+						(remoteStat.type !== localType)
+					);
 				}
 
 				return true;

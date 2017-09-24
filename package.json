@@ -22,17 +22,17 @@
         "njpPush.settingsFilename": {
           "type": "string",
           "default": ".push.settings.json",
-          "description": "Defines the push settings JSON filename"
+          "description": "Defines the push settings JSON filename."
         },
         "njpPush.privateKey": {
           "type": "string",
           "default": "",
-          "description": "Defines the default SSH key file for SFTP"
+          "description": "Defines the default SSH key file for SFTP."
         },
         "njpPush.uploadQueue": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the upload queue for deferred uploads on save"
+          "description": "Enable the upload queue for deferred uploads on save."
         },
         "njpPush.ignoreGlobs": {
           "type": "array",
@@ -43,7 +43,12 @@
             "**/.git/*",
             "**/.svn/*"
           ],
-          "description": "An array of regular expressions to match against ignored paths"
+          "description": "An array of regular expressions to match against ignored paths."
+        },
+        "njpPush.testCollisionTimeDiffs": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, will test files for time differences before considering them 'colliding' on transfers. When false, the existence of a target file is enough to be considered a collision."
         }
       }
     },

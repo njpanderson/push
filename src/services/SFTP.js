@@ -29,7 +29,8 @@ class ServiceSFTP extends ServiceBase {
 			password: '',
 			privateKey: '',
 			root: '/',
-			timeZoneOffset: 0
+			timeZoneOffset: 0,
+			testCollisionTimeDiffs: true
 		};
 
 		// Define SFTP validation rules
@@ -60,7 +61,9 @@ class ServiceSFTP extends ServiceBase {
 		// Set configuration for file class
 		this.file.setConfig({
 			service: {
-				root: this.paths.getCurrentWorkspaceRootPath()
+				root: this.paths.getCurrentWorkspaceRootPath(),
+				timeZoneOffset: -(this.config.service.timeZoneOffset),
+				testCollisionTimeDiffs: this.config.service.testCollisionTimeDiffs
 			}
 		})
 	}
@@ -283,6 +286,7 @@ class ServiceSFTP extends ServiceBase {
 				// Use the File class to put a file from the source to the dest
 				return client.get(src, true, charset === 'binary' ? null : 'utf8')
 					.then((stream) => {
+						// Use File#put to send the file from the server to the local filesystem
 						return this.file.put(
 							this.pathCache.extendStream(stream, SRC_REMOTE, src),
 							destPath
@@ -380,12 +384,26 @@ class ServiceSFTP extends ServiceBase {
 		return this.list(remoteDir)
 			.then(() => {
 				const localStat = fs.statSync(this.paths.getNormalPath(local)),
-					remoteStat = this.pathCache.getFileByPath(SRC_REMOTE, remote);
+					remoteStat = this.pathCache.getFileByPath(SRC_REMOTE, remote),
+					localMTime = (localStat.mtime.getTime() / 1000);
 
-				let localType = (localStat.isDirectory() ? 'd' : 'f');
+				let timediff, localType = (localStat.isDirectory() ? 'd' : 'f');
 
-				if (remoteStat) {
-					return utils.showFileCollisionPicker(remoteFilename, (remoteStat.type !== localType));
+				timediff = (
+					localMTime -
+					(remoteStat.modified + this.config.service.timeZoneOffset)
+				);
+
+				if (remoteStat &&
+					(
+						(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
+						!this.config.service.testCollisionTimeDiffs
+					)) {
+					// Remote file exists and difference means local file is older
+					return utils.showFileCollisionPicker(
+						remoteFilename,
+						(remoteStat.type !== localType)
+					);
 				}
 
 				return true;
