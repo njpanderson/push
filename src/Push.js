@@ -133,7 +133,7 @@ class Push {
 			});
 		}
 
-		tasks.forEach(({ method, actionTaken, uriContext, args }) => {
+		tasks.forEach(({ method, actionTaken, uriContext, args, id }) => {
 			// Add queue item with contextual config
 			queue.addTask(() => {
 				let config;
@@ -151,7 +151,7 @@ class Push {
 					// Execute the service method, returning any results and/or promises
 					return this.service.exec(method, config, args);
 				}
-			}, actionTaken);
+			}, actionTaken, id);
 		});
 
 		if (runImmediately) {
@@ -179,7 +179,8 @@ class Push {
 				method: 'put',
 				actionTaken: 'uploaded',
 				uriContext: uri,
-				args: [uri, remoteUri]
+				args: [uri, remoteUri],
+				id: remoteUri + this.paths.getNormalPath(uri)
 			}], false, Push.queueNames.upload);
 		}
 	}

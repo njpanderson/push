@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const crypto = require('crypto');
 
 const utils = require('../lib/utils');
 
@@ -14,14 +15,29 @@ class Queue {
 	 * @param {string} [actionTaken] - Name of the function/operation performed in
 	 * past tense (i.e. "uploaded").
 	 */
-	addTask(fn, actionTaken) {
-		let task = { fn };
+	addTask(fn, actionTaken, id) {
+		let hash = crypto.createHash('sha256'),
+			task = { fn };
 
-		if (actionTaken) {
-			task.actionTaken = actionTaken;
+		if (id) {
+			hash.update(id);
+			task.id = hash.digest('hex');
 		}
 
-		this.tasks.push(task);
+		if (id === undefined || !this.getTask(task.id)) {
+			// Only push the task if one doesn't already exist with this id
+			if (actionTaken) {
+				task.actionTaken = actionTaken;
+			}
+
+			this.tasks.push(task);
+		}
+	}
+
+	getTask(id) {
+		return this.tasks.find((item) => {
+			return ('id' in item && item.id === id);
+		})
 	}
 
 	/**
