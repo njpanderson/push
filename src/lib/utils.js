@@ -1,24 +1,40 @@
 const vscode = require('vscode');
 
 const utils = {
-	showMessage: (message) => {
-		utils.displayErrorOrString('showInformationMessage', message);
+	showMessage: function(message) {
+		utils.displayErrorOrString('showInformationMessage', message, [...arguments].slice(1));
 	},
 
-	showError: (message) => {
-		utils.displayErrorOrString('showErrorMessage', message);
+	showError: function(message) {
+		utils.displayErrorOrString('showErrorMessage', message, [...arguments].slice(1));
 	},
 
-	showWarning: (message) => {
-		utils.displayErrorOrString('showWarningMessage', message);
+	showWarning: function(message) {
+		utils.displayErrorOrString('showWarningMessage', message, [...arguments].slice(1));
 	},
 
-	displayErrorOrString(method, data) {
+	displayErrorOrString(method, data, replacementVars = []) {
 		if (data instanceof Error) {
-			vscode.window[method](`Push: ${data.message}`);
+			vscode.window[method](
+				`Push: ${utils.parseTemplate(data.message, replacementVars)}`
+			);
 		} else {
-			vscode.window[method](`Push: ${data}`);
+			vscode.window[method](
+				`Push: ${utils.parseTemplate(data, replacementVars)}`
+			);
 		}
+	},
+
+	parseTemplate(data, replacementVars = []) {
+		if (replacementVars.length === 0) {
+			return data;
+		}
+
+		replacementVars.forEach((item, index) => {
+			data = data.replace('$' + (index + 1), item);
+		});
+
+		return data;
 	},
 
 	showFileCollisionPicker(name, mismatchedTypes = false, callback) {
@@ -65,5 +81,10 @@ utils.collisionOpts = {
 utils.errors = {
 	stop: new Error('Transfer cancelled')
 };
+
+utils.strings = {
+	NO_SERVICE_FILE: 'A settings file could not be found within your project. Have you ' +
+		'created a file with the name $1 yet?'
+}
 
 module.exports = utils;

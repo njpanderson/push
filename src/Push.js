@@ -97,10 +97,7 @@ class Push {
 			return newConfig;
 		} else {
 			// No settings for this context - show an error
-			utils.showError(
-				`A settings file could not be found within your project. Have you ` +
-				`created a file with the name "${this.config.settingsFilename}" yet?`
-			);
+			utils.showError(utils.strings.NO_SERVICE_FILE, this.config.settingsFilename);
 
 			return false;
 		}
@@ -177,14 +174,14 @@ class Push {
 				this.configWithServiceSettings(uri),
 				[uri]
 			);
-		}
 
-		return this.queue([{
-			method: 'put',
-			actionTaken: 'uploaded',
-			uriContext: uri,
-			args: [uri, remoteUri]
-		}], false, Push.queueNames.upload);
+			return this.queue([{
+				method: 'put',
+				actionTaken: 'uploaded',
+				uriContext: uri,
+				args: [uri, remoteUri]
+			}], false, Push.queueNames.upload);
+		}
 	}
 
 	execQueue(queueName) {
