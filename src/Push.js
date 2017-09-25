@@ -118,14 +118,14 @@ class Push {
 	 * @param {array} tasks - Tasks to execute. Must contain the properties detailed below.
 	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately.
 	 * @description
-	 * Routes to a service method after doing required up-front work.
+	 * Queues a task for a service method after doing required up-front work.
 	 *
 	 * ### Task properties:
 	 * - `method` (`string`): Method to run.
 	 * - `uriContext` (`uri`): URI context for the method.
 	 * - `args` (`array`): Array of arguments to send to the method.
 	 */
-	route(tasks = [], runImmediately = false, queueName = Push.queueNames.default) {
+	queue(tasks = [], runImmediately = false, queueName = Push.queueNames.default) {
 		const queue = this.getQueue(queueName);
 
 		// Add initial init to a new queue
@@ -145,7 +145,7 @@ class Push {
 					// Add service settings to the current configuration
 					config = this.configWithServiceSettings(uriContext);
 				} else {
-					throw new Error('No uriContext set from route source.');
+					throw new Error('No uriContext set from queue source.');
 				}
 
 				if (config) {
@@ -179,7 +179,7 @@ class Push {
 			);
 		}
 
-		return this.route([{
+		return this.queue([{
 			method: 'put',
 			actionTaken: 'uploaded',
 			uriContext: uri,
@@ -252,13 +252,13 @@ class Push {
 						};
 					});
 
-					return this.route(tasks, true);
+					return this.queue(tasks, true);
 				});
 		} else {
 			return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 				.then((filteredUri) => {
 					if (filteredUri !== false) {
-						return this.route([{
+						return this.queue([{
 							method,
 							actionTaken,
 							uriContext: filteredUri,
