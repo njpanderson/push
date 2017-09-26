@@ -1,5 +1,7 @@
 # Push
 
+**Note: This extension is under heavy development and should be considered pre-alpha. Do not use unless you are happy to potentially lose data within your VS Code workspaces.**
+
 Push is a file transfer extension. It is inspired in part by Sublime's fantastic SFTP plugin, and provides you with a tool to upload and download files within a workspace.
 
 ## Features
@@ -70,6 +72,6 @@ None at present.
 
 ## Release Notes
 
-### 1.0.0
+### 0.0.0
 
-Initial release
+(Not yet released)
