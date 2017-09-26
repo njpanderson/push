@@ -376,7 +376,6 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {string} remote - Remote pathname.
 	 * @param {uri} local - Local Uri.
 	 */
-	// TODO: Compare modified times!
 	checkCollision(remote, local) {
 		const remoteFilename = path.basename(remote),
 			remoteDir = path.dirname(remote);

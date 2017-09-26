@@ -185,7 +185,6 @@ class File extends ServiceBase {
 	 * @param {string} remote - Remote pathname.
 	 * @param {uri|stream} local - Local Uri.
 	 */
-	// TODO: Compare modified times!
 	checkCollision(remote, local) {
 		const remoteFilename = path.basename(remote),
 			remoteDir = path.dirname(remote);
