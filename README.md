@@ -57,12 +57,19 @@ When defining a server settings file, placing it in the root of your workspace w
 
 | Setting | Description |
 | --- | --- |
-| `host` | Hostname or IP of the remote host |
-| `username` | Username of the authenticated user |
-| `password` | Password for the authenticated user. Leave blank if using keys |
-| `privateKey` | Private key path, if using keys. Defaults to the global `privateKey` setting |
-| `root` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path |
-| `timeZoneOffset` | In minutes, the time zone offset of the server compared to your local computer. **Note: you will likely not need this as the times are expressed in EPOCH internally.** If you do, and if your server was set to PST (Pacific Standard Time i.e. UTC-8) with your local computer set to UTC, then the value would be `-480`. |
+| `host` | Hostname or IP of the remote host. |
+| `username` | Username of the authenticated user. |
+| `password` | Password for the authenticated user. Leave blank if using keys. |
+| `privateKey` | Private key path, if using keys. Defaults to the global `privateKey` setting. |
+| `root` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
+| `testCollisionTimeDiffs` | If this option is set to `false`, the SFTP service will not consider newer files to be non-colliding, which means all files that exist on the server will produce a collision warning. |
+
+#### `File`
+
+| Setting | Description |
+| --- | --- |
+| `root` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
+| `testCollisionTimeDiffs` | If this option is set to `false`, the File service will not consider newer files to be non-colliding, which means all files that exist on the target folder will produce a collision warning. |
 
 ### Service options
 

@@ -104,17 +104,17 @@ utils.collisionOpts = {
 utils.collisionOptsAll = {
 	skip: {
 		label: 'Skip all',
-		detail: 'Skip uploading all files',
+		detail: 'Skip uploading all existing files',
 		baseOption: utils.collisionOpts.skip
 	},
 	overwrite: {
 		label: 'Overwrite all',
-		detail: 'Replace all files',
+		detail: 'Replace all existing files',
 		baseOption: utils.collisionOpts.overwrite
 	},
 	rename: {
 		label: 'Rename all',
-		detail: 'Keep all files by renaming the source files',
+		detail: 'Keep all existing files by renaming the uploaded files',
 		baseOption: utils.collisionOpts.rename
 	 }
 }

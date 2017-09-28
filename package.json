@@ -44,11 +44,6 @@
             "**/.svn/*"
           ],
           "description": "An array of regular expressions to match against ignored paths."
-        },
-        "njpPush.testCollisionTimeDiffs": {
-          "type": "boolean",
-          "default": true,
-          "description": "When true, will test files for time differences before considering them 'colliding' on transfers. When false, the existence of a target file is enough to be considered a collision."
         }
       }
     },

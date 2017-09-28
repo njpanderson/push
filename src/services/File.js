@@ -61,7 +61,7 @@ class File extends ServiceBase {
 			})
 			.then((result) => {
 				// Figure out what to do based on the collision (if any)
-				if (result.option == true) {
+				if (result == true) {
 					// No collision, just keep going
 					console.log(`Putting ${srcPath} to ${dest}...`);
 					return this.copy(src, dest);
