@@ -10,6 +10,7 @@ class ServiceBase {
 		this.progress = null;
 		this.serviceDefaults = {};
 		this.config = {};
+		this.collisionOptions = {};
 
 		this.paths = new Paths();
 	}
@@ -128,7 +129,7 @@ class ServiceBase {
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
 	init() {
-		console.log('Base service init (empty)');
+		this.collisionOptions = {};
 		return Promise.resolve(true);
 	}
 

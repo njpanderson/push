@@ -52,7 +52,10 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	init() {
-		return this.pathCache.clear();
+		return super.init()
+			.then(() => {
+				return this.pathCache.clear();
+			});
 	}
 
 	setConfig(config) {
@@ -213,14 +216,19 @@ class ServiceSFTP extends ServiceBase {
 		.then(() => {
 			return this.checkCollision(dest, src);
 		})
-		.then((option) => {
+		.then((result) => {
 			// Figure out what to do based on the collision (if any)
-			if (option == true) {
+			if (result.option == true) {
 				// No collision, just keep going
 				console.log(`Putting ${srcPath} to ${dest}...`);
 				return client.put(srcPath, dest);
 			} else {
-				switch (option) {
+				if (result.option && result.option.baseOption) {
+					// Save collision options from "All" option
+					this.collisionOptions[result.type] = result.option.baseOption;
+				}
+
+				switch (result.option) {
 					case utils.collisionOpts.stop:
 						throw utils.errors.stop;
 
@@ -241,6 +249,7 @@ class ServiceSFTP extends ServiceBase {
 									destDir + '/' + this.getNonCollidingName(destFilename, dirContents)
 								);
 							});
+
 				}
 
 				return false;
@@ -378,7 +387,8 @@ class ServiceSFTP extends ServiceBase {
 	 */
 	checkCollision(remote, local) {
 		const remoteFilename = path.basename(remote),
-			remoteDir = path.dirname(remote);
+			remoteDir = path.dirname(remote),
+			collisionType = 'file';
 
 		return this.list(remoteDir)
 			.then(() => {
@@ -399,10 +409,23 @@ class ServiceSFTP extends ServiceBase {
 						!this.config.service.testCollisionTimeDiffs
 					)) {
 					// Remote file exists and difference means local file is older
-					return utils.showFileCollisionPicker(
-						remoteFilename,
-						(remoteStat.type !== localType)
-					);
+					if (remoteStat.type === localType) {
+						if (this.collisionOptions[collisionType]) {
+							return {
+								type: collisionType,
+								option: this.collisionOptions[collisionType]
+							};
+						} else {
+							return utils.showFileCollisionPicker(
+								remoteFilename,
+								this.collisionOptions.file
+							);
+						}
+					} else {
+						return utils.showMismatchCollisionPicker(
+							remoteFilename
+						);
+					}
 				}
 
 				return true;

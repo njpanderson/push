@@ -37,27 +37,50 @@ const utils = {
 		return data;
 	},
 
-	showFileCollisionPicker(name, mismatchedTypes = false, callback) {
+	showFileCollisionPicker(name, callback) {
+		let options = [
+				utils.collisionOpts.skip,
+				utils.collisionOpts.rename,
+				utils.collisionOpts.stop,
+				utils.collisionOpts.overwrite,
+				utils.collisionOptsAll.skip,
+				utils.collisionOptsAll.rename,
+				utils.collisionOptsAll.overwrite,
+			],
+			placeHolder = `The file ${name} already exists.`;
+
+		return new Promise((resolve) => {
+			vscode.window.showQuickPick(
+				options,
+				{
+					placeHolder,
+					onDidSelectItem: callback
+				}
+			).then((option) => {
+				resolve({ option, type: 'file' });
+			});
+		});
+	},
+
+	showMismatchCollisionPicker(name, callback) {
 		let options = [
 				utils.collisionOpts.skip,
 				utils.collisionOpts.rename,
 				utils.collisionOpts.stop
 			],
-			placeHolder = `The file ${name} already exists.`;
+			placeHolder = `The file ${name} already exists and is of a different type.`;
 
-		if (!mismatchedTypes) {
-			options.push(utils.collisionOpts.overwrite);
-		} else {
-			placeHolder = `The file ${name} already exists and is of a different type.`
-		}
-
-		return vscode.window.showQuickPick(
-			options,
-			{
-				placeHolder,
-				onDidSelectItem: callback
-			}
-		)
+		return new Promise((resolve) => {
+			vscode.window.showQuickPick(
+				options,
+				{
+					placeHolder,
+					onDidSelectItem: callback
+				}
+			).then((option) => {
+				resolve({ option, type: 'mismatch_type' });
+			})
+		});
 	},
 
 	/**
@@ -76,6 +99,24 @@ utils.collisionOpts = {
 	stop: { label: 'Stop', detail: 'Stop transfer and empty current queue' },
 	overwrite: { label: 'Overwrite', detail: 'Replace the target file with the source file' },
 	rename: { label: 'Rename', detail: 'Keep both files by renaming the source file' }
+}
+
+utils.collisionOptsAll = {
+	skip: {
+		label: 'Skip all',
+		detail: 'Skip uploading all files',
+		baseOption: utils.collisionOpts.skip
+	},
+	overwrite: {
+		label: 'Overwrite all',
+		detail: 'Replace all files',
+		baseOption: utils.collisionOpts.overwrite
+	},
+	rename: {
+		label: 'Rename all',
+		detail: 'Keep all files by renaming the source files',
+		baseOption: utils.collisionOpts.rename
+	 }
 }
 
 utils.errors = {

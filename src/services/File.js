@@ -59,14 +59,14 @@ class File extends ServiceBase {
 			.then(() => {
 				return this.checkCollision(dest, src);
 			})
-			.then((option) => {
+			.then((result) => {
 				// Figure out what to do based on the collision (if any)
-				if (option == true) {
+				if (result.option == true) {
 					// No collision, just keep going
 					console.log(`Putting ${srcPath} to ${dest}...`);
 					return this.copy(src, dest);
 				} else {
-					switch (option) {
+					switch (result.option) {
 						case utils.collisionOpts.stop:
 							throw utils.errors.stop;
 
@@ -218,10 +218,16 @@ class File extends ServiceBase {
 						!this.config.service.testCollisionTimeDiffs
 					)) {
 					// Remote file exists and difference means local file is older
-					return utils.showFileCollisionPicker(
-						remoteFilename,
-						(remoteStat.type !== localType)
-					);
+					if (remoteStat.type === localType) {
+						return utils.showFileCollisionPicker(
+							remoteFilename
+						);
+					} else {
+						return utils.showMismatchCollisionPicker(
+							remoteFilename
+						);
+
+					}
 				}
 
 				return true;
