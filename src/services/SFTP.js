@@ -223,10 +223,7 @@ class ServiceSFTP extends ServiceBase {
 				console.log(`Putting ${srcPath} to ${dest}...`);
 				return client.put(srcPath, dest);
 			} else {
-				if (result.option && result.option.baseOption) {
-					// Save collision options from "All" option
-					this.collisionOptions[result.type] = result.option.baseOption;
-				}
+				this.setCollisionOption(result);
 
 				switch (result.option) {
 					case utils.collisionOpts.stop:
@@ -387,8 +384,9 @@ class ServiceSFTP extends ServiceBase {
 	 */
 	checkCollision(remote, local) {
 		const remoteFilename = path.basename(remote),
-			remoteDir = path.dirname(remote),
-			collisionType = 'file';
+			remoteDir = path.dirname(remote);
+
+		let collisionType;
 
 		return this.list(remoteDir)
 			.then(() => {
@@ -398,10 +396,13 @@ class ServiceSFTP extends ServiceBase {
 
 				let timediff, localType = (localStat.isDirectory() ? 'd' : 'f');
 
-				timediff = (
-					localMTime -
-					(remoteStat.modified + this.config.service.timeZoneOffset)
-				);
+				// Remote file exists - get time difference
+				if (remoteStat) {
+					timediff = (
+						localMTime -
+						(remoteStat.modified + this.config.service.timeZoneOffset)
+					);
+				}
 
 				if (remoteStat &&
 					(
@@ -410,6 +411,8 @@ class ServiceSFTP extends ServiceBase {
 					)) {
 					// Remote file exists and difference means local file is older
 					if (remoteStat.type === localType) {
+						collisionType = 'file';
+
 						if (this.collisionOptions[collisionType]) {
 							return {
 								type: collisionType,

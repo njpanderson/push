@@ -66,6 +66,8 @@ class File extends ServiceBase {
 					console.log(`Putting ${srcPath} to ${dest}...`);
 					return this.copy(src, dest);
 				} else {
+					this.setCollisionOption(result);
+
 					switch (result.option) {
 						case utils.collisionOpts.stop:
 							throw utils.errors.stop;
@@ -189,6 +191,8 @@ class File extends ServiceBase {
 		const remoteFilename = path.basename(remote),
 			remoteDir = path.dirname(remote);
 
+		let collisionType;
+
 		return this.list(remoteDir)
 			.then(() => {
 				let remoteStat = this.pathCache.getFileByPath(PathCache.sources.REMOTE, remote),
@@ -207,10 +211,13 @@ class File extends ServiceBase {
 					);
 				}
 
-				timediff = (
-					localMTime -
-					(remoteStat.modified + this.config.service.timeZoneOffset)
-				);
+				// Remote file exists - get time difference
+				if (remoteStat) {
+					timediff = (
+						localMTime -
+						(remoteStat.modified + this.config.service.timeZoneOffset)
+					);
+				}
 
 				if (remoteStat &&
 					(
@@ -219,9 +226,18 @@ class File extends ServiceBase {
 					)) {
 					// Remote file exists and difference means local file is older
 					if (remoteStat.type === localType) {
-						return utils.showFileCollisionPicker(
-							remoteFilename
-						);
+						collisionType = 'file';
+
+						if (this.collisionOptions[collisionType]) {
+							return {
+								type: collisionType,
+								option: this.collisionOptions[collisionType]
+							};
+						} else {
+							return utils.showFileCollisionPicker(
+								remoteFilename
+							);
+						}
 					} else {
 						return utils.showMismatchCollisionPicker(
 							remoteFilename

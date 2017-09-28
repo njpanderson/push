@@ -186,6 +186,13 @@ class ServiceBase {
 		return Promise.resolve();
 	}
 
+	setCollisionOption(result) {
+		if (result.option && result.option.baseOption) {
+			// Save collision options from "All" option
+			this.collisionOptions[result.type] = result.option.baseOption;
+		}
+	}
+
 	/**
 	 * Base service file upload method.
 	 * @param {string} src - File source path
