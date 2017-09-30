@@ -186,6 +186,53 @@ class ServiceBase {
 		return Promise.resolve();
 	}
 
+	/**
+	 * Checks for a potential file collision between the `remote` and
+	 * `local` objects. Will display a collision picker if this occurs.
+	 * @param {object} local - Local filecache entry.
+	 * @param {object} remote - Remote filecache entry.
+	 */
+	checkCollision(local, remote) {
+		let collisionType, timediff;
+
+		// Remote file exists - get time difference
+		if (remote) {
+			timediff = (
+				local.modified -
+				(remote.modified + this.config.service.timeZoneOffset)
+			);
+		}
+
+		if (remote &&
+			(
+				(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
+				!this.config.service.testCollisionTimeDiffs
+			)) {
+			// Remote file exists and difference means local file is older
+			if (remote.type === local.type) {
+				collisionType = 'normal';
+
+				if (this.collisionOptions[collisionType]) {
+					return {
+						type: collisionType,
+						option: this.collisionOptions[collisionType]
+					};
+				} else {
+					return utils.showFileCollisionPicker(
+						local.name,
+						this.collisionOptions.file
+					);
+				}
+			} else {
+				return utils.showMismatchCollisionPicker(
+					local.name
+				);
+			}
+		}
+
+		return false;
+	}
+
 	setCollisionOption(result) {
 		if (result.option && result.option.baseOption) {
 			// Save collision options from "All" option

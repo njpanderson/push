@@ -213,12 +213,11 @@ class ServiceSFTP extends ServiceBase {
 				this.mkDir
 			);
 		})
-		.then(() => {
-			return this.checkCollision(dest, src);
-		})
+		.then(() => this.getFileStats(dest, src))
+		.then((stats) => super.checkCollision(stats.local, stats.remote))
 		.then((result) => {
 			// Figure out what to do based on the collision (if any)
-			if (result == true) {
+			if (result === false) {
 				// No collision, just keep going
 				console.log(`Putting ${srcPath} to ${dest}...`);
 				return client.put(srcPath, dest);
@@ -377,61 +376,30 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	/**
-	 * Checks for a potential file collision between the `remote` pathname and
-	 * the `local` Uri. Will display a collision picker if this occurs.
+	 * Obtains local/remote stats for a file.
 	 * @param {string} remote - Remote pathname.
 	 * @param {uri} local - Local Uri.
 	 */
-	checkCollision(remote, local) {
-		const remoteFilename = path.basename(remote),
-			remoteDir = path.dirname(remote);
-
-		let collisionType;
+	getFileStats(remote, local) {
+		const remoteDir = path.dirname(remote);
 
 		return this.list(remoteDir)
 			.then(() => {
-				const localStat = fs.statSync(this.paths.getNormalPath(local)),
-					remoteStat = this.pathCache.getFileByPath(SRC_REMOTE, remote),
-					localMTime = (localStat.mtime.getTime() / 1000);
+				const localPath = this.paths.getNormalPath(local),
+					localStat = fs.statSync(localPath),
+					remoteStat = this.pathCache.getFileByPath(
+						PathCache.sources.REMOTE,
+						remote
+					)
 
-				let timediff, localType = (localStat.isDirectory() ? 'd' : 'f');
-
-				// Remote file exists - get time difference
-				if (remoteStat) {
-					timediff = (
-						localMTime -
-						(remoteStat.modified + this.config.service.timeZoneOffset)
-					);
-				}
-
-				if (remoteStat &&
-					(
-						(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
-						!this.config.service.testCollisionTimeDiffs
-					)) {
-					// Remote file exists and difference means local file is older
-					if (remoteStat.type === localType) {
-						collisionType = 'file';
-
-						if (this.collisionOptions[collisionType]) {
-							return {
-								type: collisionType,
-								option: this.collisionOptions[collisionType]
-							};
-						} else {
-							return utils.showFileCollisionPicker(
-								remoteFilename,
-								this.collisionOptions.file
-							);
-						}
-					} else {
-						return utils.showMismatchCollisionPicker(
-							remoteFilename
-						);
-					}
-				}
-
-				return true;
+				return {
+					local: {
+						name: path.basename(localPath),
+						modified: (localStat.mtime.getTime() / 1000),
+						type: (localStat.isDirectory() ? 'd' : 'f')
+					},
+					remote: remoteStat
+				};
 			});
 	}
 

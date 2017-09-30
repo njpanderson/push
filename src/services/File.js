@@ -56,12 +56,11 @@ class File extends ServiceBase {
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, this.config.service.root, this.mkDir)
-			.then(() => {
-				return this.checkCollision(dest, src);
-			})
+			.then(() => this.getFileStats(dest, src))
+			.then((stats) => super.checkCollision(stats.local, stats.remote))
 			.then((result) => {
 				// Figure out what to do based on the collision (if any)
-				if (result == true) {
+				if (result === false) {
 					// No collision, just keep going
 					console.log(`Putting ${srcPath} to ${dest}...`);
 					return this.copy(src, dest);
@@ -150,8 +149,7 @@ class File extends ServiceBase {
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
 	 */
-
-	 list(dir) {
+	list(dir) {
 		if (this.pathCache.dirIsCached(PathCache.sources.REMOTE, dir)) {
 			// console.log(`Retrieving cached file list for "${dir}"...`);
 			return Promise.resolve(this.pathCache.getDir(PathCache.sources.REMOTE, dir));
@@ -182,111 +180,88 @@ class File extends ServiceBase {
 	}
 
 	/**
-	 * Checks for a potential file collision between the remote `dest` pathname and
-	 * the `local` Uri. Will display a collision picker if this occurs.
+	 * Obtains local/remote stats for a file.
 	 * @param {string} remote - Remote pathname.
 	 * @param {uri|stream} local - Local Uri.
 	 */
-	checkCollision(remote, local) {
-		const remoteFilename = path.basename(remote),
-			remoteDir = path.dirname(remote);
-
-		let collisionType;
+	getFileStats(remote, local) {
+		const remoteDir = path.dirname(remote);
 
 		return this.list(remoteDir)
 			.then(() => {
-				let remoteStat = this.pathCache.getFileByPath(PathCache.sources.REMOTE, remote),
-					localStat, localType, localMTime, timediff;
+				const remoteStat = this.pathCache.getFileByPath(
+					PathCache.sources.REMOTE,
+					remote
+				);
+
+				let localStat, localPath;
 
 				if (local instanceof vscode.Uri) {
-					localStat = fs.statSync(this.paths.getNormalPath(local));
-					localType = (localStat.isDirectory() ? 'd' : 'f');
-					localMTime = (localStat.mtime.getTime() / 1000);
+					localPath = this.paths.getNormalPath(local);
+					localStat = fs.statSync(localPath);
+
+					return {
+						local: {
+							name: path.basename(localPath),
+							modified: (localStat.mtime.getTime() / 1000),
+							type: (localStat.isDirectory() ? 'd' : 'f')
+						},
+						remote: remoteStat
+					};
 				} else if (local instanceof ExtendedStream) {
-					localType = local.fileData.type;
-					localMTime = local.fileData.modified;
+					return {
+						local: {
+							name: local.fileData.name,
+							modified: local.fileData.modified,
+							type: local.fileData.type
+						},
+						remote: remoteStat
+					};
 				} else {
 					throw new Error(
 						'Argument `local` is neither a readable stream or a filename.'
 					);
 				}
-
-				// Remote file exists - get time difference
-				if (remoteStat) {
-					timediff = (
-						localMTime -
-						(remoteStat.modified + this.config.service.timeZoneOffset)
-					);
-				}
-
-				if (remoteStat &&
-					(
-						(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
-						!this.config.service.testCollisionTimeDiffs
-					)) {
-					// Remote file exists and difference means local file is older
-					if (remoteStat.type === localType) {
-						collisionType = 'file';
-
-						if (this.collisionOptions[collisionType]) {
-							return {
-								type: collisionType,
-								option: this.collisionOptions[collisionType]
-							};
-						} else {
-							return utils.showFileCollisionPicker(
-								remoteFilename
-							);
-						}
-					} else {
-						return utils.showMismatchCollisionPicker(
-							remoteFilename
-						);
-
-					}
-				}
-
-				return true;
 			});
-		}
+	}
 
-		/**
-		 * Copies a file or stream from one location to another.
-		 * @param {*} src - Either a source Uri or a readable stream.
-		 * @param {string} dest - Destination filename.
-		 */
-		copy(src, dest) {
-			return new Promise((resolve, reject) => {
-				let read, write;
+	/**
+	 * Copies a file or stream from one location to another.
+	 * @param {*} src - Either a source Uri or a readable stream.
+	 * @param {string} dest - Destination filename.
+	 */
+	copy(src, dest) {
+		return new Promise((resolve, reject) => {
+			let read, write;
 
-				function cleanUp() {
-					read.destroy();
-					write.end();
-					reject();
-				}
+			function cleanUp() {
+				read.destroy();
+				write.end();
+				reject();
+			}
 
-				// Create write stream
-				write = fs.createWriteStream(dest);
-				write.on('error', cleanUp);
+			// Create write stream
+			write = fs.createWriteStream(dest);
+			write.on('error', cleanUp);
 
-				write.on('finish', resolve);
+			write.on('finish', resolve);
 
-				if (src instanceof vscode.Uri) {
-					// Source is a VSCode Uri - create a read stream
-					read = fs.createReadStream(this.paths.getNormalPath(src));
-					read.on('error', cleanUp);
-					read.pipe(write);
-				} else if (src instanceof ExtendedStream) {
-					// Source is already a stream - just pipe to the write stream
-					src.read.on('error', cleanUp);
-					src.read.pipe(write);
-				} else {
-					reject(new Error(
-						'Source src argument is neither a readable stream or a filename.'
-					));
-				}
-			});
-		}
+			if (src instanceof vscode.Uri) {
+				// Source is a VSCode Uri - create a read stream
+				read = fs.createReadStream(this.paths.getNormalPath(src));
+				read.on('error', cleanUp);
+				read.pipe(write);
+			} else if (src instanceof ExtendedStream) {
+				// Source is already a stream - just pipe to the write stream
+				src.read.on('error', cleanUp);
+				src.read.pipe(write);
+			} else {
+				reject(new Error(
+					'Source src argument is neither a readable stream or a filename.'
+				));
+			}
+		});
+	}
 };
 
 module.exports = File;
