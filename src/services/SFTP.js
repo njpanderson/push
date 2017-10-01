@@ -1,6 +1,7 @@
 const SFTPClient = require('ssh2-sftp-client');
 const fs = require('fs');
 const path = require('path');
+const homedir = require('os').homedir;
 
 const ServiceBase = require('./Base');
 const File = require('./File');
@@ -41,6 +42,9 @@ class ServiceSFTP extends ServiceBase {
 		};
 	}
 
+	/**
+	 * Class destructor. Removes all clients.
+	 */
 	destructor() {
 		return new Promise((resolve) => {
 			Object.keys(this.clients).forEach((hash) => {
@@ -51,6 +55,9 @@ class ServiceSFTP extends ServiceBase {
 		});
 	}
 
+	/**
+	 * Runs initialisation code (before each queue begins)
+	 */
 	init() {
 		return super.init()
 			.then(() => {
@@ -58,6 +65,10 @@ class ServiceSFTP extends ServiceBase {
 			});
 	}
 
+	/**
+	 * Sets the current configuration.
+	 * @param {object} config
+	 */
 	setConfig(config) {
 		super.setConfig(config);
 
@@ -80,7 +91,7 @@ class ServiceSFTP extends ServiceBase {
 				host: this.config.service.host,
 				port: this.config.service.port,
 				username: this.config.service.username,
-				privateKey: this._getPrivateKey(this.config.service.privateKey || this.config.privateKey)
+				privateKey: this._getPrivateKey()
 			},
 			hash = this.config.serviceSettingsHash;
 
@@ -388,7 +399,7 @@ class ServiceSFTP extends ServiceBase {
 				const localPath = this.paths.getNormalPath(local),
 					localStat = fs.statSync(localPath),
 					remoteStat = this.pathCache.getFileByPath(
-						PathCache.sources.REMOTE,
+						SRC_REMOTE,
 						remote
 					)
 
@@ -403,9 +414,35 @@ class ServiceSFTP extends ServiceBase {
 			});
 	}
 
-	_getPrivateKey(file) {
-		if (fs.existsSync(file)) {
-			return fs.readFileSync(file, 'UTF-8');
+	/**
+	 * Retrieves the contents of a private key. Will fall back to the current home
+	 * folder if no path is specified.
+	 * @param {string} file
+	 */
+	_getPrivateKey() {
+		let keyFile = this.config.service.privateKey || this.config.privateSSHKey,
+			homeDir, defaultKeyFiles, a;
+
+		if (fs.existsSync(keyFile)) {
+			return fs.readFileSync(keyFile, 'UTF-8');
+		}
+
+		// Fall back to attempting to find by default
+		homeDir = homedir();
+		defaultKeyFiles = [
+			homeDir + '/.ssh/identity',
+			homeDir + '/.ssh/id_dsa',
+			homeDir + '/.ssh/id_rsa',
+		];
+
+		for (a = 0; a < defaultKeyFiles.length; a += 1) {
+			if (fs.existsSync(defaultKeyFiles[a])) {
+				// Save privateKey location for session...
+				this.config.service.privateKey = defaultKeyFiles[a];
+
+				// ... Then return
+				return fs.readFileSync(defaultKeyFiles[a], 'UTF-8');
+			}
 		}
 	}
 

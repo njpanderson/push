@@ -24,7 +24,7 @@
           "default": ".push.settings.json",
           "description": "Defines the push settings JSON filename."
         },
-        "njpPush.privateKey": {
+        "njpPush.privateSSHKey": {
           "type": "string",
           "default": "",
           "description": "Defines the default SSH key file for SFTP."

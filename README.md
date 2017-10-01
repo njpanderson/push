@@ -18,7 +18,7 @@ It currently provides:
 This extension contributes the following settings:
 
 * `njpPush.settingsFilename`: Settings file name. Defaults to `.push.settings.json`.
-* `njpPush.privateKey`: Set the default location of your private .ssh key. Used by the `SFTP` service.
+* `njpPush.privateSSHKey`: Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default.
 
 ## Server settings files
 
