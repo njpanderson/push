@@ -7,6 +7,8 @@ const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
 
+const SRC_REMOTE = PathCache.sources.REMOTE;
+
 class File extends ServiceBase {
 	constructor() {
 		super();
@@ -115,7 +117,7 @@ class File extends ServiceBase {
 	mkDir(dest) {
 		return this.list(path.dirname(dest))
 			.then(() => {
-				let existing = this.pathCache.getFileByPath(PathCache.sources.REMOTE, dest);
+				let existing = this.pathCache.getFileByPath(SRC_REMOTE, dest);
 
 				if (existing === null) {
 					return new Promise((resolve, reject) => {
@@ -127,7 +129,7 @@ class File extends ServiceBase {
 							// Add dir to cache
 							// TODO: maybe replace with a cache clear on the directory above?
 							this.pathCache.addCachedFile(
-								PathCache.sources.REMOTE,
+								SRC_REMOTE,
 								dest,
 								((new Date()).getTime() / 1000),
 								'd'
@@ -150,9 +152,9 @@ class File extends ServiceBase {
 	 * @param {string} dir - Remote directory to list
 	 */
 	list(dir) {
-		if (this.pathCache.dirIsCached(PathCache.sources.REMOTE, dir)) {
+		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
 			// console.log(`Retrieving cached file list for "${dir}"...`);
-			return Promise.resolve(this.pathCache.getDir(PathCache.sources.REMOTE, dir));
+			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 		} else {
 			// console.log(`Retrieving live file list for "${dir}"...`);
 			return new Promise((resolve, reject) => {
@@ -166,14 +168,14 @@ class File extends ServiceBase {
 							stats = fs.statSync(pathname);
 
 						this.pathCache.addCachedFile(
-							PathCache.sources.REMOTE,
+							SRC_REMOTE,
 							pathname,
 							(stats.mtime.getTime() / 1000),
 							(stats.isDirectory() ? 'd' : 'f')
 						);
 					});
 
-					resolve(this.pathCache.getDir(PathCache.sources.REMOTE, dir));
+					resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 				});
 			});
 		}
@@ -190,7 +192,7 @@ class File extends ServiceBase {
 		return this.list(remoteDir)
 			.then(() => {
 				const remoteStat = this.pathCache.getFileByPath(
-					PathCache.sources.REMOTE,
+					SRC_REMOTE,
 					remote
 				);
 
