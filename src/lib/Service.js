@@ -1,4 +1,5 @@
 const ServiceSFTP = require('../services/SFTP');
+const ServiceFile = require('../services/File');
 const Paths = require('../lib/Paths');
 
 class Service {
@@ -6,7 +7,8 @@ class Service {
 		this.getStateProgress = this.getStateProgress.bind(this);
 
 		this.services = {
-			SFTP: ServiceSFTP
+			SFTP: ServiceSFTP,
+			File: ServiceFile
 		};
 
 		this.activeService = null;

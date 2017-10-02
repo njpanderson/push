@@ -205,33 +205,33 @@ class ServiceSFTP extends ServiceBase {
 
 	/**
 	 * Put a single file to the SFTP server.
-	 * @param {uri} src - Source Uri.
-	 * @param {string} dest - Destination pathname.
+	 * @param {uri} local - Local source Uri.
+	 * @param {string} remote - Remote destination pathname.
 	 */
-	put(src, dest) {
-		let destDir = path.dirname(dest),
-			destFilename = path.basename(dest),
-			srcPath = this.paths.getNormalPath(src),
+	put(local, remote) {
+		let remoteDir = path.dirname(remote),
+			remoteFilename = path.basename(remote),
+			localPath = this.paths.getNormalPath(local),
 			client;
 
-		this.setProgress(`${destFilename}...`);
+		this.setProgress(`${remoteFilename}...`);
 
 		return this.connect().then((connection) => {
 			client = connection;
 			return this.mkDirRecursive(
-				destDir,
+				remoteDir,
 				this.config.service.root,
 				this.mkDir
 			);
 		})
-		.then(() => this.getFileStats(dest, src))
+		.then(() => this.getFileStats(remote, local))
 		.then((stats) => super.checkCollision(stats.local, stats.remote))
 		.then((result) => {
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
 				// No collision, just keep going
-				console.log(`Putting ${srcPath} to ${dest}...`);
-				return client.put(srcPath, dest);
+				console.log(`Putting ${localPath} to ${remote}...`);
+				return client.put(localPath, remote);
 			} else {
 				this.setCollisionOption(result);
 
@@ -240,20 +240,20 @@ class ServiceSFTP extends ServiceBase {
 						throw utils.errors.stop;
 
 					case utils.collisionOpts.skip:
-						console.log(`Skipping ${dest}...`);
+						console.log(`Skipping ${remote}...`);
 						return false;
 
 					case utils.collisionOpts.overwrite:
-						console.log(`Putting ${srcPath} to ${dest}...`);
-						return client.put(srcPath, dest);
+						console.log(`Putting ${localPath} to ${remote}...`);
+						return client.put(localPath, remote);
 
 					case utils.collisionOpts.rename:
-						console.log(`Renaming ${dest}...`);
-						return this.list(destDir)
+						console.log(`Renaming ${remote}...`);
+						return this.list(remoteDir)
 							.then((dirContents) => {
 								return this.put(
-									src,
-									destDir + '/' + this.getNonCollidingName(destFilename, dirContents)
+									local,
+									remoteDir + '/' + this.getNonCollidingName(remoteFilename, dirContents)
 								);
 							});
 
@@ -273,39 +273,36 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	/**
-	 * @param {uri} dest - Destination Uri.
-	 * @param {string} src - Source filename.
+	 * @param {uri} local - Local destination Uri.
+	 * @param {string} remote - Remote source filename.
 	 * @description
 	 * Get a single file from the SFTP server.
-	 *
-	 * **Note:** The arguments to `get` are reversed from `put` in order to be able
-	 * to utilise this method alongside put in a more re-usable way.
 	 */
-	get(dest, src) {
-		let destPath = this.paths.getNormalPath(dest),
-			srcDir = path.dirname(src),
-			srcFilename = path.basename(src),
+	get(local, remote) {
+		let localPath = this.paths.getNormalPath(local),
+			remoteDir = path.dirname(remote),
+			remoteFilename = path.basename(remote),
 			client;
 
-		this.setProgress(`${srcFilename}...`);
+		this.setProgress(`${remoteFilename}...`);
 
 		return this.connect()
 			.then((connection) => {
 				// List the source directory in order to cache the file data
 				client = connection;
-				return this.list(srcDir);
+				return this.list(remoteDir);
 			})
 			.then(() => {
-				return this.getMimeCharset(src);
+				return this.getMimeCharset(remote);
 			})
 			.then((charset) => {
-				// Use the File class to put a file from the source to the dest
-				return client.get(src, true, charset === 'binary' ? null : 'utf8')
+				// Use the File class to put a file from remote to local
+				return client.get(remote, true, charset === 'binary' ? null : 'utf8')
 					.then((stream) => {
 						// Use File#put to send the file from the server to the local filesystem
 						return this.file.put(
-							this.pathCache.extendStream(stream, SRC_REMOTE, src),
-							destPath
+							this.pathCache.extendStream(stream, SRC_REMOTE, remote),
+							localPath
 						);
 					})
 					.catch((error) => {

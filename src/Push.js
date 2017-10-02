@@ -230,6 +230,7 @@ class Push {
 		}
 
 		if (this.paths.isDirectory(uri)) {
+			// Recursively fetch directory files and transfer each one
 			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
@@ -250,12 +251,15 @@ class Push {
 						};
 					});
 
+					// Add to queue and return
 					return this.queue(tasks, true);
 				});
 		} else {
+			// Filter a single file by the ignore globs and transfer
 			return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 				.then((filteredUri) => {
 					if (filteredUri !== false) {
+						// Add to queue and return
 						return this.queue([{
 							method,
 							actionTaken,
@@ -270,6 +274,7 @@ class Push {
 							]
 						}], true);
 					} else {
+						// Only one file is being transfered so warn the user it ain't happening
 						utils.showWarning(
 							`Cannot ${action} file "${this.paths.getBaseName(uri)}" -` +
 							` It matches one of the defined ignoreGlobs filters.`

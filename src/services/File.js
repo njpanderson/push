@@ -46,26 +46,51 @@ class File extends ServiceBase {
 	}
 
 	/**
-	 * Put a single file to the SFTP server.
-	 * @param {uri|stream.Readable} src - Source Uri or Readable stream instance.
-	 * @param {string} dest - Destination pathname.
+	 * Put a single file to the remote location.
+	 * @param {uri|stream.Readable} local - Local Uri or Readable stream instance.
+	 * @param {string} remote - Remote pathname.
 	 */
-	put(src, dest) {
-		let destDir = path.dirname(dest),
-			destFilename = path.basename(dest),
+	put(local, remote) {
+		// Perform transfer from local to remote, setting root as defined by service
+		return this.transfer(local, remote, this.config.service.root);
+	}
+
+	/**
+	 * Put a single file to the remote location.
+	 * @param {uri} local - Local Uri.
+	 * @param {string} remote - Remote pathname.
+	 */
+	get(local, remote) {
+		// Perform transfer from remote to local, setting root as base of service file
+		return this.transfer(remote, local, path.dirname(this.config.serviceFilename));
+	}
+
+	/**
+	 * Transfers a single file from location to another.
+	 * @param {uri|stream.Readable|string} src - Source Uri or Readable stream instance.
+	 * @param {uri|string} dest - Destination pathname.
+	 */
+	transfer(src, dest, rootDir) {
+		let destPath = this.paths.getNormalPath(dest),
+			destDir = path.dirname(destPath),
+			destFilename = path.basename(destPath),
 			srcPath = this.paths.getPathFromStreamOrUri(src);
 
 		this.setProgress(`${destFilename}...`);
 
-		return this.mkDirRecursive(destDir, this.config.service.root, this.mkDir)
-			.then(() => this.getFileStats(dest, src))
-			.then((stats) => super.checkCollision(stats.local, stats.remote))
+		return this.mkDirRecursive(destDir, rootDir, this.mkDir)
+			.then(() => {
+				return this.getFileStats(destPath, src);
+			})
+			.then((stats) => {
+				return super.checkCollision(stats.local, stats.remote);
+			})
 			.then((result) => {
 				// Figure out what to do based on the collision (if any)
 				if (result === false) {
 					// No collision, just keep going
-					console.log(`Putting ${srcPath} to ${dest}...`);
-					return this.copy(src, dest);
+					console.log(`Putting ${srcPath} to ${destPath}...`);
+					return this.copy(src, destPath);
 				} else {
 					this.setCollisionOption(result);
 
@@ -74,15 +99,15 @@ class File extends ServiceBase {
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
-							console.log(`Skipping ${dest}...`);
+							console.log(`Skipping ${destPath}...`);
 							return false;
 
 						case utils.collisionOpts.overwrite:
-							console.log(`Putting ${srcPath} to ${dest}...`);
-							return this.copy(src, dest);
+							console.log(`Putting ${srcPath} to ${destPath}...`);
+							return this.copy(src, destPath);
 
 						case utils.collisionOpts.rename:
-							console.log(`Renaming ${dest}...`);
+							console.log(`Renaming ${destPath}...`);
 							return this.list(destDir)
 								.then((dirContents) => {
 									return this.put(
@@ -103,10 +128,6 @@ class File extends ServiceBase {
 				this.setProgress(false);
 				throw error;
 			});
-	}
-
-	get(src) {
-		throw new Error('Get not implemented');
 	}
 
 	/**
@@ -158,6 +179,10 @@ class File extends ServiceBase {
 		} else {
 			// console.log(`Retrieving live file list for "${dir}"...`);
 			return new Promise((resolve, reject) => {
+				if (!this.paths.isDirectory(dir)) {
+					return reject(new Error(`Path not found: "${dir}"`));
+				}
+
 				fs.readdir(dir, (error, list) => {
 					if (error) {
 						reject(error);
@@ -198,7 +223,7 @@ class File extends ServiceBase {
 
 				let localStat, localPath;
 
-				if (local instanceof vscode.Uri) {
+				if (local instanceof vscode.Uri || typeof local === 'string') {
 					localPath = this.paths.getNormalPath(local);
 					localStat = fs.statSync(localPath);
 
@@ -210,7 +235,9 @@ class File extends ServiceBase {
 						},
 						remote: remoteStat
 					};
-				} else if (local instanceof ExtendedStream) {
+				}
+
+				if (local instanceof ExtendedStream) {
 					return {
 						local: {
 							name: local.fileData.name,
@@ -219,11 +246,9 @@ class File extends ServiceBase {
 						},
 						remote: remoteStat
 					};
-				} else {
-					throw new Error(
-						'Argument `local` is neither a readable stream or a filename.'
-					);
 				}
+
+				throw('getFileStats: Unrecognised path type.');
 			});
 	}
 
@@ -248,7 +273,7 @@ class File extends ServiceBase {
 
 			write.on('finish', resolve);
 
-			if (src instanceof vscode.Uri) {
+			if (src instanceof vscode.Uri || typeof src === 'string') {
 				// Source is a VSCode Uri - create a read stream
 				read = fs.createReadStream(this.paths.getNormalPath(src));
 				read.on('error', cleanUp);
