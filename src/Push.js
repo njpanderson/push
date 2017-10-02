@@ -5,6 +5,7 @@ const Service = require('./lib/Service');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
 const utils = require('./lib/utils');
+const channel = require('./lib/channel');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -186,6 +187,8 @@ class Push {
 	}
 
 	execQueue(queueName) {
+		channel.clear();
+
 		return this.getQueue(queueName)
 			.exec(this.service.getStateProgress)
 				.catch((error) => {

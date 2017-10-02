@@ -3,6 +3,7 @@ const path = require('path');
 
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
+const channel = require('../lib/channel');
 
 class ServiceBase {
 	constructor() {
@@ -11,6 +12,7 @@ class ServiceBase {
 		this.serviceDefaults = {};
 		this.config = {};
 		this.collisionOptions = {};
+		this.channel = channel;
 
 		this.paths = new Paths();
 	}
@@ -187,29 +189,29 @@ class ServiceBase {
 	}
 
 	/**
-	 * Checks for a potential file collision between the `remote` and
-	 * `local` objects. Will display a collision picker if this occurs.
-	 * @param {object} local - Local filecache entry.
-	 * @param {object} remote - Remote filecache entry.
+	 * Checks for a potential file collision between the `dest` and
+	 * `source` objects. Will display a collision picker if this occurs.
+	 * @param {object} source - Source filecache entry.
+	 * @param {object} dest - Destination filecache entry (the item to be replaced).
 	 */
-	checkCollision(local, remote) {
+	checkCollision(source, dest) {
 		let collisionType, timediff;
 
-		// Remote file exists - get time difference
-		if (remote) {
+		// Dest file exists - get time difference
+		if (dest) {
 			timediff = (
-				local.modified -
-				(remote.modified + this.config.service.timeZoneOffset)
+				source.modified -
+				(dest.modified + this.config.service.timeZoneOffset)
 			);
 		}
 
-		if (remote &&
+		if (dest &&
 			(
 				(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
 				!this.config.service.testCollisionTimeDiffs
 			)) {
-			// Remote file exists and difference means local file is older
-			if (remote.type === local.type) {
+			// Destination file exists and difference means source file is older
+			if (dest.type === source.type) {
 				collisionType = 'normal';
 
 				if (this.collisionOptions[collisionType]) {
@@ -219,13 +221,13 @@ class ServiceBase {
 					};
 				} else {
 					return utils.showFileCollisionPicker(
-						local.name,
+						source.name,
 						this.collisionOptions.file
 					);
 				}
 			} else {
 				return utils.showMismatchCollisionPicker(
-					local.name
+					source.name
 				);
 			}
 		}

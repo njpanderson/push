@@ -22,12 +22,12 @@ class Paths {
 	}
 
 	getNormalPath(uri, requiredScheme) {
-		if (requiredScheme !== undefined && uri.scheme !== requiredScheme) {
-			return false;
-		}
-
 		if (typeof uri === 'string') {
 			return uri;
+		}
+
+		if (requiredScheme !== undefined && uri.scheme !== requiredScheme) {
+			return false;
 		}
 
 		return uri.fsPath || uri.path;

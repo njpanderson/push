@@ -1,9 +1,14 @@
 const vscode = require('vscode');
 const crypto = require('crypto');
 
-const utils = require('../lib/utils');
+const utils = require('./utils');
+const channel = require('./channel');
 
 class Queue {
+	/**
+	 * Class constructor
+	 * @param {OutputChannel} channel - Channel for outputting information
+	 */
 	constructor() {
 		this.running = false;
 		this.tasks = [];
@@ -48,7 +53,7 @@ class Queue {
 		let progressInterval;
 
 		if (this.tasks && this.tasks.length) {
-			console.group(`Running ${this.tasks.length} task(s) in queue...`);
+			channel.appendLine(`Running ${this.tasks.length} task(s) in queue...`);
 
 			// Start progress interface
 			return vscode.window.withProgress({
@@ -74,8 +79,7 @@ class Queue {
 					// Execute all queue items in serial
 					this.execQueueItems(
 						(results) => {
-							console.log('Queue complete', results);
-							console.groupEnd();
+							channel.appendLine('Queue complete', results);
 							clearInterval(progressInterval);
 							resolve(results);
 						}
@@ -131,12 +135,9 @@ class Queue {
 				.catch((error) => {
 					// Function/Promise was rejected
 					if (error instanceof Error) {
-						// Assume thrown errors should stop the queue & alert the user
-						if (error === utils.errors.stop) {
-							utils.showWarning(error);
-						} else {
-							utils.showError(error);
-						}
+						// Thrown errors will stop the queue as well as alerting the user
+						channel.appendError(error.message);
+						channel.show();
 
 						// Empty tasks array
 						this.tasks = [];
@@ -152,6 +153,8 @@ class Queue {
 						}
 
 						results.fail[task.actionTaken].push(error);
+
+						channel.appendError(error);
 
 						// Loop
 						this.execQueueItems(callback, results);
@@ -175,6 +178,10 @@ class Queue {
 			];
 
 		for (actionTaken in results.fail) {
+			if (results.fail[actionTaken].length) {
+				channel.show(true);
+			}
+
 			if (results.fail[actionTaken].length === 1) {
 				extra.push(`${results.fail[actionTaken].length} item failed.`);
 			} else {

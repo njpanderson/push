@@ -69,12 +69,12 @@ class File extends ServiceBase {
 	 * Transfers a single file from location to another.
 	 * @param {uri|stream.Readable|string} src - Source Uri or Readable stream instance.
 	 * @param {uri|string} dest - Destination pathname.
+	 * @param {string} rootDir - Root directory. Used for validation.
 	 */
 	transfer(src, dest, rootDir) {
 		let destPath = this.paths.getNormalPath(dest),
 			destDir = path.dirname(destPath),
-			destFilename = path.basename(destPath),
-			srcPath = this.paths.getPathFromStreamOrUri(src);
+			destFilename = path.basename(destPath);
 
 		this.setProgress(`${destFilename}...`);
 
@@ -89,7 +89,7 @@ class File extends ServiceBase {
 				// Figure out what to do based on the collision (if any)
 				if (result === false) {
 					// No collision, just keep going
-					console.log(`Putting ${srcPath} to ${destPath}...`);
+					this.channel.appendLine(`>> ${destPath}`);
 					return this.copy(src, destPath);
 				} else {
 					this.setCollisionOption(result);
@@ -99,20 +99,25 @@ class File extends ServiceBase {
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
-							console.log(`Skipping ${destPath}...`);
 							return false;
 
 						case utils.collisionOpts.overwrite:
-							console.log(`Putting ${srcPath} to ${destPath}...`);
+							this.channel.appendLine(`>> ${destPath}`);
 							return this.copy(src, destPath);
 
 						case utils.collisionOpts.rename:
-							console.log(`Renaming ${destPath}...`);
 							return this.list(destDir)
 								.then((dirContents) => {
+									destPath = destDir + '/' + this.getNonCollidingName(
+											destFilename,
+											dirContents
+										);
+
+									this.channel.appendLine(`>> ${destPath}`);
+
 									return this.put(
 										src,
-										destDir + '/' + this.getNonCollidingName(destFilename, dirContents)
+										destPath
 									);
 								});
 					}
@@ -179,13 +184,9 @@ class File extends ServiceBase {
 		} else {
 			// console.log(`Retrieving live file list for "${dir}"...`);
 			return new Promise((resolve, reject) => {
-				if (!this.paths.isDirectory(dir)) {
-					return reject(new Error(`Path not found: "${dir}"`));
-				}
-
 				fs.readdir(dir, (error, list) => {
 					if (error) {
-						reject(error);
+						return reject(error);
 					}
 
 					list.forEach((filename) => {

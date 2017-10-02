@@ -4,7 +4,6 @@ const path = require('path');
 const homedir = require('os').homedir;
 
 const ServiceBase = require('./Base');
-const File = require('./File');
 const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
 
@@ -20,7 +19,6 @@ class ServiceSFTP extends ServiceBase {
 		this.clients = {};
 		this.maxClients = 2;
 		this.pathCache = new PathCache();
-		this.file = new File();
 
 		// Define SFTP defaults
 		this.serviceDefaults = {
@@ -71,15 +69,6 @@ class ServiceSFTP extends ServiceBase {
 	 */
 	setConfig(config) {
 		super.setConfig(config);
-
-		// Set configuration for file class
-		this.file.setConfig({
-			service: {
-				root: this.paths.getCurrentWorkspaceRootPath(),
-				timeZoneOffset: -(this.config.service.timeZoneOffset),
-				testCollisionTimeDiffs: this.config.service.testCollisionTimeDiffs
-			}
-		})
 	}
 
 	/**
@@ -230,7 +219,7 @@ class ServiceSFTP extends ServiceBase {
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
 				// No collision, just keep going
-				console.log(`Putting ${localPath} to ${remote}...`);
+				this.channel.appendLine(`>> ${remote}`);
 				return client.put(localPath, remote);
 			} else {
 				this.setCollisionOption(result);
@@ -240,20 +229,24 @@ class ServiceSFTP extends ServiceBase {
 						throw utils.errors.stop;
 
 					case utils.collisionOpts.skip:
-						console.log(`Skipping ${remote}...`);
 						return false;
 
 					case utils.collisionOpts.overwrite:
-						console.log(`Putting ${localPath} to ${remote}...`);
+						this.channel.appendLine(`>> ${remote}`);
 						return client.put(localPath, remote);
 
 					case utils.collisionOpts.rename:
-						console.log(`Renaming ${remote}...`);
 						return this.list(remoteDir)
 							.then((dirContents) => {
+								let remotePath = remoteDir + '/' + this.getNonCollidingName(
+										remoteFilename,
+										dirContents
+									);
+								this.channel.appendLine(`>> ${remotePath}`);
+
 								return this.put(
 									local,
-									remoteDir + '/' + this.getNonCollidingName(remoteFilename, dirContents)
+									remotePath
 								);
 							});
 
@@ -281,37 +274,112 @@ class ServiceSFTP extends ServiceBase {
 	get(local, remote) {
 		let localPath = this.paths.getNormalPath(local),
 			remoteDir = path.dirname(remote),
-			remoteFilename = path.basename(remote),
-			client;
+			remoteFilename = path.basename(remote);
 
 		this.setProgress(`${remoteFilename}...`);
 
 		return this.connect()
-			.then((connection) => {
+			.then(() => {
 				// List the source directory in order to cache the file data
+				return this.list(remoteDir)
+					.catch((error) => {
+						throw(error.message);
+					});
+			})
+			.then(() => this.getFileStats(remote, local))
+			.then((stats) => {
+				if (!stats.remote) {
+					throw(`Remote file "${remote}" does not exist.`);
+				}
+
+				return super.checkCollision(stats.remote, stats.local)
+			})
+			.then((result) => {
+				// Figure out what to do based on the collision (if any)
+				if (result === false) {
+					// No collision, just keep going
+					this.channel.appendLine(`<< ${remote}`);
+					return this.getByStream(localPath, remote);
+				} else {
+					this.setCollisionOption(result);
+
+					switch (result.option) {
+						case utils.collisionOpts.stop:
+							throw utils.errors.stop;
+
+						case utils.collisionOpts.skip:
+							return false;
+
+						case utils.collisionOpts.overwrite:
+							this.channel.appendLine(`<< ${remote}`);
+							return this.getByStream(localPath, remote);
+
+						case utils.collisionOpts.rename:
+							// TODO: Force listing fresh contents so getNonCollidingName is guaranteed to work
+							return this.list(remoteDir)
+								.then((dirContents) => {
+									let remotePath = remoteDir + '/' + this.getNonCollidingName(
+											remoteFilename,
+											dirContents
+										);
+									this.channel.appendLine(`<< ${remotePath}`);
+
+									return this.getByStream(
+										local,
+										remotePath
+									);
+								});
+
+					}
+
+					return false;
+				}
+			})
+			.catch((error) => {
+				this.setProgress(false);
+				throw(error);
+			});
+	}
+
+	/**
+	 * Retrieves a file from the server using its get stream method.
+	 * @param {string} local - Local pathname.
+	 * @param {string} remote - Remote pathname.
+	 */
+	getByStream(local, remote) {
+		let client;
+
+		return this.connect()
+			.then((connection) => {
 				client = connection;
-				return this.list(remoteDir);
 			})
 			.then(() => {
 				return this.getMimeCharset(remote);
 			})
 			.then((charset) => {
-				// Use the File class to put a file from remote to local
-				return client.get(remote, true, charset === 'binary' ? null : 'utf8')
-					.then((stream) => {
-						// Use File#put to send the file from the server to the local filesystem
-						return this.file.put(
-							this.pathCache.extendStream(stream, SRC_REMOTE, remote),
-							localPath
-						);
-					})
-					.catch((error) => {
-						throw(error.message);
-					});
-			})
-			.catch((error) => {
-				this.setProgress(false);
-				throw(error);
+				return new Promise((resolve, reject) => {
+					// Get file with client#get and stream to local pathname
+					client.get(remote, true, charset === 'binary' ? null : 'utf8')
+						.then((stream) => {
+							let write = fs.createWriteStream(local);
+
+							function cleanUp(error) {
+								stream.destroy();
+								write.end();
+								reject(error.message);
+							}
+
+							// Set up write stream
+							write.on('error', cleanUp);
+							write.on('finish', resolve);
+
+							stream.on('error', cleanUp);
+							stream.pipe(write);
+						})
+						.catch((error) => {
+							throw(error.message);
+						});
+				});
 			});
 	}
 
@@ -330,7 +398,6 @@ class ServiceSFTP extends ServiceBase {
 						return connection.mkdir(dir)
 							.then(() => {
 								// Add dir to cache
-								// TODO: maybe replace with a cache clear on the directory above?
 								this.pathCache.addCachedFile(
 									SRC_REMOTE,
 									dir,
@@ -339,10 +406,10 @@ class ServiceSFTP extends ServiceBase {
 								);
 							});
 					} else if (existing.type === 'f') {
-						return Promise.reject(new Error(
-							'Directory could not be created' +
-							' (a file with the same name exists on the remote!)'
-						));
+						return Promise.reject(
+							`Directory "${dir}" could not be created` +
+							` (a file with the same name exists on the remote!)`
+						);
 					}
 				});
 		})
@@ -357,27 +424,27 @@ class ServiceSFTP extends ServiceBase {
 	 */
 	list(dir) {
 		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
-			// console.log(`Retrieving cached file list for "${dir}"...`);
+			// Retrieve cached path list
 			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 		} else {
-			// console.log(`Retrieving live file list for "${dir}"...`);
+			// Get path list interactively and cache
 			return this.connect()
 				.then((connection) => {
 					return connection.list(dir)
 						.then((list) => {
-							// console.log(`Caching path list for "${dir}"...`);
-							if (list) {
-								list.forEach((item) => {
-									this.pathCache.addCachedFile(
-										SRC_REMOTE,
-										dir + '/' + item.name,
-										(item.modifyTime / 1000),
-										(item.type === 'd' ? 'd' : 'f')
-									);
-								});
-							}
+							list.forEach((item) => {
+								this.pathCache.addCachedFile(
+									SRC_REMOTE,
+									dir + '/' + item.name,
+									(item.modifyTime / 1000),
+									(item.type === 'd' ? 'd' : 'f')
+								);
+							});
 
 							return this.pathCache.getDir(SRC_REMOTE, dir);
+						})
+						.catch((error) => {
+							console.log(error);
 						});
 				});
 		}
