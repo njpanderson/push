@@ -57,7 +57,7 @@ const utils = {
 					onDidSelectItem: callback
 				}
 			).then((option) => {
-				resolve({ option, type: 'file' });
+				resolve({ option, type: 'normal' });
 			});
 		});
 	},

@@ -222,7 +222,7 @@ class ServiceBase {
 				} else {
 					return utils.showFileCollisionPicker(
 						source.name,
-						this.collisionOptions.file
+						this.collisionOptions.normal
 					);
 				}
 			} else {
