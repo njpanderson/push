@@ -223,8 +223,6 @@ class Push {
 		uri = this.paths.getFileSrc(uri);
 
 		if (method === 'put') {
-			// Filter Uri(s) by the ignore globs when uploading
-			ignoreGlobs = this.config.ignoreGlobs;
 			action = 'upload';
 			actionTaken = 'uploaded';
 		} else {
@@ -233,6 +231,9 @@ class Push {
 		}
 
 		if (this.paths.isDirectory(uri)) {
+			// Always filter multiple Uris by the ignore globs
+			ignoreGlobs = this.config.ignoreGlobs;
+
 			// Recursively fetch directory files and transfer each one
 			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
@@ -259,6 +260,11 @@ class Push {
 				});
 		} else {
 			// Filter a single file by the ignore globs and transfer
+			if (method === 'put') {
+				// Filter Uri by the ignore globs when uploading
+				ignoreGlobs = this.config.ignoreGlobs;
+			}
+
 			return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 				.then((filteredUri) => {
 					if (filteredUri !== false) {
