@@ -47,28 +47,36 @@ class File extends ServiceBase {
 
 	/**
 	 * Put a single file to the remote location.
-	 * @param {uri|stream.Readable} local - Local Uri or Readable stream instance.
-	 * @param {string} remote - Remote pathname.
+	 * @param {uri} local - Local Uri or Readable stream instance.
+	 * @param {uri} remote - Remote Uri.
 	 */
 	put(local, remote) {
 		// Perform transfer from local to remote, setting root as defined by service
-		return this.transfer(local, remote, this.config.service.root);
+		return this.transfer(
+			local,
+			vscode.Uri.parse(remote),
+			this.config.service.root
+		);
 	}
 
 	/**
 	 * Put a single file to the remote location.
 	 * @param {uri} local - Local Uri.
-	 * @param {string} remote - Remote pathname.
+	 * @param {uri} remote - Remote Uri.
 	 */
 	get(local, remote) {
 		// Perform transfer from remote to local, setting root as base of service file
-		return this.transfer(remote, local, path.dirname(this.config.serviceFilename));
+		return this.transfer(
+			vscode.Uri.parse(remote),
+			local,
+			path.dirname(this.config.serviceFilename)
+		);
 	}
 
 	/**
 	 * Transfers a single file from location to another.
-	 * @param {uri|stream.Readable|string} src - Source Uri or Readable stream instance.
-	 * @param {uri|string} dest - Destination pathname.
+	 * @param {uri} src - Source Uri.
+	 * @param {uri} dest - Destination Uri.
 	 * @param {string} rootDir - Root directory. Used for validation.
 	 */
 	transfer(src, dest, rootDir) {
@@ -80,7 +88,7 @@ class File extends ServiceBase {
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir)
 			.then(() => {
-				return this.getFileStats(destPath, src);
+				return this.getFileStats(dest, src);
 			})
 			.then((stats) => {
 				return super.checkCollision(stats.local, stats.remote);
@@ -153,7 +161,6 @@ class File extends ServiceBase {
 							}
 
 							// Add dir to cache
-							// TODO: maybe replace with a cache clear on the directory above?
 							this.pathCache.addCachedFile(
 								SRC_REMOTE,
 								dest,
@@ -179,10 +186,8 @@ class File extends ServiceBase {
 	 */
 	list(dir) {
 		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
-			// console.log(`Retrieving cached file list for "${dir}"...`);
 			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 		} else {
-			// console.log(`Retrieving live file list for "${dir}"...`);
 			return new Promise((resolve, reject) => {
 				fs.readdir(dir, (error, list) => {
 					if (error) {
@@ -213,43 +218,27 @@ class File extends ServiceBase {
 	 * @param {uri|stream} local - Local Uri.
 	 */
 	getFileStats(remote, local) {
-		const remoteDir = path.dirname(remote);
+		const remotePath = this.paths.getNormalPath(remote),
+			remoteDir = path.dirname(remotePath);
 
 		return this.list(remoteDir)
 			.then(() => {
 				const remoteStat = this.pathCache.getFileByPath(
 					SRC_REMOTE,
-					remote
+					remotePath
 				);
 
-				let localStat, localPath;
-
-				if (local instanceof vscode.Uri || typeof local === 'string') {
-					localPath = this.paths.getNormalPath(local);
+				let localPath = this.paths.getNormalPath(local),
 					localStat = fs.statSync(localPath);
 
-					return {
-						local: {
-							name: path.basename(localPath),
-							modified: (localStat.mtime.getTime() / 1000),
-							type: (localStat.isDirectory() ? 'd' : 'f')
-						},
-						remote: remoteStat
-					};
-				}
-
-				if (local instanceof ExtendedStream) {
-					return {
-						local: {
-							name: local.fileData.name,
-							modified: local.fileData.modified,
-							type: local.fileData.type
-						},
-						remote: remoteStat
-					};
-				}
-
-				throw('getFileStats: Unrecognised path type.');
+				return {
+					local: {
+						name: path.basename(localPath),
+						modified: (localStat.mtime.getTime() / 1000),
+						type: (localStat.isDirectory() ? 'd' : 'f')
+					},
+					remote: remoteStat
+				};
 			});
 	}
 
