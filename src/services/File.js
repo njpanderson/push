@@ -214,8 +214,8 @@ class File extends ServiceBase {
 
 	/**
 	 * Obtains local/remote stats for a file.
-	 * @param {string} remote - Remote pathname.
-	 * @param {uri|stream} local - Local Uri.
+	 * @param {uri} remote - Remote Uri.
+	 * @param {uri} local - Local Uri.
 	 */
 	getFileStats(remote, local) {
 		const remotePath = this.paths.getNormalPath(remote),
