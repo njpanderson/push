@@ -19,7 +19,6 @@ class ServiceBase {
 
 	destructor() {
 		this.config = null;
-		return Promise.resolve();
 	}
 
 	setProgress(state) {
@@ -80,8 +79,8 @@ class ServiceBase {
 	convertUriToRemote(uri) {
 		let file = this.paths.getNormalPath(uri);
 
-		return this.paths.stripTrailingSlash(this.config.service.root) + '/' +
-			file.replace(path.dirname(this.config.serviceFilename) + '/', '');
+		return this.paths.stripTrailingSlash(this.config.service.root) +
+			file.replace(path.dirname(this.config.serviceFilename), '');
 	}
 
 	/**
@@ -239,6 +238,7 @@ class ServiceBase {
 		if (result.option && result.option.baseOption) {
 			// Save collision options from "All" option
 			this.collisionOptions[result.type] = result.option.baseOption;
+			result.option = result.option.baseOption;
 		}
 	}
 
@@ -267,11 +267,26 @@ class ServiceBase {
 	 * @description
 	 * Base service directory listing method.
 	 * Should return a promise either resolving to a list in the format given by
-	 * PathCache#getDir(), or rejecting if the directory passed could not be found.
+	 * {@link PathCache#getDir}, or rejecting if the directory passed could not be found.
 	 * @returns {promise}
 	 */
 	list() {
 		throw new Error('Service #list method is not yet implemented!');
+	}
+
+	/**
+	 * @param {string} dir - Directory to list.
+	 * @param {string} ignoreGlobs - List of globs to ignore. Files matching these
+	 * globs should not be returned.
+	 * @description
+	 * Base service recursive file listing method.
+	 * Should return a promise either resolving to a list in the format given by
+	 * {@link PathCache#getRecursiveFiles}, or rejecting if the directory passed
+	 * could not be found.
+	 * @returns {promise}
+	 */
+	listRecursiveFiles() {
+		throw new Error('Service #listRecursiveFiles method is not yet implemented!');
 	}
 };
 

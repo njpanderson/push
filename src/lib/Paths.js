@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
+const mkdirp = require('mkdirp');
 const Glob = require('glob').Glob;
 
 const ExtendedStream = require('./ExtendedStream');
@@ -61,12 +62,20 @@ class Paths {
 		dir = this.getNormalPath(dir, 'file');
 
 		if (dir) {
-			const stats = fs.statSync(this.getNormalPath(dir));
-			return stats.isDirectory();
+			try {
+				const stats = fs.statSync(this.getNormalPath(dir));
+				return stats.isDirectory();
+			} catch(e) {
+				return false;
+			}
 		}
 
 		return false;
 	}
+
+	// getClosestDirectory(dir) {
+
+	// }
 
 	getGlobOptions(extend = {}) {
 		return Object.assign({
@@ -191,6 +200,28 @@ class Paths {
 
 	getBaseName(uri) {
 		return path.basename(this.getNormalPath(uri));
+	}
+
+	getDirName(uri) {
+		return path.dirname(this.getNormalPath(uri));
+	}
+
+	ensureDirExists(dir) {
+		return new Promise((resolve, reject) => {
+			fs.stat(dir, (error, stat) => {
+				if (!stat) {
+					mkdirp(dir, function (error) {
+						if (error) {
+							reject(error);
+						} else {
+							resolve();
+						}
+					});
+				} else {
+					resolve();
+				}
+			})
+		});
 	}
 }
 

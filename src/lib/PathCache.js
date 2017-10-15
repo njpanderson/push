@@ -27,14 +27,14 @@ class PathCache {
 	/**
 	 *	Adds a single file to the path cache.
 	 * @param {string} source - Source name from `PathCache.source`
-	 * @param {string} name - Name of the file/directory.
+	 * @param {string} pathName - Full path of the file/directory.
 	 * @param {number} modified - Modified date, as a Unix epoch in seconds.
 	 * @param {string} type - Either 'd' for directory, or 'f' for file.
 	 * @param {*} [meta] - Any extra information to store.
 	 */
-	addCachedFile(source, name, modified = 0, type = 'f', meta = null) {
-		const dir = path.dirname(name),
-			basename = path.basename(name);
+	addCachedFile(source, pathName, modified = 0, type = 'f', meta = null) {
+		const dir = path.dirname(pathName),
+			basename = path.basename(pathName);
 
 		let index;
 
@@ -43,16 +43,17 @@ class PathCache {
 			this.createSourceDir(source, dir);
 		}
 
-		if ((index = this.indices[source][dir][name]) === undefined) {
+		if ((index = this.indices[source][dir][pathName]) === undefined) {
 			// File does not exist in the source/dir index cache
 			index = (this.cache[source][dir].push({
 				name: basename,
+				pathName,
 				modified,
 				type,
 				meta
 			})) - 1;
 
-			this.indices[source][dir][name] = index;
+			this.indices[source][dir][pathName] = index;
 		} else {
 			this.cache[source][dir][index] = {
 				name: basename,
@@ -65,8 +66,8 @@ class PathCache {
 
 	dirIsCached(source, dir) {
 		return !!(
-			(this.cache[source]) &&
-			(this.cache[source][dir])
+			(this.indices[source]) &&
+			(this.indices[source][dir])
 		);
 	}
 
@@ -86,13 +87,43 @@ class PathCache {
 		);
 	}
 
-	getDir(source, dir) {
+	getDir(source, dir, type = null) {
 		if (this.cache[source]) {
 			if (dir) {
+				if (type !== null) {
+					return this.cache[source][dir].filter((file) => {
+						return file.type === type;
+					});
+				}
+
 				return (this.cache[source][dir] || null);
 			}
 
 			return this.cache[source];
+		}
+
+		return null;
+	}
+
+	getRecursiveFiles(source, dir) {
+		let result = [],
+			re = new RegExp('^' + dir + '($|\/)'),
+			dirs, a;
+
+		if (this.cache[source] && dir) {
+			dirs = Object.keys(this.cache[source]);
+
+			for (a = 0; a < dirs.length; a += 1) {
+				if (dirs[a].match(re)) {
+					result = result.concat(this.getDir(
+						source,
+						dirs[a],
+						'f'
+					));
+				}
+			}
+
+			return result;
 		}
 
 		return null;

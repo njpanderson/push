@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
+const Glob = require('glob').Glob;
 
 const ServiceBase = require('./Base');
 const utils = require('../lib/utils');
@@ -31,16 +32,6 @@ class File extends ServiceBase {
 		};
 	}
 
-	destructor() {
-		return new Promise((resolve) => {
-			Object.keys(this.clients).forEach((hash) => {
-				this.removeClient(hash);
-			});
-
-			resolve();
-		});
-	}
-
 	init() {
 		return this.pathCache.clear();
 	}
@@ -69,7 +60,8 @@ class File extends ServiceBase {
 		return this.transfer(
 			vscode.Uri.parse(remote),
 			local,
-			path.dirname(this.config.serviceFilename)
+			path.dirname(this.config.serviceFilename),
+			'<< '
 		);
 	}
 
@@ -79,7 +71,7 @@ class File extends ServiceBase {
 	 * @param {uri} dest - Destination Uri.
 	 * @param {string} rootDir - Root directory. Used for validation.
 	 */
-	transfer(src, dest, rootDir) {
+	transfer(src, dest, rootDir, logPrefix = '>> ') {
 		let destPath = this.paths.getNormalPath(dest),
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath);
@@ -97,7 +89,7 @@ class File extends ServiceBase {
 				// Figure out what to do based on the collision (if any)
 				if (result === false) {
 					// No collision, just keep going
-					this.channel.appendLine(`>> ${destPath}`);
+					this.channel.appendLine(`${logPrefix}${destPath}`);
 					return this.copy(src, destPath);
 				} else {
 					this.setCollisionOption(result);
@@ -110,7 +102,7 @@ class File extends ServiceBase {
 							return false;
 
 						case utils.collisionOpts.overwrite:
-							this.channel.appendLine(`>> ${destPath}`);
+							this.channel.appendLine(`${logPrefix}${destPath}`);
 							return this.copy(src, destPath);
 
 						case utils.collisionOpts.rename:
@@ -121,7 +113,7 @@ class File extends ServiceBase {
 											dirContents
 										);
 
-									this.channel.appendLine(`>> ${destPath}`);
+									this.channel.appendLine(`${logPrefix}${destPath}`);
 
 									return this.put(
 										src,
@@ -210,6 +202,10 @@ class File extends ServiceBase {
 				});
 			});
 		}
+	}
+
+	listRecursiveFiles(uri, ignoreGlobs) {
+		return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs);
 	}
 
 	/**

@@ -14,16 +14,28 @@ class ServiceSettings {
 	 * @description
 	 * Attempts to retrieve a server settings JSON file from the supplied URI,
 	 * eventually ascending the directory tree to the root of the project.
-	 * @param {object} uri - URI of the path in which to start looking
+	 * @param {object} uri - URI of the path in which to start looking.
+	 * @param {string} settingsFilename - Name of the settings file.
 	 */
 	getServerJSON(uri, settingsFilename) {
-		const file = this.paths.findFileInAncestors(
-				settingsFilename,
-				path.dirname(uri.path)
-			),
-			hash = crypto.createHash('sha256');
+		const hash = crypto.createHash('sha256');
 
-		let fileContents, newFile;
+		let uriPath = this.paths.getNormalPath(uri),
+			file, fileContents, newFile;
+
+		// TODO: Find next existing directory up the tree when passed a non-existent directory
+		// uriPath = this.paths.getClosestDirectory(uriPath);
+
+		// If the path isn't a directory, get its directory name
+		if (!this.paths.isDirectory(uriPath)) {
+			uriPath = path.dirname(uriPath);
+		}
+
+		// Find the settings file
+		file = this.paths.findFileInAncestors(
+			settingsFilename,
+			uriPath
+		);
 
 		if (file !== '' && fs.existsSync(file)) {
 			// File isn't empty and exists - read and set into cache

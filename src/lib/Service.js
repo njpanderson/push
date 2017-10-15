@@ -68,15 +68,11 @@ class Service {
 		if (this.config.serviceName && this.config.service) {
 			if (this.activeService) {
 				// Run service destructor
-				this.activeService.destructor()
-					.then(() => {
-						this.activeService = null;
-						this.startServiceInstance();
-					});
-			} else {
-				this.activeService = null;
-				this.startServiceInstance();
+				this.activeService.destructor();
 			}
+
+			this.activeService = null;
+			this.startServiceInstance();
 		}
 	}
 

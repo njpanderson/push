@@ -2,6 +2,7 @@ const SFTPClient = require('ssh2-sftp-client');
 const fs = require('fs');
 const path = require('path');
 const homedir = require('os').homedir;
+var micromatch = require("micromatch");
 
 const ServiceBase = require('./Base');
 const utils = require('../lib/utils');
@@ -44,12 +45,8 @@ class ServiceSFTP extends ServiceBase {
 	 * Class destructor. Removes all clients.
 	 */
 	destructor() {
-		return new Promise((resolve) => {
-			Object.keys(this.clients).forEach((hash) => {
-				this.removeClient(hash);
-			});
-
-			resolve();
+		Object.keys(this.clients).forEach((hash) => {
+			this.removeClient(hash);
 		});
 	}
 
@@ -92,6 +89,8 @@ class ServiceSFTP extends ServiceBase {
 			.then((client) => {
 				if (!client.lastUsed) {
 					// New client - connect first
+					console.log('Connecting to a new server instance...');
+
 					return client.sftp.connect(options)
 						.then(() => {
 							console.log(`SFTP client connected to host ${options.host}:${options.port}`);
@@ -308,6 +307,7 @@ class ServiceSFTP extends ServiceBase {
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
+						case undefined:
 							return false;
 
 						case utils.collisionOpts.overwrite:
@@ -336,6 +336,7 @@ class ServiceSFTP extends ServiceBase {
 				}
 			})
 			.catch((error) => {
+				console.log(`error! ${error.message || error}`);
 				this.setProgress(false);
 				throw(error);
 			});
@@ -354,6 +355,9 @@ class ServiceSFTP extends ServiceBase {
 				client = connection;
 			})
 			.then(() => {
+				return this.paths.ensureDirExists(path.dirname(local));
+			})
+			.then(() => {
 				return this.getMimeCharset(remote);
 			})
 			.then((charset) => {
@@ -361,6 +365,7 @@ class ServiceSFTP extends ServiceBase {
 					// Get file with client#get and stream to local pathname
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
+							console.log(`creating write stream for ${local}...`);
 							let write = fs.createWriteStream(local);
 
 							function cleanUp(error) {
@@ -421,10 +426,12 @@ class ServiceSFTP extends ServiceBase {
 	/**
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
+	 * @param {string} ignoreGlobs - List of globs to ignore.
 	 */
-	list(dir) {
+	list(dir, ignoreGlobs) {
 		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
 			// Retrieve cached path list
+			// TODO: Allow ignoreGlobs option on this route
 			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 		} else {
 			// Get path list interactively and cache
@@ -433,12 +440,21 @@ class ServiceSFTP extends ServiceBase {
 					return connection.list(dir)
 						.then((list) => {
 							list.forEach((item) => {
-								this.pathCache.addCachedFile(
-									SRC_REMOTE,
-									dir + '/' + item.name,
-									(item.modifyTime / 1000),
-									(item.type === 'd' ? 'd' : 'f')
-								);
+								let match,
+									pathName = dir + '/' + item.name;
+
+								if (ignoreGlobs && ignoreGlobs.length) {
+									match = micromatch([pathName], ignoreGlobs);
+								}
+
+								if (!match || !match.length) {
+									this.pathCache.addCachedFile(
+										SRC_REMOTE,
+										pathName,
+										(item.modifyTime / 1000),
+										(item.type === 'd' ? 'd' : 'f')
+									);
+								}
 							});
 
 							return this.pathCache.getDir(SRC_REMOTE, dir);
@@ -451,6 +467,75 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	/**
+	 * @param {string} dir - Directory to list.
+	 * @param {string} ignoreGlobs - List of globs to ignore.
+	 * @description
+	 * Returns a promise either resolving to a recursive file list in the format
+	 * given by {@link PathCache#getRecursiveFiles}, or rejects if `dir` is not
+	 * found.
+	 * @returns {promise}
+	 */
+	listRecursiveFiles(dir, ignoreGlobs) {
+		let counter = {
+			scanned: 0,
+			total: 0
+		};
+
+		return new Promise((resolve, reject) => {
+			this.cacheRecursiveList(dir, counter, ignoreGlobs, () => {
+				if (counter.scanned === counter.total) {
+					resolve(this.pathCache.getRecursiveFiles(
+						PathCache.sources.REMOTE,
+						dir
+					));
+				}
+			}).catch(reject)
+		});
+	}
+
+	/**
+	 * Recursively adds a directory to the pathCache cache.
+	 * @param {string} dir - Directory path
+	 * @param {object} counter - Counter object. Must contain `total` and `scanned`
+	 * properties with `0` number values.
+	 * @param {array} ignoreGlobs - An optional array of globs to ignore
+	 * @param {function} callback - An optional callback function to fire when all
+	 * of the listed directories have been cached.
+	 */
+	cacheRecursiveList(dir, counter, ignoreGlobs, callback) {
+		if (counter.total === 0) {
+			// Ensure counter total starts at 1 (to include the current directory)
+			counter.total = 1;
+		}
+
+		return this.list(dir, ignoreGlobs)
+			.then((dirContents) => {
+				let dirs;
+
+				counter.scanned += 1;
+
+				if (dirContents !== null) {
+					dirs = dirContents.filter((file) => {
+						return (file.type === 'd');
+					});
+
+					counter.total += dirs.length;
+
+					dirs.forEach((file) => {
+						this.cacheRecursiveList(
+							dir + '/' + file.name,
+							counter,
+							ignoreGlobs,
+							callback
+						);
+					});
+				}
+
+				callback(counter);
+			});
+	}
+
+	/**
 	 * Obtains local/remote stats for a file.
 	 * @param {string} remote - Remote pathname.
 	 * @param {uri} local - Local Uri.
@@ -458,24 +543,38 @@ class ServiceSFTP extends ServiceBase {
 	getFileStats(remote, local) {
 		const remoteDir = path.dirname(remote);
 
+		let result = {};
+
 		return this.list(remoteDir)
 			.then(() => {
-				const localPath = this.paths.getNormalPath(local),
-					localStat = fs.statSync(localPath),
-					remoteStat = this.pathCache.getFileByPath(
-						SRC_REMOTE,
-						remote
-					)
+				return new Promise((resolve) => {
+					const localPath = this.paths.getNormalPath(local);
 
-				return {
-					local: {
-						name: path.basename(localPath),
-						modified: (localStat.mtime.getTime() / 1000),
-						type: (localStat.isDirectory() ? 'd' : 'f')
-					},
-					remote: remoteStat
-				};
-			});
+					fs.stat(localPath, (error, stat) => {
+						if (!error && stat) {
+							result.local = {
+								name: path.basename(localPath),
+								modified: (stat.mtime.getTime() / 1000),
+								type: (stat.isDirectory() ? 'd' : 'f')
+							};
+
+
+						} else {
+							result.local = null;
+						}
+
+						resolve();
+					});
+				});
+			})
+			.then(() => {
+				result.remote = this.pathCache.getFileByPath(
+					SRC_REMOTE,
+					remote
+				);
+
+				return result;
+			})
 	}
 
 	/**

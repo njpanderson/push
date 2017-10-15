@@ -205,6 +205,10 @@ class Push {
 	 * @param {Uri} uri
 	 */
 	upload(uri) {
+		if (this.paths.isDirectory(uri)) {
+			return this.transferDirectory(uri, 'put');
+		}
+
 		return this.transfer(uri, 'put');
 	}
 
@@ -213,11 +217,24 @@ class Push {
 	 * @param {Uri} uri
 	 */
 	download(uri) {
+		if (this.paths.isDirectory(uri)) {
+			return this.transferDirectory(uri, 'get');
+		}
+
 		return this.transfer(uri, 'get');
 	}
 
+	/**
+	 * Transfers a single file.
+	 * @param {uri} uri - Uri of file to transfer
+	 * @param {string} method - Either 'get' or 'put;
+	 */
 	transfer(uri, method) {
-		let ignoreGlobs = [], action, actionTaken;
+		let ignoreGlobs = [], action, actionTaken, config, remoteUri;
+
+		if (this.paths.isDirectory(uri)) {
+			throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
+		}
 
 		// Get Uri from file/selection, src from Uri
 		uri = this.paths.getFileSrc(uri);
@@ -230,11 +247,72 @@ class Push {
 			actionTaken = 'downloaded';
 		}
 
-		if (this.paths.isDirectory(uri)) {
-			// Always filter multiple Uris by the ignore globs
+		if (method === 'put') {
+			// Filter Uri by the ignore globs when uploading
 			ignoreGlobs = this.config.ignoreGlobs;
+		}
 
-			// Recursively fetch directory files and transfer each one
+		return this.paths.filterUriByGlobs(uri, ignoreGlobs)
+			.then((filteredUri) => {
+				if (filteredUri !== false) {
+					// Add to queue and return
+					return this.queue([{
+						method,
+						actionTaken,
+						uriContext: filteredUri,
+						args: [
+							filteredUri,
+							this.service.exec(
+								'convertUriToRemote',
+								this.configWithServiceSettings(filteredUri),
+								[filteredUri]
+							)
+						]
+					}], true);
+				} else {
+					// Only one file is being transfered so warn the user it ain't happening
+					utils.showWarning(
+						`Cannot ${action} file "${this.paths.getBaseName(uri)}" -` +
+						` It matches one of the defined ignoreGlobs filters.`
+					);
+				}
+			});
+	}
+
+	transferDirectory(uri, method) {
+		let ignoreGlobs = [], action, actionTaken, config, remoteUri;
+
+		if (!this.paths.isDirectory(uri)) {
+			throw new Error(
+				'Path is a single file and cannot be transferred with Push#transferDirectory.'
+			);
+		}
+
+		// Get Uri from file/selection, src from Uri
+		uri = this.paths.getFileSrc(uri);
+
+		if (method === 'put') {
+			action = 'upload';
+			actionTaken = 'uploaded';
+		} else {
+			action = 'download';
+			actionTaken = 'downloaded';
+		}
+
+		// Always filter multiple Uris by the ignore globs
+		ignoreGlobs = this.config.ignoreGlobs;
+		config = this.configWithServiceSettings(uri);
+
+		// TODO: Check for mulptiple service files within directory and decline if found
+
+		remoteUri = this.service.exec(
+			'convertUriToRemote',
+			config,
+			[uri]
+		);
+
+		if (method === 'put') {
+			// Recursively list local files and transfer each one
 			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
@@ -248,7 +326,7 @@ class Push {
 								uri,
 								this.service.exec(
 									'convertUriToRemote',
-									this.configWithServiceSettings(uri),
+									config,
 									[uri]
 								)
 							]
@@ -259,36 +337,32 @@ class Push {
 					return this.queue(tasks, true);
 				});
 		} else {
-			// Filter a single file by the ignore globs and transfer
-			if (method === 'put') {
-				// Filter Uri by the ignore globs when uploading
-				ignoreGlobs = this.config.ignoreGlobs;
-			}
+			// Recursively list remote files and transfer each one
+			return this.service.exec('listRecursiveFiles', config, [remoteUri, ignoreGlobs])
+				.then((files) => {
+					let tasks = files.map((file) => {
+						let uri = this.service.exec(
+							'convertRemoteToUri',
+							config,
+							[file.pathName || file]
+						);
 
-			return this.paths.filterUriByGlobs(uri, ignoreGlobs)
-				.then((filteredUri) => {
-					if (filteredUri !== false) {
-						// Add to queue and return
-						return this.queue([{
+						return {
 							method,
 							actionTaken,
-							uriContext: filteredUri,
+							uriContext: uri,
 							args: [
-								filteredUri,
-								this.service.exec(
-									'convertUriToRemote',
-									this.configWithServiceSettings(filteredUri),
-									[filteredUri]
-								)
+								uri,
+								file.pathName || file
 							]
-						}], true);
-					} else {
-						// Only one file is being transfered so warn the user it ain't happening
-						utils.showWarning(
-							`Cannot ${action} file "${this.paths.getBaseName(uri)}" -` +
-							` It matches one of the defined ignoreGlobs filters.`
-						);
-					}
+						};
+					});
+
+					// Add to queue and return
+					tasks.forEach((task) => {
+						console.log(`task: ${task.args[1]}`);
+					});
+					return this.queue(tasks, true);
 				});
 		}
 	}
