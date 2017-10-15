@@ -205,6 +205,8 @@ class Push {
 	 * @param {Uri} uri
 	 */
 	upload(uri) {
+		uri = this.paths.getFileSrc(uri);
+
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => {
@@ -220,6 +222,8 @@ class Push {
 	 * @param {Uri} uri
 	 */
 	download(uri) {
+		uri = this.paths.getFileSrc(uri);
+
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => {
@@ -241,9 +245,6 @@ class Push {
 		if (this.paths.isDirectory(uri)) {
 			throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
 		}
-
-		// Get Uri from file/selection, src from Uri
-		uri = this.paths.getFileSrc(uri);
 
 		if (method === 'put') {
 			action = 'upload';

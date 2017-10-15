@@ -11,7 +11,7 @@ class ServiceBase {
 		this.progress = null;
 		this.serviceDefaults = {};
 		this.config = {};
-		this.collisionOptions = {};
+		this.persistCollisionOptions = {};
 		this.channel = channel;
 
 		this.paths = new Paths();
@@ -130,7 +130,7 @@ class ServiceBase {
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
 	init() {
-		this.collisionOptions = {};
+		this.persistCollisionOptions = {};
 		return Promise.resolve(true);
 	}
 
@@ -193,7 +193,7 @@ class ServiceBase {
 	 * @param {object} source - Source filecache entry.
 	 * @param {object} dest - Destination filecache entry (the item to be replaced).
 	 */
-	checkCollision(source, dest) {
+	checkCollision(source, dest, defaultCollisionOption) {
 		let collisionType, timediff;
 
 		// Dest file exists - get time difference
@@ -213,15 +213,24 @@ class ServiceBase {
 			if (dest.type === source.type) {
 				collisionType = 'normal';
 
-				if (this.collisionOptions[collisionType]) {
+				if (this.persistCollisionOptions[collisionType]) {
+					console.log(`Using persisting collision type ${this.persistCollisionOptions[collisionType].label}`);
 					return {
 						type: collisionType,
-						option: this.collisionOptions[collisionType]
+						option: this.persistCollisionOptions[collisionType]
+					};
+				} else if (defaultCollisionOption &&
+						utils.collisionOpts[defaultCollisionOption]) {
+					console.log(`Using default collision type ${utils.collisionOpts[defaultCollisionOption].label}`);
+					return {
+						type: collisionType,
+						option: utils.collisionOpts[defaultCollisionOption]
 					};
 				} else {
+					console.log(`Showing collision picker`);
 					return utils.showFileCollisionPicker(
 						source.name,
-						this.collisionOptions.normal
+						this.persistCollisionOptions.normal
 					);
 				}
 			} else {
@@ -237,7 +246,7 @@ class ServiceBase {
 	setCollisionOption(result) {
 		if (result.option && result.option.baseOption) {
 			// Save collision options from "All" option
-			this.collisionOptions[result.type] = result.option.baseOption;
+			this.persistCollisionOptions[result.type] = result.option.baseOption;
 			result.option = result.option.baseOption;
 		}
 	}

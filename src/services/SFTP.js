@@ -30,7 +30,9 @@ class ServiceSFTP extends ServiceBase {
 			privateKey: '',
 			root: '/',
 			timeZoneOffset: 0,
-			testCollisionTimeDiffs: true
+			testCollisionTimeDiffs: true,
+			collisionUploadAction: null,
+			collisionDownloadAction: null
 		};
 
 		// Define SFTP validation rules
@@ -213,7 +215,11 @@ class ServiceSFTP extends ServiceBase {
 			);
 		})
 		.then(() => this.getFileStats(remote, local))
-		.then((stats) => super.checkCollision(stats.local, stats.remote))
+		.then((stats) => super.checkCollision(
+			stats.local,
+			stats.remote,
+			this.config.service.collisionUploadAction
+		))
 		.then((result) => {
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
@@ -291,7 +297,11 @@ class ServiceSFTP extends ServiceBase {
 					throw(`Remote file "${remote}" does not exist.`);
 				}
 
-				return super.checkCollision(stats.remote, stats.local)
+				return super.checkCollision(
+					stats.remote,
+					stats.local,
+					this.config.service.collisionDownloadAction
+				);
 			})
 			.then((result) => {
 				// Figure out what to do based on the collision (if any)

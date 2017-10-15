@@ -71,7 +71,13 @@ When defining a server settings file, placing it in the root of your workspace w
 | `root` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
 | `testCollisionTimeDiffs` | If this option is set to `false`, the File service will not consider newer files to be non-colliding, which means all files that exist on the target folder will produce a collision warning. |
 
-### Service options
+### General service settings
+The following options are available to all services:
+
+| Setting | Description |
+| --- | --- |
+| `collisionUploadAction` | Sets how to proceed when colliding with the same remote file. Set one of `stop` (Stop transfer entirely), `skip` (Skip the file), `overwrite` (Overwrite the file), or `rename` (Keep both files by renaming the source file). This option is ignored if the file type (directory or file) does not match the target.
+| `collisionDownloadAction` | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
 
 ## Known Issues
 

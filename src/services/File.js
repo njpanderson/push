@@ -23,7 +23,9 @@ class File extends ServiceBase {
 		this.serviceDefaults = {
 			root: '/',
 			timeZoneOffset: 0,
-			testCollisionTimeDiffs: true
+			testCollisionTimeDiffs: true,
+			collisionUploadAction: null,
+			collisionDownloadAction: null
 		};
 
 		// Define File validation rules
@@ -46,7 +48,9 @@ class File extends ServiceBase {
 		return this.transfer(
 			local,
 			vscode.Uri.parse(remote),
-			this.config.service.root
+			this.config.service.root,
+			'>> ',
+			this.config.service.collisionUploadAction
 		);
 	}
 
@@ -61,7 +65,8 @@ class File extends ServiceBase {
 			vscode.Uri.parse(remote),
 			local,
 			path.dirname(this.config.serviceFilename),
-			'<< '
+			'<< ',
+			this.config.service.collisionDownloadAction
 		);
 	}
 
@@ -71,7 +76,7 @@ class File extends ServiceBase {
 	 * @param {uri} dest - Destination Uri.
 	 * @param {string} rootDir - Root directory. Used for validation.
 	 */
-	transfer(src, dest, rootDir, logPrefix = '>> ') {
+	transfer(src, dest, rootDir, logPrefix = '', collisionAction) {
 		let destPath = this.paths.getNormalPath(dest),
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath);
@@ -79,12 +84,12 @@ class File extends ServiceBase {
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir)
-			.then(() => {
-				return this.getFileStats(dest, src);
-			})
-			.then((stats) => {
-				return super.checkCollision(stats.local, stats.remote);
-			})
+			.then(() => this.getFileStats(dest, src))
+			.then((stats) => super.checkCollision(
+				stats.local,
+				stats.remote,
+				collisionAction
+			))
 			.then((result) => {
 				// Figure out what to do based on the collision (if any)
 				if (result === false) {
