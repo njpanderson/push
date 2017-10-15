@@ -125,7 +125,10 @@ utils.errors = {
 
 utils.strings = {
 	NO_SERVICE_FILE: 'A settings file could not be found within your project. Have you ' +
-		'created a file with the name $1 yet?'
+		'created a file with the name $1 yet?',
+	MULTIPLE_SERVICE_FILES: 'More than one service settings file was found within the selected ' +
+		'directory.',
+	TRANSFER_NOT_POSSIBLE: 'The transfer could not be completed.'
 }
 
 module.exports = utils;

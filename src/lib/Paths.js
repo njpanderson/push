@@ -85,15 +85,18 @@ class Paths {
 	}
 
 	/**
-	 * Recursively returns the contents of a directory.
-	 * @param {Uri} uri - Uri of directory to glob for paths
+	 * Recursively returns the file contents of a directory.
+	 * @param {uri|string} include - Uri of directory to glob for paths, or a glob string.
+	 * @param {array} [ignoreGlobs] - List of globs to ignore.
 	 */
-	getDirectoryContentsAsFiles(uri, ignoreGlobs = []) {
-		let dir = this.getNormalPath(uri);
+	getDirectoryContentsAsFiles(include, ignoreGlobs = []) {
+		if (include instanceof vscode.Uri) {
+			include = `${this.getNormalPath(include)}/**/*`;
+		}
 
 		return new Promise((resolve, reject) => {
 			new Glob(
-				`${dir}/**/*`,
+				include,
 				this.getGlobOptions({
 					ignore: ignoreGlobs
 				}),

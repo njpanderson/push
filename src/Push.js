@@ -206,7 +206,10 @@ class Push {
 	 */
 	upload(uri) {
 		if (this.paths.isDirectory(uri)) {
-			return this.transferDirectory(uri, 'put');
+			return this.ensureSingleService(uri)
+				.then(() => {
+					return this.transferDirectory(uri, 'put');
+				});
 		}
 
 		return this.transfer(uri, 'put');
@@ -218,7 +221,10 @@ class Push {
 	 */
 	download(uri) {
 		if (this.paths.isDirectory(uri)) {
-			return this.transferDirectory(uri, 'get');
+			return this.ensureSingleService(uri)
+				.then(() => {
+					return this.transferDirectory(uri, 'get');
+				});
 		}
 
 		return this.transfer(uri, 'get');
@@ -303,8 +309,6 @@ class Push {
 		ignoreGlobs = this.config.ignoreGlobs;
 		config = this.configWithServiceSettings(uri);
 
-		// TODO: Check for mulptiple service files within directory and decline if found
-
 		remoteUri = this.service.exec(
 			'convertUriToRemote',
 			config,
@@ -365,6 +369,27 @@ class Push {
 					return this.queue(tasks, true);
 				});
 		}
+	}
+
+	ensureSingleService(uri) {
+		return new Promise((resolve, reject) => {
+			this.paths.getDirectoryContentsAsFiles(
+				`${this.paths.getNormalPath(uri)}/**/${this.config.settingsFilename}`
+			)
+				.then((files) => {
+					if (files.length > 1) {
+
+						utils.showError(
+							utils.strings.MULTIPLE_SERVICE_FILES + ' ' +
+							utils.strings.TRANSFER_NOT_POSSIBLE
+						);
+
+						reject();
+					}
+
+					resolve();
+				});
+		});
 	}
 }
 

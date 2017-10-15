@@ -120,7 +120,6 @@ class Queue {
 					if (result !== false) {
 						// Add to success list if the result from the function is anything
 						// other than `false`
-						console.log('Task result', result);
 						if (task.actionTaken) {
 							if (!results.success[task.actionTaken]) {
 								results.success[task.actionTaken] = [];
@@ -136,7 +135,7 @@ class Queue {
 				.catch((error) => {
 					// Function/Promise was rejected
 					if (error instanceof Error) {
-						// Thrown errors will stop the queue as well as alerting the user
+						// Thrown Errors will stop the queue as well as alerting the user
 						channel.appendError(error.message);
 						channel.show();
 
@@ -148,7 +147,7 @@ class Queue {
 
 						throw error;
 					} else if (typeof error === 'string') {
-						// Add basic error string to fail list, but don't stop
+						// String based errors add to fail list, but don't stop
 						if (!results.fail[task.actionTaken]) {
 							results.fail[task.actionTaken] = [];
 						}
