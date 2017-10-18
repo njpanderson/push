@@ -63,9 +63,14 @@ class Push {
 	 * @param {textDocument} textDocument
 	 */
 	didSaveTextDocument(textDocument) {
-		const settings = this.settings.getServerJSON(
-				textDocument.uri,
-				this.config.settingsFilename
+		let settings;
+
+		this.settings.clear();
+
+		settings = this.settings.getServerJSON(
+			textDocument.uri,
+			this.config.settingsFilename,
+			true
 		);
 
 		if (settings) {

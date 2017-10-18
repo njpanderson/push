@@ -11,6 +11,13 @@ class ServiceSettings {
 	}
 
 	/**
+	 * Completely clear the cache by trashing the old object.
+	 */
+	clear() {
+		this.settingsCache = {};
+	}
+
+	/**
 	 * @description
 	 * Attempts to retrieve a server settings JSON file from the supplied URI,
 	 * eventually ascending the directory tree to the root of the project.
@@ -18,17 +25,19 @@ class ServiceSettings {
 	 * @param {string} settingsFilename - Name of the settings file.
 	 */
 	getServerJSON(uri, settingsFilename) {
-		const hash = crypto.createHash('sha256');
-
 		let uriPath = this.paths.getNormalPath(uri),
-			file, fileContents, newFile;
-
-		// TODO: Find next existing directory up the tree when passed a non-existent directory
-		// uriPath = this.paths.getClosestDirectory(uriPath);
+			file, fileContents, newFile, hash, digest;
 
 		// If the path isn't a directory, get its directory name
 		if (!this.paths.isDirectory(uriPath)) {
 			uriPath = path.dirname(uriPath);
+		}
+
+		// Cache entry for this directory exists. Use this instead
+		if (this.settingsCache[uriPath]) {
+			this.settingsCache[uriPath].newFile = false;
+			console.log('cached', this.settingsCache[uriPath]);
+			return this.settingsCache[uriPath];
 		}
 
 		// Find the settings file
@@ -43,26 +52,35 @@ class ServiceSettings {
 
 			if (fileContents !== '') {
 				try {
+					hash = crypto.createHash('sha256');
+					hash.update(file + '\n' + fileContents);
+					digest = hash.digest('hex');
+
+					// Check file is new by comparing existing hash
 					newFile = (
-						!this.settingsCache ||
-						fileContents !== this.settingsCache
+						!this.settingsCache[uriPath] ||
+						digest !== this.settingsCache[uriPath].hash
 					);
 
-					this.settingsCache = fileContents;
-
-					hash.update(file + '\n' + fileContents);
-
-					return {
+					// Cache entry
+					this.settingsCache[uriPath] = {
 						file,
-						data: JSON.parse(fileContents),
+						fileContents,
 						newFile,
-						hash: hash.digest('hex')
+						data: JSON.parse(fileContents),
+						hash: digest
 					};
+
+					console.log('new', this.settingsCache[uriPath]);
+
+					return this.settingsCache[uriPath];
 				} catch(e) {
 					return null;
 				}
 			}
 		}
+
+		return null;
 	}
 }
 
