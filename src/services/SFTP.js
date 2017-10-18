@@ -468,9 +468,6 @@ class ServiceSFTP extends ServiceBase {
 							});
 
 							return this.pathCache.getDir(SRC_REMOTE, dir);
-						})
-						.catch((error) => {
-							console.log(error);
 						});
 				});
 		}
