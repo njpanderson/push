@@ -33,7 +33,7 @@ class ServiceSettings {
 			uriPath = path.dirname(uriPath);
 		}
 
-		// Cache entry for this directory exists. Use this instead
+		// Use a cached version, if it exists
 		if (this.settingsCache[uriPath]) {
 			this.settingsCache[uriPath].newFile = false;
 			console.log('cached', this.settingsCache[uriPath]);

@@ -245,7 +245,7 @@ class Push {
 	 * @param {string} method - Either 'get' or 'put;
 	 */
 	transfer(uri, method) {
-		let ignoreGlobs = [], action, actionTaken, config, remoteUri;
+		let ignoreGlobs = [], action, actionTaken;
 
 		if (this.paths.isDirectory(uri)) {
 			throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
