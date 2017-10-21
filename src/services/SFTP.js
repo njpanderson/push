@@ -124,16 +124,10 @@ class ServiceSFTP extends ServiceBase {
 									);
 								});
 						})
-						.catch((error) => {
-							utils.showError(error)
-						});
 				} else {
 					// Existing client - just return it
 					return Promise.resolve(client.sftp);
 				}
-			})
-			.catch((error) => {
-				utils.showError(error);
 			});
 	}
 
