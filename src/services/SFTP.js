@@ -11,8 +11,8 @@ const PathCache = require('../lib/PathCache');
 const SRC_REMOTE = PathCache.sources.REMOTE;
 
 class ServiceSFTP extends ServiceBase {
-	constructor() {
-		super();
+	constructor(options) {
+		super(options);
 
 		this.mkDir = this.mkDir.bind(this);
 
@@ -20,6 +20,7 @@ class ServiceSFTP extends ServiceBase {
 		this.clients = {};
 		this.maxClients = 2;
 		this.pathCache = new PathCache();
+		this.sftpError = null;
 
 		// Define SFTP defaults
 		this.serviceDefaults = {
@@ -32,7 +33,9 @@ class ServiceSFTP extends ServiceBase {
 			timeZoneOffset: 0,
 			testCollisionTimeDiffs: true,
 			collisionUploadAction: null,
-			collisionDownloadAction: null
+			collisionDownloadAction: null,
+			keepaliveInterval: 3000,
+			debug: false
 		};
 
 		// Define SFTP validation rules
@@ -58,6 +61,8 @@ class ServiceSFTP extends ServiceBase {
 	init() {
 		return super.init()
 			.then(() => {
+				this.sftpError = null;
+
 				return this.pathCache.clear();
 			});
 	}
@@ -79,12 +84,19 @@ class ServiceSFTP extends ServiceBase {
 				host: this.config.service.host,
 				port: this.config.service.port,
 				username: this.config.service.username,
-				privateKey: this._getPrivateKey()
+				privateKey: this._getPrivateKey(),
+				keepaliveInterval: this.config.service.keepaliveInterval
 			},
 			hash = this.config.serviceSettingsHash;
 
 		if (this.config.service.password) {
 			options.password = this.config.service.password;
+		}
+
+		if (this.config.service.debug) {
+			options.debug = (data) => {
+				console.log(`Client debug data: "${data}"`);
+			}
 		}
 
 		return this.getClient(hash)
@@ -95,6 +107,7 @@ class ServiceSFTP extends ServiceBase {
 
 					return client.sftp.connect(options)
 						.then(() => {
+							this.onConnect();
 							console.log(`SFTP client connected to host ${options.host}:${options.port}`);
 							return client;
 						})
@@ -122,6 +135,37 @@ class ServiceSFTP extends ServiceBase {
 			.catch((error) => {
 				utils.showError(error);
 			});
+	}
+
+	/**
+	 * Stops any current transfers (by disconnecting all current clients)
+	 */
+	stop() {
+		return this.disconnect();
+	}
+
+	/**
+	 * Disconnects all current clients.
+	 */
+	disconnect() {
+		let tasks = [], hash;
+
+		this.setProgress(false);
+
+		for (hash in this.clients) {
+			tasks.push(
+				this.clients[hash].sftp.end()
+					.then(() => {
+						this.clients[hash] = null;
+						delete this.clients[hash];
+					})
+			);
+		}
+
+		return new Promise((resolve) => {
+			Promise.all(tasks)
+				.then(resolve);
+		});
 	}
 
 	/**
@@ -166,9 +210,12 @@ class ServiceSFTP extends ServiceBase {
 							sftp: new SFTPClient()
 						};
 
-						this.clients[hash].sftp.client.on('close', () => {
-							this.removeClient(hash);
-						});
+						this.clients[hash].sftp.client
+							.on('close', (hadError) => {
+								this.onDisconnect((hadError || this.sftpError));
+								this.removeClient(hash);
+							})
+							.on('error', (error) => (this.sftpError = error));
 
 						// Resolve with new client connection
 						resolve(this.clients[hash]);

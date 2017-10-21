@@ -11,13 +11,15 @@ const PathCache = require('../lib/PathCache');
 const SRC_REMOTE = PathCache.sources.REMOTE;
 
 class File extends ServiceBase {
-	constructor() {
-		super();
+	constructor(options) {
+		super(options);
 
 		this.mkDir = this.mkDir.bind(this);
 
 		this.type = 'File';
 		this.pathCache = new PathCache();
+		this.writeStream = null;
+		this.readStream = null;
 
 		// Define File defaults
 		this.serviceDefaults = {
@@ -114,15 +116,17 @@ class File extends ServiceBase {
 							return this.list(destDir)
 								.then((dirContents) => {
 									destPath = destDir + '/' + this.getNonCollidingName(
-											destFilename,
-											dirContents
-										);
+										destFilename,
+										dirContents
+									);
 
 									this.channel.appendLine(`${logPrefix}${destPath}`);
 
-									return this.put(
+									return this.transfer(
 										src,
-										destPath
+										destPath,
+										rootDir,
+										logPrefix
 									);
 								});
 					}
@@ -138,6 +142,27 @@ class File extends ServiceBase {
 				this.setProgress(false);
 				throw error;
 			});
+	}
+
+	/**
+	 * Effectively stops the read and write streams by end() and destroy().
+	 * @param {function} fnCallback - Optional callback function to call after stopping.
+	 */
+	stop(fnCallback) {
+		// Stop read stream
+		if (this.readStream) {
+			this.readStream.destroy();
+		}
+
+		// Stop write stream
+		if (this.writeStream) {
+			this.writeStream.end();
+			this.writeStream.destroy();
+		}
+
+		if (typeof fnCallback === 'function') {
+			fnCallback();
+		}
 	}
 
 	/**
@@ -250,29 +275,26 @@ class File extends ServiceBase {
 	 */
 	copy(src, dest) {
 		return new Promise((resolve, reject) => {
-			let read, write;
-
-			function cleanUp() {
-				read.destroy();
-				write.end();
-				reject();
-			}
+			function fnError() {
+				this.stop(reject);
+			};
 
 			// Create write stream
-			write = fs.createWriteStream(dest);
-			write.on('error', cleanUp);
+			this.writeStream = fs.createWriteStream(dest);
+			this.writeStream.on('error', fnError);
 
-			write.on('finish', resolve);
+			this.writeStream.on('finish', resolve);
 
 			if (src instanceof vscode.Uri || typeof src === 'string') {
 				// Source is a VSCode Uri - create a read stream
-				read = fs.createReadStream(this.paths.getNormalPath(src));
-				read.on('error', cleanUp);
-				read.pipe(write);
+				this.readStream = fs.createReadStream(this.paths.getNormalPath(src));
+				this.readStream.on('error', fnError);
+				this.readStream.pipe(this.writeStream);
 			} else if (src instanceof ExtendedStream) {
 				// Source is already a stream - just pipe to the write stream
-				src.read.on('error', cleanUp);
-				src.read.pipe(write);
+				this.readStream = src.read;
+				this.readStream.on('error', fnError);
+				this.readStream.pipe(this.writeStream);
 			} else {
 				reject(new Error(
 					'Source src argument is neither a readable stream or a filename.'

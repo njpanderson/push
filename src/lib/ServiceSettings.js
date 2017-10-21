@@ -36,7 +36,6 @@ class ServiceSettings {
 		// Use a cached version, if it exists
 		if (this.settingsCache[uriPath]) {
 			this.settingsCache[uriPath].newFile = false;
-			console.log('cached', this.settingsCache[uriPath]);
 			return this.settingsCache[uriPath];
 		}
 
@@ -70,8 +69,6 @@ class ServiceSettings {
 						data: JSON.parse(fileContents),
 						hash: digest
 					};
-
-					console.log('new', this.settingsCache[uriPath]);
 
 					return this.settingsCache[uriPath];
 				} catch(e) {

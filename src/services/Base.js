@@ -6,7 +6,9 @@ const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
 
 class ServiceBase {
-	constructor() {
+	constructor(options) {
+		this.setOptions(options);
+
 		this.type = '';
 		this.progress = null;
 		this.serviceDefaults = {};
@@ -21,8 +23,20 @@ class ServiceBase {
 		this.config = null;
 	}
 
+	/**
+	 * Sets the current service progress.
+	 * @param {boolean|string} state - Use `false` to cancel the queue, or a string
+	 * value to specify the current state.
+	 */
 	setProgress(state) {
 		this.progress = state || null;
+	}
+
+	setOptions(options) {
+		this.options = Object.assign({}, {
+			onDisconnect: null,
+			onConnect: null
+		}, options);
 	}
 
 	/**
@@ -281,6 +295,57 @@ class ServiceBase {
 	 */
 	list() {
 		throw new Error('Service #list method is not yet implemented!');
+	}
+
+	/**
+	 * Base service stop function. Implementation is optional.
+	 *
+	 * Used to ensure that an existing transfer is halted.
+	 */
+	stop() {
+		this.setProgress(false);
+		return Promise.resolve();
+	}
+
+	/**
+	 * Base service disconnect function. Implementation is optional, but it may
+	 * be used in the future for preventing hanging connections over time.
+	 *
+	 * It is the responsibility of the service implementation to ensure all its
+	 * active connections are removed.
+	 */
+	disconnect() {
+
+	}
+
+	/**
+	 * @description
+	 * Base service process connection callback. Used by Base options.
+	 * Can be extended, ensuring that `super.onConnect()` is called.
+	 */
+	onConnect() {
+		if (typeof this.options.onConnect === 'function') {
+			this.options.onConnect(this);
+		}
+	}
+
+	/**
+	 * @param {boolean} hadError - Set `true` If an error occured.
+	 * @description
+	 * Base service process disconnection callback. Used by Base options.
+	 * Can be extended, ensuring that `super.onDisconnect()` is called.
+	 */
+	onDisconnect(hadError) {
+		this.setProgress(false);
+
+		// Alert user via channel
+		channel['append' + (hadError ? 'Error' : 'Info')](
+			`Service "${this.type}" has disconnected.`
+		);
+
+		if (typeof this.options.onDisconnect === 'function') {
+			this.options.onDisconnect(this);
+		}
 	}
 
 	/**

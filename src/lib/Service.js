@@ -3,7 +3,9 @@ const ServiceFile = require('../services/File');
 const Paths = require('../lib/Paths');
 
 class Service {
-	constructor() {
+	constructor(options) {
+		this.setOptions(options);
+
 		this.getStateProgress = this.getStateProgress.bind(this);
 
 		this.services = {
@@ -14,6 +16,12 @@ class Service {
 		this.activeService = null;
 		this.paths = new Paths();
 		this.config = {};
+	}
+
+	setOptions(options) {
+		this.options = Object.assign({}, {
+			onDisconnect: null
+		}, options);
 	}
 
 	setConfig(config) {
@@ -61,6 +69,20 @@ class Service {
 		}
 	}
 
+	stop() {
+		if (this.activeService) {
+			return new Promise((resolve, reject) => {
+				this.activeService.stop()
+					.then(() => {
+						resolve(this.activeService.type);
+					})
+					.catch(reject);
+			});
+		} else {
+			return Promise.reject();
+		}
+	}
+
 	/**
 	 * Restarts the currently active service instance
 	 */
@@ -81,7 +103,9 @@ class Service {
 			console.log(`Instantiating service provider "${this.config.serviceName}"`);
 
 			// Instantiate
-			this.activeService = new this.services[this.config.serviceName]();
+			this.activeService = new this.services[this.config.serviceName]({
+				onDisconnect: this.options.onDisconnect
+			});
 
 			// Invoke settings validation
 			this.activeService.validateServiceSettings(

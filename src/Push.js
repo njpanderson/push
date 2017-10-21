@@ -17,9 +17,15 @@ class Push {
 		this.setConfig = this.setConfig.bind(this);
 		this.execUploadQueue = this.execUploadQueue.bind(this);
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
+		this.cancelQueues = this.cancelQueues.bind(this);
+		this.stopQueues = this.stopQueues.bind(this);
 
 		this.settings = new ServiceSettings();
-		this.service = new Service();
+		this.service = new Service({
+			onDisconnect: () => {
+				this.stopCancellableQueues();
+			}
+		});
 		this.paths = new Paths();
 
 		this.config = null;
@@ -32,6 +38,56 @@ class Push {
 		// Create event handlers
 		vscode.workspace.onDidChangeConfiguration(this.setConfig);
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
+	}
+
+	execUploadQueue() {
+		return this.execQueue(Push.queueDefs.upload);
+	}
+
+	clearUploadQueue() {
+		// TODO: Write
+	}
+
+	/**
+	 * Uploads a single file or directory by its Uri.
+	 * @param {Uri} uri
+	 */
+	upload(uri) {
+		uri = this.paths.getFileSrc(uri);
+
+		if (this.paths.isDirectory(uri)) {
+			return this.ensureSingleService(uri)
+				.then(() => {
+					return this.transferDirectory(uri, 'put');
+				});
+		}
+
+		return this.transfer(uri, 'put');
+	}
+
+	/**
+	 * Downloads a single file or directory by its Uri.
+	 * @param {Uri} uri
+	 */
+	download(uri) {
+		uri = this.paths.getFileSrc(uri);
+
+		if (this.paths.isDirectory(uri)) {
+			return this.ensureSingleService(uri)
+				.then(() => {
+					return this.transferDirectory(uri, 'get');
+				});
+		}
+
+		return this.transfer(uri, 'get');
+	}
+
+	cancelQueues() {
+		this.stopCancellableQueues();
+	}
+
+	stopQueues() {
+		this.stopCancellableQueues(true);
 	}
 
 	/**
@@ -53,8 +109,6 @@ class Push {
 
 			// Ensure glob list only contains unique values
 			this.config.ignoreGlobs = utils.uniqArray(this.config.ignoreGlobs);
-
-			console.log(this.config);
 		}
 	}
 
@@ -109,14 +163,6 @@ class Push {
 		}
 	}
 
-	getQueue(queueName) {
-		if (!this.queues[queueName]) {
-			this.queues[queueName] = new Queue();
-		}
-
-		return this.queues[queueName];
-	}
-
 	/**
 	 * @param {array} tasks - Tasks to execute. Must contain the properties detailed below.
 	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately.
@@ -128,8 +174,8 @@ class Push {
 	 * - `uriContext` (`uri`): URI context for the method.
 	 * - `args` (`array`): Array of arguments to send to the method.
 	 */
-	queue(tasks = [], runImmediately = false, queueName = Push.queueNames.default) {
-		const queue = this.getQueue(queueName);
+	queue(tasks = [], runImmediately = false, queueDef = Push.queueDefs.default) {
+		const queue = this.getQueue(queueDef);
 
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0) {
@@ -161,12 +207,12 @@ class Push {
 		});
 
 		if (runImmediately) {
-			return this.execQueue(queueName);
+			return this.execQueue(queueDef);
 		}
 	}
 
 	/**
-	 * Queues a single file to be uploaded within the deferred queue.
+	 * Queues a single file to be uploaded within the deferred queue. Will honour ignore list.
 	 * @param {uri} uri - File Uri to queue
 	 */
 	queueForUpload(uri) {
@@ -181,62 +227,96 @@ class Push {
 				[uri]
 			);
 
-			return this.queue([{
-				method: 'put',
-				actionTaken: 'uploaded',
-				uriContext: uri,
-				args: [uri, remoteUri],
-				id: remoteUri + this.paths.getNormalPath(uri)
-			}], false, Push.queueNames.upload);
+			return this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+				.then((filteredUri) => {
+					if (!filteredUri) {
+						return;
+					}
+
+					this.queue([{
+						method: 'put',
+						actionTaken: 'uploaded',
+						uriContext: uri,
+						args: [uri, remoteUri],
+						id: remoteUri + this.paths.getNormalPath(uri)
+					}], false, Push.queueDefs.upload.id);
+				});
 		}
 	}
 
-	execQueue(queueName) {
+	/**
+	 * Retrieve a queue instance by its definition.
+	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
+	 * @returns {object} A single instance of Queue.
+	 */
+	getQueue(queueDef) {
+		if (typeof queueDef !== 'object' || !queueDef.id) {
+			throw new Error('Invalid queue definition type.');
+		}
+
+		if (!this.queues[queueDef.id]) {
+			this.queues[queueDef.id] = new Queue();
+		}
+
+		return this.queues[queueDef.id];
+	}
+
+	/**
+	 * Execute a queue, invoking its individual tasks in serial.
+	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
+	 * @returns {promise} A promise, eventually resolving once the queue is complete.
+	 */
+	execQueue(queueDef) {
+		if (typeof queueDef !== 'object' || !queueDef.id) {
+			throw new Error('Invalid queue definition type.');
+		}
+
 		channel.clear();
 
-		return this.getQueue(queueName)
+		return this.getQueue(queueDef)
 			.exec(this.service.getStateProgress)
 				.catch((error) => {
 					throw error;
 				});
 	}
 
-	execUploadQueue() {
-		return this.execQueue(Push.queueNames.upload);
+	/**
+	 * Stop any current queue operations.
+	 */
+	stopCancellableQueues(force = false) {
+		let def;
+
+		for (def in Push.queueDefs) {
+			if (Push.queueDefs[def].cancellable) {
+				this.stopQueue(Push.queueDefs[def], force);
+			}
+		}
 	}
 
 	/**
-	 * Uploads a single file or directory by its Uri.
-	 * @param {Uri} uri
+	 * Stops a queue.
+	 * @param {object} queueDef - Queue definition
+	 * @param {boolean} force - `true` to force a service disconnect as well as stopping the queue
 	 */
-	upload(uri) {
-		uri = this.paths.getFileSrc(uri);
+	stopQueue(queueDef, force = false) {
+		// Get the queue by definition and run its #stop method.
+		return vscode.window.withProgress({
+			location: vscode.ProgressLocation.Window,
+			title: 'Push'
+		}, (progress) => {
+			return new Promise((resolve) => {
+				progress.report({ message: 'Stopping...' });
 
-		if (this.paths.isDirectory(uri)) {
-			return this.ensureSingleService(uri)
-				.then(() => {
-					return this.transferDirectory(uri, 'put');
-				});
-		}
+				this.getQueue(queueDef)
+					.stop()
+					.then(resolve);
 
-		return this.transfer(uri, 'put');
-	}
-
-	/**
-	 * Downloads a single file or directory by its Uri.
-	 * @param {Uri} uri
-	 */
-	download(uri) {
-		uri = this.paths.getFileSrc(uri);
-
-		if (this.paths.isDirectory(uri)) {
-			return this.ensureSingleService(uri)
-				.then(() => {
-					return this.transferDirectory(uri, 'get');
-				});
-		}
-
-		return this.transfer(uri, 'get');
+				if (force) {
+					// Ensure the service stops in addition to the queue emptying
+					this.service.stop();
+				}
+			});
+		});
 	}
 
 	/**
@@ -292,7 +372,7 @@ class Push {
 	}
 
 	transferDirectory(uri, method) {
-		let ignoreGlobs = [], action, actionTaken, config, remoteUri;
+		let ignoreGlobs = [], actionTaken, config, remoteUri;
 
 		if (!this.paths.isDirectory(uri)) {
 			throw new Error(
@@ -304,10 +384,8 @@ class Push {
 		uri = this.paths.getFileSrc(uri);
 
 		if (method === 'put') {
-			action = 'upload';
 			actionTaken = 'uploaded';
 		} else {
-			action = 'download';
 			actionTaken = 'downloaded';
 		}
 
@@ -368,10 +446,6 @@ class Push {
 						};
 					});
 
-					// Add to queue and return
-					tasks.forEach((task) => {
-						console.log(`task: ${task.args[1]}`);
-					});
 					return this.queue(tasks, true);
 				});
 		}
@@ -399,9 +473,15 @@ class Push {
 	}
 }
 
-Push.queueNames = {
-	default: 'default',
-	upload: 'upload'
+Push.queueDefs = {
+	default: {
+		id: 'default',
+		cancellable: true
+	},
+	upload: {
+		id: 'upload',
+		cancellable: false
+	}
 };
 
 module.exports = Push;

@@ -12,6 +12,11 @@ class Queue {
 	constructor() {
 		this.running = false;
 		this.tasks = [];
+		this.currentTask = null;
+		this.progressInterval = null;
+
+		// Global progress callbacks for external use
+		this.progressReject = null;
 	}
 
 	/**
@@ -47,11 +52,9 @@ class Queue {
 
 	/**
 	 * Invokes all stored functions within the queue, returning a promise
-	 * @param {string} queueName='default' - Name of the queue to run
+	 * @param {function} fnProgress - Function to call when requesting progress updates.
 	 */
-	exec(progressFn) {
-		let progressInterval;
-
+	exec(fnProgress) {
 		if (this.tasks && this.tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(`Running ${this.tasks.length - 1} task(s) in queue...`);
@@ -61,14 +64,22 @@ class Queue {
 				location: vscode.ProgressLocation.Window,
 				title: 'Push'
 			}, (progress) => {
-				return new Promise((resolve) => {
+				return new Promise((resolve, reject) => {
+					// Globally assign the rejection function for rejection outside
+					// of the promise
+					this.progressReject = reject;
+
 					progress.report({ message: 'Processing' });
 
-					// Create an interval to monitor the progressFn function return value
-					progressInterval = setInterval(() => {
+					// Create an interval to monitor the fnProgress function return value
+					this.progressInterval = setInterval(() => {
 						let state;
 
-						if (typeof progressFn === 'function' && (state = progressFn())) {
+						if (typeof fnProgress === 'function') {
+							state = fnProgress();
+						}
+
+						if (typeof state === 'string') {
 							// Value is defined - write to progress
 							progress.report({ message: `Processing ${state}` });
 						} else {
@@ -81,7 +92,7 @@ class Queue {
 					this.execQueueItems(
 						(results) => {
 							channel.appendLine('Queue complete', results);
-							clearInterval(progressInterval);
+							clearInterval(this.progressInterval);
 							resolve(results);
 						}
 					);
@@ -94,10 +105,10 @@ class Queue {
 
 	/**
 	 * Executes all items within a queue in serial and invokes the callback on completion.
-	 * @param {function} callback - Callback to invoke once the queue is empty
+	 * @param {function} fnCallback - Callback to invoke once the queue is empty
 	 * @param {array} results - Results object, populated by queue tasks
 	 */
-	execQueueItems(callback, results) {
+	execQueueItems(fnCallback, results) {
 		let task;
 
 		// Initialise the results object
@@ -109,12 +120,16 @@ class Queue {
 		}
 
 		if (this.tasks.length) {
+			// Further tasks to process
+			this.running = true;
+
 			console.log(`Invoking queue item 1 of ${this.tasks.length}...`);
+
 			// Shift a task off the tasks array
 			task = this.tasks.shift();
 
-			// Invoke the function for this task, then get the result
-			task.fn()
+			// Invoke the function for this task, then get the result from its promise
+			this.currentTask = task.fn()
 				.then((result) => {
 					// Function/Promise was resolved
 					if (result !== false) {
@@ -130,7 +145,7 @@ class Queue {
 					}
 
 					// Loop
-					this.execQueueItems(callback, results);
+					this.execQueueItems(fnCallback, results);
 				})
 				.catch((error) => {
 					// Function/Promise was rejected
@@ -143,7 +158,7 @@ class Queue {
 						this.tasks = [];
 
 						// Trigger callback
-						callback(results);
+						fnCallback(results);
 
 						throw error;
 					} else if (typeof error === 'string') {
@@ -157,14 +172,39 @@ class Queue {
 						channel.appendError(error);
 
 						// Loop
-						this.execQueueItems(callback, results);
+						this.execQueueItems(fnCallback, results);
 					}
 				});
 		} else {
 			// Task queue is empty - send the resuts to the callback and report internally
+			this.running = false;
+
 			this.reportQueueResults(results);
-			callback(results);
+			fnCallback(results);
 		}
+	}
+
+	/**
+	 * Stops a queue by removing all items from it.
+	 * @returns {promise} - A promise, eventually resolving when the current task
+	 * has completed, or immediately resolved if there is no current task.
+	 */
+	stop() {
+		if (this.tasks.length && this.running && this.progressReject) {
+			channel.appendInfo(`Stopping queue...`);
+
+			// Remove all pending tasks from this queue
+			this.tasks = [];
+
+			if (this.progressInterval) {
+				clearInterval(this.progressInterval);
+			}
+
+			// Reject the globally assigned progress promise
+			this.progressReject();
+		}
+
+		return this.currentTask || Promise.resolve();
 	}
 
 	/**

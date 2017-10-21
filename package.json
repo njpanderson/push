@@ -67,6 +67,14 @@
       {
         "command": "extension.uploadQueuedItems",
         "title": "Upload queued items"
+      },
+      {
+        "command": "extension.cancelQueues",
+        "title": "Cancel currently active queue"
+      },
+      {
+        "command": "extension.stopQueues",
+        "title": "Cancel currently active queue and force transfers to stop"
       }
     ],
     "menus": {

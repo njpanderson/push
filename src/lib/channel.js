@@ -5,14 +5,27 @@ class Channel {
 		this.channel = vscode.window.createOutputChannel(name);
 	}
 
+	/**
+	 * Appends a basic line to the channel output.
+	 * @see https://code.visualstudio.com/docs/extensionAPI/vscode-api#OutputChannel
+	 */
 	appendLine() {
 		return this.channel.appendLine.apply(this.channel, arguments);
 	}
 
+	/**
+	 * Produces a line formatted as an error (and also shows the output window).
+	 * @param {string} string - Error string to show.
+	 */
 	appendError(string) {
+		this.channel.show();
 		return this.channel.appendLine(`⚠️ ${string}`);
 	}
 
+	/**
+	 * Produces a line formatted as an informative note.
+	 * @param {string} string - Information string to show.
+	 */
 	appendInfo(string) {
 		return this.channel.appendLine(`ℹ️ ${string}`);
 	}
