@@ -128,6 +128,17 @@ class ServiceSFTP extends ServiceBase {
 					// Existing client - just return it
 					return Promise.resolve(client.sftp);
 				}
+			})
+			.catch((error) => {
+				// Catch the native error and throw a better one
+				if (error.code === 'ENOTFOUND' && error.level === 'client-socket') {
+					// This is likely the error that means the client couldn't connect
+					throw new Error(
+						`Could not connect to server host ${options.host}:${options.port}`
+					);
+				}
+
+				throw error;
 			});
 	}
 

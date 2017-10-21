@@ -91,7 +91,14 @@ class Queue {
 					// Execute all queue items in serial
 					this.execQueueItems(
 						(results) => {
-							channel.appendLine('Queue complete', results);
+							if (
+								Object.keys(results.success).length ||
+								Object.keys(results.fail).length
+							) {
+								// Report "completion" only if something was done
+								channel.appendLine('Queue complete', results);
+							}
+
 							clearInterval(this.progressInterval);
 							resolve(results);
 						}
