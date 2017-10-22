@@ -50,31 +50,38 @@
     "commands": [
       {
         "command": "push.upload",
-        "title": "Upload File"
+        "title": "Upload File",
+        "category": "Push"
       },
       {
         "command": "push.download",
-        "title": "Download File"
+        "title": "Download File",
+        "category": "Push"
       },
       {
         "command": "push.uploadFolder",
-        "title": "Upload Folder"
+        "title": "Upload Folder",
+        "category": "Push"
       },
       {
         "command": "push.downloadFolder",
-        "title": "Download Folder"
+        "title": "Download Folder",
+        "category": "Push"
       },
       {
         "command": "push.uploadQueuedItems",
-        "title": "Upload queued items"
+        "title": "Upload queued items",
+        "category": "Push"
       },
       {
         "command": "push.cancelQueues",
-        "title": "Cancel currently active queue"
+        "title": "Cancel currently active queue",
+        "category": "Push"
       },
       {
         "command": "push.stopQueues",
-        "title": "Cancel currently active queue and force transfers to stop"
+        "title": "Cancel currently active queue and force transfers to stop",
+        "category": "Push"
       }
     ],
     "menus": {
@@ -130,7 +137,26 @@
           "when": "push:queueInProgress"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "push.upload",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+ctrl+u",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "push.download",
+        "key": "ctrl+alt+d",
+        "mac": "cmd+ctrl+d",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "push.uploadQueuedItems",
+        "key": "ctrl+alt+p",
+        "mac": "cmd+ctrl+p"
+      }
+    ]
   },
   "scripts": {
     "postinstall": "node ./node_modules/vscode/bin/install",
