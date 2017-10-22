@@ -277,25 +277,24 @@ class File extends ServiceBase {
 	 */
 	copy(src, dest) {
 		return new Promise((resolve, reject) => {
-			function fnError() {
-				this.stop(reject);
+			function fnError(error) {
+				this.stop(() => reject(error));
 			};
 
-			// Create write stream
+			// Create write stream & attach events
 			this.writeStream = fs.createWriteStream(dest);
-			this.writeStream.on('error', fnError);
-
+			this.writeStream.on('error', fnError.bind(this));
 			this.writeStream.on('finish', resolve);
 
 			if (src instanceof vscode.Uri || typeof src === 'string') {
 				// Source is a VSCode Uri - create a read stream
 				this.readStream = fs.createReadStream(this.paths.getNormalPath(src));
-				this.readStream.on('error', fnError);
+				this.readStream.on('error', fnError.bind(this));
 				this.readStream.pipe(this.writeStream);
 			} else if (src instanceof ExtendedStream) {
 				// Source is already a stream - just pipe to the write stream
 				this.readStream = src.read;
-				this.readStream.on('error', fnError);
+				this.readStream.on('error', fnError.bind(this));
 				this.readStream.pipe(this.writeStream);
 			} else {
 				reject(new Error(
