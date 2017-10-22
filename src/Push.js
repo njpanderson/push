@@ -185,6 +185,10 @@ class Push {
 	queue(tasks = [], runImmediately = false, queueDef = Push.queueDefs.default) {
 		const queue = this.getQueue(queueDef);
 
+		if (!queue) {
+			throw new Error('No valid queue defined in Push#queue');
+		}
+
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0) {
 			queue.addTask(() => {
