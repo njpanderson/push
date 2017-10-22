@@ -38,6 +38,9 @@ class Push {
 		// Create event handlers
 		vscode.workspace.onDidChangeConfiguration(this.setConfig);
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
+
+		// Set initial contexts
+		this.setContext(Push.contexts.queueInProgress, false);
 	}
 
 	execUploadQueue() {
@@ -272,12 +275,21 @@ class Push {
 		}
 
 		channel.clear();
+		this.setContext(Push.contexts.queueInProgress, true);
 
 		return this.getQueue(queueDef)
 			.exec(this.service.getStateProgress)
+				.then(() => {
+					this.setContext(Push.contexts.queueInProgress, false);
+				})
 				.catch((error) => {
+					this.setContext(Push.contexts.queueInProgress, false);
 					throw error;
 				});
+	}
+
+	setContext(context, value) {
+		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 	}
 
 	/**
@@ -482,6 +494,10 @@ Push.queueDefs = {
 		id: 'upload',
 		cancellable: false
 	}
+};
+
+Push.contexts = {
+	queueInProgress: 'queueInProgress'
 };
 
 module.exports = Push;

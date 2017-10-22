@@ -108,6 +108,14 @@
         {
           "command": "push.downloadFolder",
           "when": "false"
+        },
+        {
+          "command": "push.cancelQueues",
+          "when": "push:queueInProgress"
+        },
+        {
+          "command": "push.stopQueues",
+          "when": "push:queueInProgress"
         }
       ]
     }
