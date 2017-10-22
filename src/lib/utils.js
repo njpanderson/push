@@ -37,17 +37,23 @@ const utils = {
 		return data;
 	},
 
-	showFileCollisionPicker(name, callback) {
+	showFileCollisionPicker(name, callback, queueLength = 0) {
 		let options = [
 				utils.collisionOpts.skip,
 				utils.collisionOpts.rename,
 				utils.collisionOpts.stop,
 				utils.collisionOpts.overwrite,
+			],
+			placeHolder = `The file ${name} already exists.`;
+
+		if (queueLength > 1) {
+			// Add "all" options if there's more than one item in the current queue
+			options = options.concat([
 				utils.collisionOptsAll.skip,
 				utils.collisionOptsAll.rename,
 				utils.collisionOptsAll.overwrite,
-			],
-			placeHolder = `The file ${name} already exists.`;
+			]);
+		}
 
 		return new Promise((resolve) => {
 			vscode.window.showQuickPick(

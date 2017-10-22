@@ -10,6 +10,7 @@ class ServiceBase {
 		this.setOptions(options);
 
 		this.type = '';
+		this.queueLength = 0;
 		this.progress = null;
 		this.serviceDefaults = {};
 		this.config = {};
@@ -152,8 +153,9 @@ class ServiceBase {
 	/**
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
-	init() {
+	init(queueLength) {
 		this.persistCollisionOptions = {};
+		this.queueLength = queueLength;
 		return Promise.resolve(true);
 	}
 
@@ -255,7 +257,8 @@ class ServiceBase {
 					// Standard collision picker
 					return utils.showFileCollisionPicker(
 						source.name,
-						this.persistCollisionOptions.normal
+						this.persistCollisionOptions.normal,
+						this.queueLength
 					);
 				}
 			} else {

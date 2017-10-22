@@ -59,8 +59,8 @@ class ServiceSFTP extends ServiceBase {
 	/**
 	 * Runs initialisation code (before each queue begins)
 	 */
-	init() {
-		return super.init()
+	init(queueLength) {
+		return super.init(queueLength)
 			.then(() => {
 				this.sftpError = null;
 

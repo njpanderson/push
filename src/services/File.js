@@ -36,8 +36,8 @@ class File extends ServiceBase {
 		};
 	}
 
-	init() {
-		return super.init()
+	init(queueLength) {
+		return super.init(queueLength)
 			.then(() => {
 				return this.pathCache.clear();
 			});

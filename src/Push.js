@@ -193,7 +193,7 @@ class Push {
 		if (queue.tasks.length === 0) {
 			queue.addTask(() => {
 				return this.service.activeService &&
-					this.service.activeService.init();
+					this.service.activeService.init(queue.tasks.length);
 			});
 		}
 
