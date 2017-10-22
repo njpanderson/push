@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const jsonc = require('jsonc-parser');
 
 const Paths = require('../lib/Paths');
 
@@ -66,7 +67,7 @@ class ServiceSettings {
 						file,
 						fileContents,
 						newFile,
-						data: JSON.parse(fileContents),
+						data: jsonc.parse(fileContents),
 						hash: digest
 					};
 
