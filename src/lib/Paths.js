@@ -188,7 +188,7 @@ class Paths {
 	 * @param {object} uri - Source file URI
 	 */
 	getFileSrc(uri) {
-		if (uri) {
+		if (uri && uri instanceof vscode.Uri) {
 			return uri;
 		}
 
