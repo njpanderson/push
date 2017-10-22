@@ -115,12 +115,11 @@ class File extends ServiceBase {
 						case utils.collisionOpts.rename:
 							return this.list(destDir)
 								.then((dirContents) => {
+									// Re-invoke transfer with new filename
 									destPath = destDir + '/' + this.getNonCollidingName(
 										destFilename,
 										dirContents
 									);
-
-									this.channel.appendLine(`${logPrefix}${destPath}`);
 
 									return this.transfer(
 										src,
