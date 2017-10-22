@@ -117,12 +117,19 @@ class ServiceBase {
 	 * returned from PathCache.
 	 */
 	getNonCollidingName(file, dirContents) {
-		let re = new RegExp('^' + file.substring(0, file.indexOf('.')) + '.*'),
+		let indexOfDot = file.indexOf('.'),
+			re = new RegExp('^' + file.substring(0, ) + '.*'),
 			matches = this.matchFilesInDir(dirContents, re);
 
 		if (matches.length > 0) {
-			return file.substring(0, (file.indexOf('.'))) +
-				'-' + (matches.length + 1) + file.substring(file.indexOf('.'));
+			if (indexOfDot > 0) {
+				// filename[-XXX].ext
+				return file.substring(0, (indexOfDot)) +
+					'-' + (matches.length + 1) + file.substring(indexOfDot);
+			} else {
+				// .ext[-XXX]
+				return file.substring(indexOfDot) + '-' + (matches.length + 1);
+			}
 		} else {
 			return file;
 		}
