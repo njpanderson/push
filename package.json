@@ -49,31 +49,31 @@
     },
     "commands": [
       {
-        "command": "extension.upload",
+        "command": "push.upload",
         "title": "Upload File"
       },
       {
-        "command": "extension.download",
+        "command": "push.download",
         "title": "Download File"
       },
       {
-        "command": "extension.uploadFolder",
+        "command": "push.uploadFolder",
         "title": "Upload Folder"
       },
       {
-        "command": "extension.downloadFolder",
+        "command": "push.downloadFolder",
         "title": "Download Folder"
       },
       {
-        "command": "extension.uploadQueuedItems",
+        "command": "push.uploadQueuedItems",
         "title": "Upload queued items"
       },
       {
-        "command": "extension.cancelQueues",
+        "command": "push.cancelQueues",
         "title": "Cancel currently active queue"
       },
       {
-        "command": "extension.stopQueues",
+        "command": "push.stopQueues",
         "title": "Cancel currently active queue and force transfers to stop"
       }
     ],
@@ -81,32 +81,32 @@
       "explorer/context": [
         {
           "when": "!explorerResourceIsFolder",
-          "command": "extension.upload",
+          "command": "push.upload",
           "group": "njp-push@1"
         },
         {
           "when": "!explorerResourceIsFolder",
-          "command": "extension.download",
+          "command": "push.download",
           "group": "njp-push@2"
         },
         {
           "when": "explorerResourceIsFolder",
-          "command": "extension.uploadFolder",
+          "command": "push.uploadFolder",
           "group": "njp-push@3"
         },
         {
           "when": "explorerResourceIsFolder",
-          "command": "extension.downloadFolder",
+          "command": "push.downloadFolder",
           "group": "njp-push@4"
         }
       ],
       "commandPalette": [
         {
-          "command": "extension.uploadFolder",
+          "command": "push.uploadFolder",
           "when": "false"
         },
         {
-          "command": "extension.downloadFolder",
+          "command": "push.downloadFolder",
           "when": "false"
         }
       ]
