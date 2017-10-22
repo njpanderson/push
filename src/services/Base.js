@@ -237,20 +237,22 @@ class ServiceBase {
 				collisionType = 'normal';
 
 				if (this.persistCollisionOptions[collisionType]) {
-					console.log(`Using persisting collision type ${this.persistCollisionOptions[collisionType].label}`);
+					// Persisting collision option (defined by an "all" request)
 					return {
 						type: collisionType,
 						option: this.persistCollisionOptions[collisionType]
 					};
-				} else if (defaultCollisionOption &&
-						utils.collisionOpts[defaultCollisionOption]) {
-					console.log(`Using default collision type ${utils.collisionOpts[defaultCollisionOption].label}`);
+				} else if (
+					defaultCollisionOption &&
+					utils.collisionOpts[defaultCollisionOption]
+				) {
+					// Default collision option (defined in settings file)
 					return {
 						type: collisionType,
 						option: utils.collisionOpts[defaultCollisionOption]
 					};
 				} else {
-					console.log(`Showing collision picker`);
+					// Standard collision picker
 					return utils.showFileCollisionPicker(
 						source.name,
 						this.persistCollisionOptions.normal
@@ -323,9 +325,7 @@ class ServiceBase {
 	 * It is the responsibility of the service implementation to ensure all its
 	 * active connections are removed.
 	 */
-	disconnect() {
-
-	}
+	disconnect() {}
 
 	/**
 	 * @description
