@@ -316,12 +316,17 @@ class Push {
 			location: vscode.ProgressLocation.Window,
 			title: 'Push'
 		}, (progress) => {
-			return new Promise((resolve) => {
+			return new Promise((resolve, reject) => {
 				progress.report({ message: 'Stopping...' });
 
 				this.getQueue(queueDef)
 					.stop()
-					.then(resolve);
+					.then((result) => {
+						resolve();
+					})
+					.catch((error) => {
+						reject(error);
+					});
 
 				if (force) {
 					// Ensure the service stops in addition to the queue emptying

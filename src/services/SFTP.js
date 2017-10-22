@@ -21,6 +21,7 @@ class ServiceSFTP extends ServiceBase {
 		this.maxClients = 2;
 		this.pathCache = new PathCache();
 		this.sftpError = null;
+		this.transferReject = null;
 
 		// Define SFTP defaults
 		this.serviceDefaults = {
@@ -218,7 +219,6 @@ class ServiceSFTP extends ServiceBase {
 						this.clients[hash].sftp.client
 							.on('close', (hadError) => {
 								this.onDisconnect((hadError || this.sftpError));
-								this.removeClient(hash);
 							})
 							.on('error', (error) => (this.sftpError = error));
 
@@ -245,6 +245,16 @@ class ServiceSFTP extends ServiceBase {
 		}
 	}
 
+	onDisconnect(hadError) {
+		super.onDisconnect(hadError);
+
+		if (typeof this.transferReject === 'function') {
+			this.transferReject();
+		};
+
+		this.removeClient(hash);
+	}
+
 	/**
 	 * Put a single file to the SFTP server.
 	 * @param {uri} local - Local source Uri.
@@ -253,13 +263,11 @@ class ServiceSFTP extends ServiceBase {
 	put(local, remote) {
 		let remoteDir = path.dirname(remote),
 			remoteFilename = path.basename(remote),
-			localPath = this.paths.getNormalPath(local),
-			client;
+			localPath = this.paths.getNormalPath(local);
 
 		this.setProgress(`${remoteFilename}...`);
 
 		return this.connect().then((connection) => {
-			client = connection;
 			return this.mkDirRecursive(
 				remoteDir,
 				this.config.service.root,
@@ -277,7 +285,7 @@ class ServiceSFTP extends ServiceBase {
 			if (result === false) {
 				// No collision, just keep going
 				this.channel.appendLine(`>> ${remote}`);
-				return client.put(localPath, remote);
+				return this.clientPut(localPath, remote);
 			} else {
 				this.setCollisionOption(result);
 
@@ -290,7 +298,7 @@ class ServiceSFTP extends ServiceBase {
 
 					case utils.collisionOpts.overwrite:
 						this.channel.appendLine(`>> ${remote}`);
-						return client.put(localPath, remote);
+						return this.clientPut(localPath, remote);
 
 					case utils.collisionOpts.rename:
 						return this.list(remoteDir)
@@ -360,7 +368,7 @@ class ServiceSFTP extends ServiceBase {
 				if (result === false) {
 					// No collision, just keep going
 					this.channel.appendLine(`<< ${remote}`);
-					return this.getByStream(localPath, remote);
+					return this.clientGetByStream(localPath, remote);
 				} else {
 					this.setCollisionOption(result);
 
@@ -374,10 +382,9 @@ class ServiceSFTP extends ServiceBase {
 
 						case utils.collisionOpts.overwrite:
 							this.channel.appendLine(`<< ${remote}`);
-							return this.getByStream(localPath, remote);
+							return this.clientGetByStream(localPath, remote);
 
 						case utils.collisionOpts.rename:
-							// TODO: Force listing fresh contents so getNonCollidingName is guaranteed to work
 							return this.list(remoteDir)
 								.then((dirContents) => {
 									let remotePath = remoteDir + '/' + this.getNonCollidingName(
@@ -386,7 +393,7 @@ class ServiceSFTP extends ServiceBase {
 										);
 									this.channel.appendLine(`<< ${remotePath}`);
 
-									return this.getByStream(
+									return this.clientGetByStream(
 										local,
 										remotePath
 									);
@@ -404,12 +411,24 @@ class ServiceSFTP extends ServiceBase {
 			});
 	}
 
+	clientPut(local, remote) {
+		return new Promise((resolve, reject) => {
+			this.transferReject = reject;
+
+			this.connect().then((client) => {
+				client.put(local, remote)
+					.then(resolve)
+					.catch(reject);
+			});
+		});
+	}
+
 	/**
 	 * Retrieves a file from the server using its get stream method.
 	 * @param {string} local - Local pathname.
 	 * @param {string} remote - Remote pathname.
 	 */
-	getByStream(local, remote) {
+	clientGetByStream(local, remote) {
 		let client;
 
 		return this.connect()
@@ -425,6 +444,8 @@ class ServiceSFTP extends ServiceBase {
 			.then((charset) => {
 				return new Promise((resolve, reject) => {
 					// Get file with client#get and stream to local pathname
+					this.transferReject = reject;
+
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
 							console.log(`creating write stream for ${local}...`);
