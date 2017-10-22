@@ -37,7 +37,10 @@ class File extends ServiceBase {
 	}
 
 	init() {
-		return this.pathCache.clear();
+		return super.init()
+			.then(() => {
+				return this.pathCache.clear();
+			});
 	}
 
 	/**
