@@ -247,7 +247,7 @@ class Push {
 						uriContext: uri,
 						args: [uri, remoteUri],
 						id: remoteUri + this.paths.getNormalPath(uri)
-					}], false, Push.queueDefs.upload.id);
+					}], false, Push.queueDefs.upload);
 				});
 		}
 	}
