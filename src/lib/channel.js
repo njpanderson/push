@@ -1,5 +1,7 @@
 const vscode = require('vscode');
 
+const utils = require('./utils');
+
 class Channel {
 	constructor(name) {
 		this.channel = vscode.window.createOutputChannel(name);
@@ -19,6 +21,11 @@ class Channel {
 	 */
 	appendError(string) {
 		this.channel.show();
+
+		if (arguments.length > 1) {
+			string = utils.parseTemplate(string, [...arguments].slice(1));
+		}
+
 		return this.channel.appendLine(`⚠️ ${string}`);
 	}
 
@@ -27,6 +34,10 @@ class Channel {
 	 * @param {string} string - Information string to show.
 	 */
 	appendInfo(string) {
+		if (arguments.length > 1) {
+			string = utils.parseTemplate(string, [...arguments].slice(1));
+		}
+
 		return this.channel.appendLine(`ℹ️ ${string}`);
 	}
 

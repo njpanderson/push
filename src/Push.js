@@ -152,6 +152,12 @@ class Push {
 
 		if (settings) {
 			// Settings retrieved from JSON file within context
+			if (!settings.data.service) {
+				// Show a service error
+				channel.appendError(utils.strings.SERVICE_NOT_DEFINED, this.config.settingsFilename);
+				return false;
+			}
+
 			newConfig.serviceName = settings.data.service;
 			newConfig.serviceFilename = settings.file,
 			newConfig.service = settings.data[newConfig.serviceName];
@@ -160,8 +166,7 @@ class Push {
 			return newConfig;
 		} else {
 			// No settings for this context - show an error
-			utils.showError(utils.strings.NO_SERVICE_FILE, this.config.settingsFilename);
-
+			channel.appendError(utils.strings.NO_SERVICE_FILE, this.config.settingsFilename);
 			return false;
 		}
 	}
@@ -348,6 +353,8 @@ class Push {
 			throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
 		}
 
+		this.settings.clear();
+
 		if (method === 'put') {
 			action = 'upload';
 			actionTaken = 'uploaded';
@@ -363,26 +370,33 @@ class Push {
 
 		return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 			.then((filteredUri) => {
+				let config;
+
 				if (filteredUri !== false) {
-					// Add to queue and return
-					return this.queue([{
-						method,
-						actionTaken,
-						uriContext: filteredUri,
-						args: [
-							filteredUri,
-							this.service.exec(
-								'convertUriToRemote',
-								this.configWithServiceSettings(filteredUri),
-								[filteredUri]
-							)
-						]
-					}], true);
+					config = this.configWithServiceSettings(filteredUri);
+
+					if (config) {
+						// Add to queue and return
+						return this.queue([{
+							method,
+							actionTaken,
+							uriContext: filteredUri,
+							args: [
+								filteredUri,
+								this.service.exec(
+									'convertUriToRemote',
+									config,
+									[filteredUri]
+								)
+							]
+						}], true);
+					}
 				} else {
 					// Only one file is being transfered so warn the user it ain't happening
-					utils.showWarning(
-						`Cannot ${action} file "${this.paths.getBaseName(uri)}" -` +
-						` It matches one of the defined ignoreGlobs filters.`
+					channel.appendError(
+						utils.strings.CANNOT_ACTION_IGNORED_FILE,
+						action,
+						this.paths.getBaseName(uri)
 					);
 				}
 			});
@@ -476,15 +490,22 @@ class Push {
 				.then((files) => {
 					if (files.length > 1) {
 
-						utils.showError(
+						channel.showError(
 							utils.strings.MULTIPLE_SERVICE_FILES + ' ' +
 							utils.strings.TRANSFER_NOT_POSSIBLE
 						);
 
 						reject();
-					}
+					} else if (files.length === 0) {
+						channel.showError(
+							utils.strings.NO_SERVICE_FILE,
+							this.config.settingsFilename
+						);
 
-					resolve();
+						reject();
+					} else {
+						resolve();
+					}
 				});
 		});
 	}

@@ -119,8 +119,8 @@ class ServiceSFTP extends ServiceBase {
 									return client.sftp;
 								})
 								.catch(() => {
-									utils.showError(
-										`SFTP could not find or access the root path. Please check` +
+									throw new Error(
+										'SFTP could not find or access the root path. Please check' +
 										` the "${this.config.settingsFilename}" settings file.`
 									);
 								});
@@ -218,7 +218,7 @@ class ServiceSFTP extends ServiceBase {
 
 						this.clients[hash].sftp.client
 							.on('close', (hadError) => {
-								this.onDisconnect((hadError || this.sftpError));
+								this.onDisconnect((hadError || this.sftpError), hash);
 							})
 							.on('error', (error) => (this.sftpError = error));
 
@@ -245,7 +245,7 @@ class ServiceSFTP extends ServiceBase {
 		}
 	}
 
-	onDisconnect(hadError) {
+	onDisconnect(hadError, hash) {
 		super.onDisconnect(hadError);
 
 		if (typeof this.transferReject === 'function') {

@@ -74,10 +74,12 @@ class ServiceBase {
 		for (key in spec) {
 			if (spec.hasOwnProperty(key)) {
 				if (!settings[key]) {
-					utils.showError(
-						`Service setting file for type ${this.type} missing required setting: "${key}".` +
-						` Please resolve before continuing.`
+					channel.appendError(
+						utils.strings.SERVICE_SETTING_MISSING,
+						this.type,
+						key
 					);
+
 					return false;
 				}
 			}

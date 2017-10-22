@@ -49,14 +49,6 @@ class Service {
 		// Set the current service configuration
 		this.setConfig(config);
 
-		if (!this.activeService) {
-			// Show a service error
-			throw new Error(
-				`A transfer service was not defined within the settings file` +
-				` at ${this.config.settingsFilename}`
-			);
-		}
-
 		if (this.activeService) {
 			// Set the active service's config
 			this.activeService.setConfig(this.config);

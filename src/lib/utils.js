@@ -125,10 +125,14 @@ utils.errors = {
 
 utils.strings = {
 	NO_SERVICE_FILE: 'A settings file could not be found within your project. Have you ' +
-		'created a file with the name $1 yet?',
+		'created a file with the name "$1" yet?',
+	SERVICE_NOT_DEFINED: 'A transfer service was not defined within the settings file at "$1".',
 	MULTIPLE_SERVICE_FILES: 'More than one service settings file was found within the selected ' +
 		'directory.',
-	TRANSFER_NOT_POSSIBLE: 'The transfer could not be completed.'
+	TRANSFER_NOT_POSSIBLE: 'The transfer could not be completed.',
+	SERVICE_SETTING_MISSING: 'Service setting file for type $1 missing required setting: "$2".',
+	CANNOT_ACTION_IGNORED_FILE: 'Cannot $1 file "$2" - It matches one of the defined' +
+		' ignoreGlobs filters.'
 }
 
 module.exports = utils;
