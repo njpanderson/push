@@ -99,7 +99,7 @@ class ServiceBase {
 		file = this.paths.stripTrailingSlash(this.config.service.root) +
 			file.replace(path.dirname(this.config.serviceFilename), '');
 	
-		file = file.replace(path.sep, '\/');
+		file = (path.join(file).split(path.sep)).join('/');
 
 		return file;
 	}
