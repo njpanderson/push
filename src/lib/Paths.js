@@ -176,7 +176,7 @@ class Paths {
 			loop += 1;
 		}
 
-		return startDir + '/' + file;
+		return startDir + path.sep + file;
 	}
 
 	/**
