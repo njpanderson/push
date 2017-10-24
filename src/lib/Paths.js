@@ -170,13 +170,13 @@ class Paths {
 		let loop = 0,
 			rootPath = this.getCurrentWorkspaceRootPath();
 
-		while (!fs.existsSync(startDir + '/' + file)) {
+		while (!fs.existsSync(startDir + path.sep + file)) {
 			if (startDir === rootPath || loop === 50) {
 				// dir matches root path or hard loop limit reached
 				return null;
 			}
 
-			startDir = startDir.substring(0, startDir.lastIndexOf('/'));
+			startDir = startDir.substring(0, startDir.lastIndexOf(path.sep));
 			loop += 1;
 		}
 
