@@ -73,10 +73,6 @@ class Paths {
 		return false;
 	}
 
-	// getClosestDirectory(dir) {
-
-	// }
-
 	getGlobOptions(extend = {}) {
 		return Object.assign({
 			dot: true,
