@@ -96,8 +96,12 @@ class ServiceBase {
 	convertUriToRemote(uri) {
 		let file = this.paths.getNormalPath(uri);
 
-		return this.paths.stripTrailingSlash(this.config.service.root) +
+		file = this.paths.stripTrailingSlash(this.config.service.root) +
 			file.replace(path.dirname(this.config.serviceFilename), '');
+	
+		file = file.replace(path.sep, '\/');
+
+		return file;
 	}
 
 	/**
