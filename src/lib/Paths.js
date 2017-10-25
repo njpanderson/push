@@ -86,9 +86,22 @@ class Paths {
 	 * @param {array} [ignoreGlobs] - List of globs to ignore.
 	 */
 	getDirectoryContentsAsFiles(include, ignoreGlobs = []) {
+		let parsed;
+
 		if (include instanceof vscode.Uri) {
-			include = `${this.getNormalPath(include)}/**/*`;
+			// Create path out of Uri
+			include = `${this.getNormalPath(include)}${path.sep}**${path.sep}*`;
 		}
+
+		if (Array.isArray(include)) {
+			// Create path out of array elements
+			include = path.join.apply(path, include);
+		}
+
+		include = (include.split(path.sep)).join('/');
+		parsed = path.parse(include);
+
+		include = include.replace(parsed.root, '/');
 
 		return new Promise((resolve, reject) => {
 			new Glob(
@@ -105,10 +118,6 @@ class Paths {
 				}
 			);
 		});
-
-		// dir = this.getNormalPath(dir);
-		// dir = dir.replace(this.getCurrentWorkspaceRootPath() + '/', '');
-		// return vscode.workspace.findFiles(`${dir}/*/**/*`);
 	}
 
 	filterUriByGlobs(uri, ignoreGlobs = []) {
@@ -176,7 +185,7 @@ class Paths {
 			loop += 1;
 		}
 
-		return startDir + path.sep + file;
+		return path.join(startDir + path.sep + file);
 	}
 
 	/**

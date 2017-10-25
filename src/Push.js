@@ -439,7 +439,7 @@ class Push {
 			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
-						uri = vscode.Uri.parse(uri);
+						uri = vscode.Uri.file(uri);
 
 						return {
 							method,
@@ -493,21 +493,15 @@ class Push {
 			)
 				.then((files) => {
 					if (files.length > 1) {
-
-						channel.showError(
+						// More than one settings file found within the current directory
+						channel.appendError(
 							utils.strings.MULTIPLE_SERVICE_FILES + ' ' +
 							utils.strings.TRANSFER_NOT_POSSIBLE
 						);
 
 						reject();
-					} else if (files.length === 0) {
-						channel.showError(
-							utils.strings.NO_SERVICE_FILE,
-							this.config.settingsFilename
-						);
-
-						reject();
 					} else {
+						// 1 or less file found
 						resolve();
 					}
 				});
