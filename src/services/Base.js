@@ -110,7 +110,7 @@ class ServiceBase {
 	 * @returns {uri} A qualified Uri object.
 	 */
 	convertRemoteToUri(file) {
-		return vscode.Uri.parse(
+		return vscode.Uri.file(
 			path.dirname(this.config.serviceFilename) + '/' +
 			file.replace(this.paths.stripTrailingSlash(this.config.service.root) + '/', '')
 		);

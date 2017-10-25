@@ -52,7 +52,7 @@ class File extends ServiceBase {
 		// Perform transfer from local to remote, setting root as defined by service
 		return this.transfer(
 			local,
-			vscode.Uri.parse(remote),
+			vscode.Uri.file(remote),
 			this.config.service.root,
 			'>> ',
 			this.config.service.collisionUploadAction
@@ -67,7 +67,7 @@ class File extends ServiceBase {
 	get(local, remote) {
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
-			vscode.Uri.parse(remote),
+			vscode.Uri.file(remote),
 			local,
 			path.dirname(this.config.serviceFilename),
 			'<< ',

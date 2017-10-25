@@ -137,7 +137,7 @@ class Paths {
 					}
 
 					if (matches.length) {
-						resolve(vscode.Uri.parse(matches[0]));
+						resolve(vscode.Uri.file(matches[0]));
 					} else {
 						resolve(false);
 					}
