@@ -150,7 +150,7 @@ class Queue {
 					// Function/Promise was rejected
 					if (error instanceof Error) {
 						// Thrown Errors will stop the queue as well as alerting the user
-						channel.appendError(error.message);
+						channel.appendError(error);
 						channel.show();
 
 						// Empty tasks array

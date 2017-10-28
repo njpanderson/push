@@ -2,13 +2,15 @@ const SFTPClient = require('ssh2-sftp-client');
 const fs = require('fs');
 const path = require('path');
 const homedir = require('os').homedir;
-var micromatch = require("micromatch");
+const micromatch = require("micromatch");
+const vscode = require("vscode");
 
 const ServiceBase = require('./Base');
 const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
+const SRC_LOCAL = PathCache.sources.LOCAL;
 
 class ServiceSFTP extends ServiceBase {
 	constructor(options) {
@@ -365,9 +367,11 @@ class ServiceSFTP extends ServiceBase {
 			})
 			.then((result) => {
 				// Figure out what to do based on the collision (if any)
+				let localDir, localFilename;
+
 				if (result === false) {
 					// No collision, just keep going
-					this.channel.appendLine(`<< ${remote}`);
+					this.channel.appendLine(`<< ${localPath}`);
 					return this.clientGetByStream(localPath, remote);
 				} else {
 					this.setCollisionOption(result);
@@ -381,21 +385,24 @@ class ServiceSFTP extends ServiceBase {
 							return false;
 
 						case utils.collisionOpts.overwrite:
-							this.channel.appendLine(`<< ${remote}`);
+							this.channel.appendLine(`<< ${localPath}`);
 							return this.clientGetByStream(localPath, remote);
 
 						case utils.collisionOpts.rename:
-							return this.list(remoteDir)
+							localDir = path.dirname(localPath);
+							localFilename = path.basename(localPath);
+
+							return this.paths.listDirectory(localDir)
 								.then((dirContents) => {
-									let remotePath = remoteDir + '/' + this.getNonCollidingName(
-											remoteFilename,
+									let localPath = localDir + '/' + this.getNonCollidingName(
+											localFilename,
 											dirContents
 										);
-									this.channel.appendLine(`<< ${remotePath}`);
+									this.channel.appendLine(`<< ${localPath}`);
 
 									return this.clientGetByStream(
-										local,
-										remotePath
+										localPath,
+										remote
 									);
 								});
 

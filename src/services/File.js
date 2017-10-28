@@ -208,32 +208,8 @@ class File extends ServiceBase {
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
 	 */
-	list(dir) {
-		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
-			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
-		} else {
-			return new Promise((resolve, reject) => {
-				fs.readdir(dir, (error, list) => {
-					if (error) {
-						return reject(error);
-					}
-
-					list.forEach((filename) => {
-						let pathname = dir + '/' + filename,
-							stats = fs.statSync(pathname);
-
-						this.pathCache.addCachedFile(
-							SRC_REMOTE,
-							pathname,
-							(stats.mtime.getTime() / 1000),
-							(stats.isDirectory() ? 'd' : 'f')
-						);
-					});
-
-					resolve(this.pathCache.getDir(SRC_REMOTE, dir));
-				});
-			});
-		}
+	list(dir, src = SRC_REMOTE) {
+		return this.paths.listDirectory(dir, src,  this.pathCache);
 	}
 
 	listRecursiveFiles(uri, ignoreGlobs) {

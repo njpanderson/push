@@ -97,22 +97,7 @@ class Push {
 	 * Sets the current configuration for the active workspace.
 	 */
 	setConfig() {
-		let settingsGlob;
-
-		this.config = Object.assign({}, vscode.workspace.getConfiguration(
-			'njpPush',
-			vscode.window.activeTextEditor &&
-				vscode.window.activeTextEditor.document.uri
-			));
-
-		// Augment configuration with computed settings
-		if (Array.isArray(this.config.ignoreGlobs)) {
-			settingsGlob = `**/${this.config.settingsFilename}`;
-			this.config.ignoreGlobs.push(settingsGlob);
-
-			// Ensure glob list only contains unique values
-			this.config.ignoreGlobs = utils.uniqArray(this.config.ignoreGlobs);
-		}
+		this.config = utils.getConfig();
 	}
 
 	/**

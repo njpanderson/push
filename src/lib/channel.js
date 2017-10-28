@@ -17,16 +17,29 @@ class Channel {
 
 	/**
 	 * Produces a line formatted as an error (and also shows the output window).
-	 * @param {string} string - Error string to show.
+	 * @param {string} error - Error or string to show.
 	 */
-	appendError(string) {
+	appendError(error) {
+		let message, config;
+
+		if (error instanceof Error) {
+			config = utils.getConfig();
+			message = error.message;
+
+			if (config.debugMode && error.fileName && error.lineNumber) {
+				message += ` (${error.fileName}:${error.lineNumber})`;
+			}
+		} else {
+			message = error;
+		}
+
 		this.channel.show();
 
 		if (arguments.length > 1) {
-			string = utils.parseTemplate(string, [...arguments].slice(1));
+			message = utils.parseTemplate(message, [...arguments].slice(1));
 		}
 
-		return this.channel.appendLine(`⚠️ ${string}`);
+		return this.channel.appendLine(`⚠️ ${message}`);
 	}
 
 	/**

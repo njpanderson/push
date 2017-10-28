@@ -5,8 +5,17 @@ const mkdirp = require('mkdirp');
 const Glob = require('glob').Glob;
 
 const ExtendedStream = require('./ExtendedStream');
+const PathCache = require('../lib/PathCache');
 
 class Paths {
+	getPathCache() {
+		if (!this.pathCache) {
+			this.pathCache = new PathCache();
+		}
+
+		return this.pathCache;
+	}
+
 	/**
 	 * Retrieves the current workspace root path from the active workspace.
 	 */
@@ -78,6 +87,37 @@ class Paths {
 			dot: true,
 			nodir: true
 		}, extend);
+	}
+
+	listDirectory(dir, src = PathCache.sources.LOCAL, cache) {
+		// Use supplied cache or fall back to class instance
+		cache = cache || this.getPathCache();
+
+		if (cache.dirIsCached(src, dir)) {
+			return Promise.resolve(cache.getDir(src, dir));
+		} else {
+			return new Promise((resolve, reject) => {
+				fs.readdir(dir, (error, list) => {
+					if (error) {
+						return reject(error);
+					}
+
+					list.forEach((filename) => {
+						let pathname = dir + '/' + filename,
+							stats = fs.statSync(pathname);
+
+						cache.addCachedFile(
+							src,
+							pathname,
+							(stats.mtime.getTime() / 1000),
+							(stats.isDirectory() ? 'd' : 'f')
+						);
+					});
+
+					resolve(cache.getDir(src, dir));
+				});
+			});
+		}
 	}
 
 	/**
