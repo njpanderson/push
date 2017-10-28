@@ -125,8 +125,15 @@ class ServiceBase {
 	 */
 	getNonCollidingName(file, dirContents) {
 		let indexOfDot = file.indexOf('.'),
-			re = new RegExp('^' + file.substring(0, ) + '.*'),
-			matches = this.matchFilesInDir(dirContents, re);
+			re, matches;
+
+		if (indexOfDot > 0 || indexOfDot === -1) {
+			re = new RegExp('^' + file.substring(0, indexOfDot) + '(-\d+)?\..*');
+		} else {
+			re = new RegExp('^' + file + '(-\d+)?');
+		}
+
+		matches = this.matchFilesInDir(dirContents, re);
 
 		if (matches.length > 0) {
 			if (indexOfDot > 0) {
