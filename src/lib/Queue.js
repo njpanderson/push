@@ -58,6 +58,7 @@ class Queue {
 		if (this.tasks && this.tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(`Running ${this.tasks.length - 1} task(s) in queue...`);
+			console.log(`Starting ${this.tasks.length} item(s) in queue...`);
 
 			// Start progress interface
 			return vscode.window.withProgress({
@@ -122,7 +123,7 @@ class Queue {
 			// Further tasks to process
 			this.running = true;
 
-			console.log(`Invoking queue item 1 of ${this.tasks.length}...`);
+			console.log(`Invoking queue item ${this.tasks.length}...`);
 
 			// Shift a task off the tasks array
 			task = this.tasks.shift();
