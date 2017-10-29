@@ -9,6 +9,7 @@ const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
+const SRC_LOCAL = PathCache.sources.LOCAL;
 
 class File extends ServiceBase {
 	constructor(options) {
@@ -51,6 +52,7 @@ class File extends ServiceBase {
 	put(local, remote) {
 		// Perform transfer from local to remote, setting root as defined by service
 		return this.transfer(
+			File.transferTypes.PUT,
 			local,
 			vscode.Uri.file(remote),
 			this.config.service.root,
@@ -67,6 +69,7 @@ class File extends ServiceBase {
 	get(local, remote) {
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
+			File.transferTypes.GET,
 			vscode.Uri.file(remote),
 			local,
 			path.dirname(this.config.serviceFilename),
@@ -77,19 +80,22 @@ class File extends ServiceBase {
 
 	/**
 	 * Transfers a single file from location to another.
+	 * @param {number} transferType - One of the {@link File.transferTypes} types.
 	 * @param {uri} src - Source Uri.
 	 * @param {uri} dest - Destination Uri.
 	 * @param {string} rootDir - Root directory. Used for validation.
 	 */
-	transfer(src, dest, rootDir, logPrefix = '', collisionAction) {
+	transfer(transferType, src, dest, rootDir, collisionAction) {
 		let destPath = this.paths.getNormalPath(dest),
 			destDir = path.dirname(destPath),
-			destFilename = path.basename(destPath);
+			destFilename = path.basename(destPath),
+			logPrefix = (transferType === File.transferTypes.PUT ? '>> ' : '<< '),
+			srcType = (transferType === File.transferTypes.PUT ? SRC_REMOTE : SRC_LOCAL);
 
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir)
-			.then(() => this.getFileStats(dest, src))
+			.then(() => this.getFileStats(dest, src, srcType))
 			.then((stats) => super.checkCollision(
 				stats.local,
 				stats.remote,
@@ -116,7 +122,7 @@ class File extends ServiceBase {
 							return this.copy(src, destPath);
 
 						case utils.collisionOpts.rename:
-							return this.list(destDir)
+							return this.list(destDir, srcType)
 								.then((dirContents) => {
 									// Re-invoke transfer with new filename
 									destPath = destDir + '/' + this.getNonCollidingName(
@@ -207,9 +213,10 @@ class File extends ServiceBase {
 	/**
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
+	 * @param {string} srcType - One of the {@link PathCache.sources} types.
 	 */
-	list(dir, src = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, src,  this.pathCache);
+	list(dir, srcType = SRC_REMOTE) {
+		return this.paths.listDirectory(dir, srcType,  this.pathCache);
 	}
 
 	listRecursiveFiles(uri, ignoreGlobs) {
@@ -220,12 +227,13 @@ class File extends ServiceBase {
 	 * Obtains local/remote stats for a file.
 	 * @param {uri} remote - Remote Uri.
 	 * @param {uri} local - Local Uri.
+	 * @param {uri} srcType - One of the {@link PathCache.sources} types.
 	 */
-	getFileStats(remote, local) {
+	getFileStats(remote, local, srcType = SRC_REMOTE) {
 		const remotePath = this.paths.getNormalPath(remote),
 			remoteDir = path.dirname(remotePath);
 
-		return this.list(remoteDir)
+		return this.list(remoteDir, srcType)
 			.then(() => {
 				const remoteStat = this.pathCache.getFileByPath(
 					SRC_REMOTE,
@@ -279,6 +287,11 @@ class File extends ServiceBase {
 			}
 		});
 	}
+};
+
+File.transferTypes = {
+	PUT: 0,
+	GET: 1
 };
 
 module.exports = File;
