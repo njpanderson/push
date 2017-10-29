@@ -309,7 +309,6 @@ class ServiceSFTP extends ServiceBase {
 										remoteFilename,
 										dirContents
 									);
-								this.channel.appendLine(`>> ${remotePath}`);
 
 								return this.put(
 									local,
