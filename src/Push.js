@@ -15,11 +15,11 @@ class Push {
 	constructor() {
 		// this.upload = this.upload.bind(this);
 		// this.download = this.download.bind(this);
-		// this.setConfig = this.setConfig.bind(this);
 		// this.execUploadQueue = this.execUploadQueue.bind(this);
-		// this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		// this.cancelQueues = this.cancelQueues.bind(this);
 		// this.stopQueues = this.stopQueues.bind(this);
+		this.setConfig = this.setConfig.bind(this);
+		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 
 		this.settings = new ServiceSettings();
 		this.service = new Service({
