@@ -6,19 +6,20 @@ const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
 const utils = require('./lib/utils');
 const channel = require('./lib/channel');
+const constants = require('./lib/constants');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
  */
 class Push {
 	constructor() {
-		this.upload = this.upload.bind(this);
-		this.download = this.download.bind(this);
-		this.setConfig = this.setConfig.bind(this);
-		this.execUploadQueue = this.execUploadQueue.bind(this);
-		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
-		this.cancelQueues = this.cancelQueues.bind(this);
-		this.stopQueues = this.stopQueues.bind(this);
+		// this.upload = this.upload.bind(this);
+		// this.download = this.download.bind(this);
+		// this.setConfig = this.setConfig.bind(this);
+		// this.execUploadQueue = this.execUploadQueue.bind(this);
+		// this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
+		// this.cancelQueues = this.cancelQueues.bind(this);
+		// this.stopQueues = this.stopQueues.bind(this);
 
 		this.settings = new ServiceSettings();
 		this.service = new Service({
@@ -83,6 +84,102 @@ class Push {
 		}
 
 		return this.transfer(uri, 'get');
+	}
+
+	/**
+	 * Edits (or creates) a server configuration file
+	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 */
+	editServiceConfig(uri) {
+		let rootPaths = this.paths.getWorkspaceRootPaths(),
+			dirName, settingsFile;
+
+		uri = this.paths.getFileSrc(uri);
+		dirName = this.paths.getDirName(uri, true);
+
+		settingsFile = this.paths.findFileInAncestors(
+			this.config.settingsFilename,
+			dirName
+		);
+
+		if (settingsFile) {
+			// Edit the settings file found
+			this.openDoc(settingsFile);
+		} else {
+			// Produce a prompt to create a new settings file
+			this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
+				.then((file) => {
+					if (file.exists) {
+						this.openDoc(file.fileName);
+					} else {
+						// Write a file then open it
+						this.paths.writeFile(
+							constants.DEFAULT_SERVICE_CONFIG,
+							file.fileName
+						)
+							.then((fileName) => {
+								 this.openDoc(fileName);
+							})
+							.catch((error) => {
+								channel.appendError(error);
+							});
+					}
+				});
+		}
+	}
+
+	getFileNamePrompt(exampleFileName, rootPaths) {
+		return new Promise((resolve, reject) => {
+			this.getRootPathPrompt(rootPaths)
+				.then((rootPath) => {
+					let settingsFile = rootPath + Paths.sep + exampleFileName;
+
+					if (rootPath) {
+						if (this.paths.fileExists(settingsFile)) {
+							resolve({ fileName: settingsFile, exists: true });
+						} else {
+							vscode.window.showInputBox({
+								prompt: 'Enter a filename for the service settings file:',
+								value: settingsFile
+							}).then((value) => {
+								if (value) {
+									resolve({ fileName: value, exists: false });
+								} else {
+									reject();
+								}
+							});
+						}
+					} else {
+						reject();
+					}
+				});
+		});
+	}
+
+	getRootPathPrompt(rootPaths) {
+		return new Promise((resolve) => {
+			if (rootPaths.length > 1) {
+				// First, select a root path
+				vscode.window.showQuickPick(
+					rootPaths.map((item) => this.paths.getNormalPath(item.uri)),
+					{
+						placeHolder: 'Select a workspace root path:'
+					}
+				).then(resolve);
+			} else {
+				resolve(this.paths.getNormalPath(rootPaths[0].uri));
+			}
+		});
+	}
+
+	/**
+	 * Imports a configuration file from Sublime SFTP
+	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 * @param {string} type - Type of config to import. Currently only 'SSFTP'
+	 * is supported.
+	 */
+	importConfig(uri, type) {
+		uri = this.paths.getFileSrc(uri);
 	}
 
 	cancelQueues() {
@@ -153,6 +250,45 @@ class Push {
 			// No settings for this context - show an error
 			channel.appendError(utils.strings.NO_SERVICE_FILE, this.config.settingsFilename);
 			return false;
+		}
+	}
+
+	/**
+	 * Opens a text document and displays it within the editor window.
+	 * @param {string|Uri} file - File to open. Must be local.
+	 */
+	openDoc(file) {
+		let document;
+
+		// Shows the document as an editor tab
+		function show(document) {
+			vscode.window.showTextDocument(
+				document,
+				{
+					preview: true,
+					preserveFocus: false
+				}
+			);
+		}
+
+		// Convert string (or invalid scheme) into a Uri with a scheme of "file"
+		if (!(file instanceof vscode.Uri) || file.scheme !== 'file') {
+			file = vscode.Uri.file(this.paths.getNormalPath(file));
+		}
+
+		// Find and open document
+		document = vscode.workspace.openTextDocument(file);
+
+		if (document instanceof Promise) {
+			// Document is opening, wait and display
+			document.then(show)
+			.catch((error) => {
+				channel.appendError(error);
+				throw error;
+			});
+		} else {
+			// Display immediately
+			show(document);
 		}
 	}
 
@@ -316,7 +452,7 @@ class Push {
 				this.getQueue(queueDef)
 					.stop()
 					.then((result) => {
-						resolve();
+						resolve(result);
 					})
 					.catch((error) => {
 						reject(error);

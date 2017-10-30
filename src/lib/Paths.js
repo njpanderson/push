@@ -8,6 +8,11 @@ const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
 
 class Paths {
+	fileExists(file) {
+		file = this.getNormalPath(file);
+		return fs.existsSync(file);
+	}
+
 	getPathCache() {
 		if (!this.pathCache) {
 			this.pathCache = new PathCache();
@@ -19,16 +24,12 @@ class Paths {
 	/**
 	 * Retrieves the current workspace root path from the active workspace.
 	 */
-	getCurrentWorkspaceRootPath() {
+	getWorkspaceRootPaths() {
 		if (vscode.workspace.workspaceFolders.length) {
-			return vscode.workspace.workspaceFolders[0].uri.path;
+			return vscode.workspace.workspaceFolders;
 		}
 
-		if (vscode.window.activeTextEditor) {
-			return path.dirname(vscode.window.activeTextEditor.document.uri);
-		}
-
-		return '';
+		return [];
 	}
 
 	getNormalPath(uri, requiredScheme) {
@@ -65,7 +66,8 @@ class Paths {
 
 	/**
 	 * Returns whether the supplied path is a directory. A shortcut for the fs.statSync method.
-	 * @param {string} dir
+	 * @param {string|Uri} dir - Directory to validate
+	 * @returns {boolean} `true` if the path is a directory, `false` otherwise.
 	 */
 	isDirectory(dir) {
 		dir = this.getNormalPath(dir, 'file');
@@ -208,16 +210,16 @@ class Paths {
 	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
 	 * the root of the active workspace is reached.
-	 * @param {string} file
-	 * @param {string} startDir
+	 * @param {string} file - The filename to look for.
+	 * @param {string} startDir - The directory to start looking in.
 	 */
 	findFileInAncestors(file, startDir) {
 		let loop = 0,
-			rootPath = this.getCurrentWorkspaceRootPath();
+			rootPaths = this.getWorkspaceRootPaths();
 
 		while (!fs.existsSync(startDir + path.sep + file)) {
-			if (startDir === rootPath || loop === 50) {
-				// dir matches root path or hard loop limit reached
+			if (rootPaths.indexOf(startDir) !== -1 || loop === 50) {
+				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
@@ -230,7 +232,7 @@ class Paths {
 
 	/**
 	 * Retrieves a source file based on the workspace of the command.
-	 * @param {object} uri - Source file URI
+	 * @param {object} [uri] - Source file Uri.
 	 */
 	getFileSrc(uri) {
 		if (uri && uri instanceof vscode.Uri) {
@@ -250,7 +252,17 @@ class Paths {
 		return path.basename(this.getNormalPath(uri));
 	}
 
-	getDirName(uri) {
+	/**
+	 *
+	 * @param {string|Uri} uri - Uri or pathname.
+	 * @param {boolean} [returnIfDirectory=false] - If the path supplied is already a
+	 * directory, just return it.
+	 */
+	getDirName(uri, returnIfDirectory = false) {
+		if (returnIfDirectory && this.isDirectory(uri)) {
+			return this.getNormalPath(uri);
+		}
+
 		return path.dirname(this.getNormalPath(uri));
 	}
 
@@ -271,6 +283,27 @@ class Paths {
 			})
 		});
 	}
+
+	writeFile(contents, fileName) {
+		return new Promise((resolve, reject) => {
+			fs.writeFile(
+				fileName,
+				contents,
+				{
+					encoding: 'utf8'
+				},
+				(error) => {
+					if (error) {
+						reject(error);
+					} else {
+						resolve(fileName);
+					}
+				}
+			);
+		});
+	}
 }
+
+Paths.sep = path.sep;
 
 module.exports = Paths;

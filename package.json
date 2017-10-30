@@ -54,6 +54,16 @@
     },
     "commands": [
       {
+        "command": "push.editServiceConfig",
+        "title": "Create/edit Push configuration",
+        "category": "Push"
+      },
+      {
+        "command": "push.importConfigSSFTP",
+        "title": "Import Sublime SFTP configuration",
+        "category": "Push"
+      },
+      {
         "command": "push.upload",
         "title": "Upload File",
         "category": "Push"
@@ -92,24 +102,28 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "!explorerResourceIsFolder",
-          "command": "push.upload",
+          "command": "push.editServiceConfig",
           "group": "njp-push@1"
         },
         {
           "when": "!explorerResourceIsFolder",
-          "command": "push.download",
+          "command": "push.upload",
           "group": "njp-push@2"
         },
         {
-          "when": "explorerResourceIsFolder",
-          "command": "push.uploadFolder",
+          "when": "!explorerResourceIsFolder",
+          "command": "push.download",
           "group": "njp-push@3"
         },
         {
           "when": "explorerResourceIsFolder",
-          "command": "push.downloadFolder",
+          "command": "push.uploadFolder",
           "group": "njp-push@4"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "push.downloadFolder",
+          "group": "njp-push@5"
         }
       ],
       "editor/title/context": [
@@ -170,7 +184,7 @@
   "devDependencies": {
     "@types/mocha": "^2.2.32",
     "@types/node": "^6.0.40",
-    "eslint": "^3.6.0",
+    "eslint": "^3.19.0",
     "mocha": "^2.3.3",
     "typescript": "^2.0.3",
     "vscode": "^1.0.0"
