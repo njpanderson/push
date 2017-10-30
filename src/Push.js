@@ -91,16 +91,25 @@ class Push {
 	 * @param {Uri} uri - Uri to start looking for a configuration file
 	 */
 	editServiceConfig(uri) {
-		let rootPaths = this.paths.getWorkspaceRootPaths(),
-			dirName, settingsFile;
+		let rootPaths, dirName, settingsFile;
 
 		uri = this.paths.getFileSrc(uri);
 		dirName = this.paths.getDirName(uri, true);
 
+		// Find the nearest settings file
 		settingsFile = this.paths.findFileInAncestors(
 			this.config.settingsFilename,
 			dirName
 		);
+
+		if (dirName !== ".") {
+			// If a directory is defined, use it as the root path
+			rootPaths = [{
+				uri: vscode.Uri.file(dirName)
+			}]
+		} else {
+			rootPaths = this.paths.getWorkspaceRootPaths();
+		}
 
 		if (settingsFile) {
 			// Edit the settings file found
@@ -156,6 +165,12 @@ class Push {
 		});
 	}
 
+	/**
+	 * Will either prompt the user to select a root path, or in the case that
+	 * only one `rootPaths` element exists, will resolve to that path.
+	 * @param {vscode.WorkspaceFolder[]} rootPaths
+	 * @returns {promise} A promise eventually resolving to a single Uri.
+	 */
 	getRootPathPrompt(rootPaths) {
 		return new Promise((resolve) => {
 			if (rootPaths.length > 1) {
