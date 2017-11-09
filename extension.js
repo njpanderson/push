@@ -17,9 +17,7 @@ exports.activate = (context) => {
 		vscode.commands.registerCommand('push.clearUploadQueue', push.clearUploadQueue, push),
 		vscode.commands.registerCommand('push.cancelQueues', push.cancelQueues, push),
 		vscode.commands.registerCommand('push.editServiceConfig', push.editServiceConfig, push),
-		vscode.commands.registerCommand('push.importConfigSSFTP', (uri) => {
-			return this.importConfig(uri, 'SSFTP');
-		}, push)
+		vscode.commands.registerCommand('push.importConfig', push.importConfig, push)
 	]);
 };
 

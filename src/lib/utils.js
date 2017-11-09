@@ -164,7 +164,13 @@ utils.strings = {
 	TRANSFER_NOT_POSSIBLE: 'The transfer could not be completed.',
 	SERVICE_SETTING_MISSING: 'Service setting file for type $1 missing required setting: "$2".',
 	CANNOT_ACTION_IGNORED_FILE: 'Cannot $1 file "$2" - It matches one of the defined' +
-		' ignoreGlobs filters.'
+		' ignoreGlobs filters.',
+	NO_IMPORT_FILE: 'Config file not specified. Please either run this command from within a' +
+		' configuration file or from the explorer context menu.',
+	IMPORT_FILE_NOT_SUPPORTED: 'Configuration file format is not supported. Currently, only the ' +
+		'Sublime SFTP format is supported.',
+	SETTINGS_FILE_EXISTS: 'A settings file already exists in this location. Do you want to ' +
+		'overwrite it?'
 }
 
 module.exports = utils;

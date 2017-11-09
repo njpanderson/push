@@ -121,38 +121,48 @@ class Push {
 					if (file.exists) {
 						this.openDoc(file.fileName);
 					} else {
-						// Write a file then open it
-						this.paths.writeFile(
+						this.writeAndOpen(
 							constants.DEFAULT_SERVICE_CONFIG,
 							file.fileName
-						)
-							.then((fileName) => {
-								 this.openDoc(fileName);
-							})
-							.catch((error) => {
-								channel.appendError(error);
-							});
+						);
 					}
 				});
 		}
 	}
 
-	getFileNamePrompt(exampleFileName, rootPaths) {
+	writeAndOpen(content, fileName) {
+		// Write a file then open it
+		this.paths.writeFile(
+			content,
+			fileName
+		)
+			.then((fileName) => {
+				this.openDoc(fileName);
+			})
+			.catch((error) => {
+				channel.appendError(error);
+			});
+	}
+
+	getFileNamePrompt(exampleFileName, rootPaths, forceDialog = false) {
 		return new Promise((resolve, reject) => {
 			this.getRootPathPrompt(rootPaths)
 				.then((rootPath) => {
-					let settingsFile = rootPath + Paths.sep + exampleFileName;
+					let fileName = rootPath + Paths.sep + exampleFileName;
 
 					if (rootPath) {
-						if (this.paths.fileExists(settingsFile)) {
-							resolve({ fileName: settingsFile, exists: true });
+						if (this.paths.fileExists(fileName) && !forceDialog) {
+							resolve({ fileName, exists: true });
 						} else {
 							vscode.window.showInputBox({
 								prompt: 'Enter a filename for the service settings file:',
-								value: settingsFile
-							}).then((value) => {
-								if (value) {
-									resolve({ fileName: value, exists: false });
+								value: fileName
+							}).then((fileName) => {
+								if (fileName) {
+									resolve({
+										fileName,
+										exists: this.paths.fileExists(fileName)
+									});
 								} else {
 									reject();
 								}
@@ -173,6 +183,11 @@ class Push {
 	 */
 	getRootPathPrompt(rootPaths) {
 		return new Promise((resolve) => {
+			if (typeof rootPaths === 'string') {
+				resolve(rootPaths);
+				return;
+			}
+
 			if (rootPaths.length > 1) {
 				// First, select a root path
 				vscode.window.showQuickPick(
@@ -193,8 +208,68 @@ class Push {
 	 * @param {string} type - Type of config to import. Currently only 'SSFTP'
 	 * is supported.
 	 */
-	importConfig(uri, type) {
-		uri = this.paths.getFileSrc(uri);
+	importConfig(uri) {
+		let className, pathName, basename, instance, settings;
+
+		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
+
+		if (!(basename = this.paths.getBaseName(pathName))) {
+			channel.appendError(utils.strings.NO_IMPORT_FILE);
+		}
+
+		// Figure out which config type this is and import
+		for (className in constants.CONFIG_FORMATS) {
+			if (constants.CONFIG_FORMATS[className].test(basename)) {
+				className = require(`./lib/importers/${className}`);
+				instance = new className();
+
+				return instance.import(pathName)
+					.then((result) => {
+						settings = result;
+
+						return this.getFileNamePrompt(
+							this.config.settingsFilename,
+							this.paths.getDirName(pathName),
+							true
+						);
+					})
+					.then((result) => {
+						if (result.exists) {
+							// Settings file already exists at this location!
+							return vscode.window.showInformationMessage(
+								utils.strings.SETTINGS_FILE_EXISTS,
+								{
+									title: 'Overwrite'
+								}, {
+									isCloseAffordance: true,
+									title: 'Cancel'
+								}
+							).then((collisionAnswer) => ({
+								fileName: result.fileName,
+								write: (collisionAnswer.title === 'Overwrite')
+							}));
+						} else {
+							// Just create and open
+							return({ fileName: result.fileName, write: true });
+						}
+					})
+					.then((result) => {
+						if (result.write) {
+							// Write the file
+							this.writeAndOpen(
+								`\/\/ Settings imported from ${pathName}\n` +
+								JSON.stringify(settings, null, '\t'),
+								result.fileName
+							);
+						}
+					})
+					.catch((error) => {
+						channel.appendError(error);
+					});
+			}
+		}
+
+		channel.appendError(utils.strings.IMPORT_FILE_NOT_SUPPORTED);
 	}
 
 	cancelQueues() {

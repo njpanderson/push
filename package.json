@@ -59,8 +59,8 @@
         "category": "Push"
       },
       {
-        "command": "push.importConfigSSFTP",
-        "title": "Import Sublime SFTP configuration",
+        "command": "push.importConfig",
+        "title": "Import Push configuration",
         "category": "Push"
       },
       {
@@ -103,6 +103,10 @@
       "explorer/context": [
         {
           "command": "push.editServiceConfig",
+          "group": "njp-push@1"
+        },
+        {
+          "command": "push.importConfig",
           "group": "njp-push@1"
         },
         {

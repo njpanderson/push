@@ -302,6 +302,18 @@ class Paths {
 			);
 		});
 	}
+
+	readFile(fileName) {
+		return new Promise((resolve, reject) => {
+			fs.readFile(fileName, (error, data) => {
+				if (error) {
+					reject(error);
+				} else {
+					resolve(data);
+				}
+			});
+		});
+	}
 }
 
 Paths.sep = path.sep;
