@@ -23,7 +23,7 @@ class ServiceSFTP extends ServiceBase {
 		this.maxClients = 2;
 		this.pathCache = new PathCache();
 		this.sftpError = null;
-		this.transferReject = null;
+		this.globalReject = null;
 
 		// Define SFTP defaults
 		this.serviceDefaults = {
@@ -83,50 +83,14 @@ class ServiceSFTP extends ServiceBase {
 	 * @returns {promise} - Promise resolving to a connected SFTP client instance.
 	 */
 	connect() {
-		let options = {
-				host: this.config.service.host,
-				port: this.config.service.port,
-				username: this.config.service.username,
-				privateKey: this._getPrivateKey(),
-				keepaliveInterval: this.config.service.keepaliveInterval
-			},
-			hash = this.config.serviceSettingsHash;
-
-		if (this.config.service.password) {
-			options.password = this.config.service.password;
-		}
-
-		if (this.config.service.debug) {
-			options.debug = (data) => {
-				console.log(`Client debug data: "${data}"`);
-			}
-		}
+		let hash = this.config.serviceSettingsHash;
 
 		return this.getClient(hash)
 			.then((client) => {
 				if (!client.lastUsed) {
 					// New client - connect first
 					console.log('Connecting to a new server instance...');
-
-					return client.sftp.connect(options)
-						.then(() => {
-							this.onConnect();
-							console.log(`SFTP client connected to host ${options.host}:${options.port}`);
-							return client;
-						})
-						.then((client) => {
-							// Attempt to list the root path to ensure it exists
-							return client.sftp.list(this.config.service.root)
-								.then(() => {
-									return client.sftp;
-								})
-								.catch(() => {
-									throw new Error(
-										'SFTP could not find or access the root path. Please check' +
-										` the "${this.config.settingsFilename}" settings file.`
-									);
-								});
-						})
+					return this.openConnection(client);
 				} else {
 					// Existing client - just return it
 					return Promise.resolve(client.sftp);
@@ -137,11 +101,71 @@ class ServiceSFTP extends ServiceBase {
 				if (error.code === 'ENOTFOUND' && error.level === 'client-socket') {
 					// This is likely the error that means the client couldn't connect
 					throw new Error(
-						`Could not connect to server host ${options.host}:${options.port}`
+						`Could not connect to server host ${this.config.service.host}:${this.config.service.port}`
 					);
 				}
 
 				throw error;
+			});
+	}
+
+	/**
+	 * Attempts to open a connection to the configured SFTP server.
+	 * @param {Object} client - SFTP client returned from {@link this.getClient}
+	 */
+	openConnection(client) {
+		let options = this.getClientOptions(this.config.service);
+
+		return new Promise((resolve, reject) => {
+			client.sftp.connect(options)
+				.then(() => {
+					this.onConnect();
+					console.log(
+						`SFTP client connected to host ${options.host}:${options.port}`
+					);
+
+					return client;
+				})
+				.then((client) => this.checkServiceRoot(client, resolve))
+				.catch((error) => {
+					if (error.level === 'client-authentication') {
+						// Put a note in the log to remind users that a password can be set
+						this.channel.appendInfo(utils.strings.REQUESTING_PASSWORD);
+
+						// Offer to use a password
+						this.requestAuthentication()
+							.then((result) => {
+								if (result) {
+									// Temporarily set the password in the service config
+									this.config.service.password = result;
+									resolve(this.openConnection(client, options));
+								} else {
+									reject(error);
+								}
+							});
+					} else {
+						reject(error);
+					}
+				});
+		});
+	}
+
+	/**
+	 * Attempt to list the root path to ensure it exists
+	 * @param {SFTP} client - SFTP client object.
+	 * @param {function} resolve - Promise resolver function.
+	 */
+	checkServiceRoot(client, resolve) {
+		return client.sftp.list(this.config.service.root)
+			.then(() => {
+				// Finally, resolve with the sftp object
+				resolve(client.sftp);
+			})
+			.catch(() => {
+				throw new Error(
+					'SFTP could not find or access the root path. Please check' +
+					` the "${this.config.settingsFilename}" settings file.`
+				);
 			});
 	}
 
@@ -219,8 +243,22 @@ class ServiceSFTP extends ServiceBase {
 						};
 
 						this.clients[hash].sftp.client
-							.on('close', (hadError) => {
-								this.onDisconnect((hadError || this.sftpError), hash);
+							.on('keyboard-interactive', (name, instructions, prompts, finish) => {
+								console.log('keyboard-interactive event');
+							})
+							.on('close', (error) => {
+								// Check for local or global error (created by error event)
+								let hadError = (error || this.sftpError);
+
+								if (hadError.level === 'client-authentication') {
+									// Error is regarding authentication - don't consider fatal
+									hadError = false;
+								} else {
+									hadError = true;
+								}
+
+								// Fire onDisconnect event method
+								this.onDisconnect(hadError, hash);
 							})
 							.on('error', (error) => (this.sftpError = error));
 
@@ -229,6 +267,35 @@ class ServiceSFTP extends ServiceBase {
 					});
 			}
 		});
+	}
+
+	/**
+	 * Create an object of SFTP client options, given the service settings.
+	 * @param {object} service
+	 */
+	getClientOptions(service) {
+		let options = {
+			host: service.host,
+			port: service.port,
+			username: service.username,
+			privateKey: this._getPrivateKey(),
+			keepaliveInterval: service.keepaliveInterval,
+			tryKeyboard: true
+		};
+
+		// Add a password, if set
+		if (service.password) {
+			options.password = service.password;
+		}
+
+		// Add a debugging logger, if requested
+		if (service.debug) {
+			options.debug = (data) => {
+				console.log(`Client debug data: "${data}"`);
+			}
+		}
+
+		return options;
 	}
 
 	/**
@@ -247,11 +314,18 @@ class ServiceSFTP extends ServiceBase {
 		}
 	}
 
+	/**
+	 * Fired on disconnection of the SFTP client.
+	 * @param {boolean} hadError - Whether or not an error occured.
+	 * @param {string} hash - SFTP client hash (Generated by service settings).
+	 */
 	onDisconnect(hadError, hash) {
 		super.onDisconnect(hadError);
 
-		if (typeof this.transferReject === 'function') {
-			this.transferReject();
+		// If a global rejection function exists, invoke it
+		if (typeof this.globalReject === 'function') {
+			this.globalReject();
+			this.globalReject = null;
 		};
 
 		this.removeClient(hash);
@@ -269,7 +343,7 @@ class ServiceSFTP extends ServiceBase {
 
 		this.setProgress(`${remoteFilename}...`);
 
-		return this.connect().then((connection) => {
+		return this.connect().then(() => {
 			return this.mkDirRecursive(
 				remoteDir,
 				this.config.service.root,
@@ -419,7 +493,7 @@ class ServiceSFTP extends ServiceBase {
 
 	clientPut(local, remote) {
 		return new Promise((resolve, reject) => {
-			this.transferReject = reject;
+			this.globalReject = reject;
 
 			this.connect().then((client) => {
 				client.put(local, remote)
@@ -450,7 +524,7 @@ class ServiceSFTP extends ServiceBase {
 			.then((charset) => {
 				return new Promise((resolve, reject) => {
 					// Get file with client#get and stream to local pathname
-					this.transferReject = reject;
+					this.globalReject = reject;
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
@@ -744,6 +818,17 @@ class ServiceSFTP extends ServiceBase {
 		}
 
 		return 'binary';
+	}
+
+	/**
+	 * Used on failure to disconnect, will attempt to ask the user for a psssword.
+	 */
+	requestAuthentication() {
+		return vscode.window.showInputBox({
+			ignoreFocusOut: true,
+			password: true,
+			prompt: 'Enter SSH password (will not be saved)'
+		});
 	}
 };
 

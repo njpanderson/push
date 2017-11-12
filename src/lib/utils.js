@@ -156,21 +156,16 @@ utils.errors = {
 };
 
 utils.strings = {
-	NO_SERVICE_FILE: 'A settings file could not be found within your project. Have you ' +
-		'created a file with the name "$1" yet?',
+	NO_SERVICE_FILE: 'A settings file could not be found within your project. Have you created a file with the name "$1" yet?',
 	SERVICE_NOT_DEFINED: 'A transfer service was not defined within the settings file at "$1".',
-	MULTIPLE_SERVICE_FILES: 'More than one service settings file was found within the selected ' +
-		'directory.',
+	MULTIPLE_SERVICE_FILES: 'More than one service settings file was found within the selected directory.',
 	TRANSFER_NOT_POSSIBLE: 'The transfer could not be completed.',
 	SERVICE_SETTING_MISSING: 'Service setting file for type $1 missing required setting: "$2".',
-	CANNOT_ACTION_IGNORED_FILE: 'Cannot $1 file "$2" - It matches one of the defined' +
-		' ignoreGlobs filters.',
-	NO_IMPORT_FILE: 'Config file not specified. Please either run this command from within a' +
-		' configuration file or from the explorer context menu.',
-	IMPORT_FILE_NOT_SUPPORTED: 'Configuration file format is not supported. Currently, only the ' +
-		'Sublime SFTP format is supported.',
-	SETTINGS_FILE_EXISTS: 'A settings file already exists in this location. Do you want to ' +
-		'overwrite it?'
+	CANNOT_ACTION_IGNORED_FILE: 'Cannot $1 file "$2" - It matches one of the defined ignoreGlobs filters.',
+	NO_IMPORT_FILE: 'Config file not specified. Please either run this command from within a configuration file or from the explorer context menu.',
+	IMPORT_FILE_NOT_SUPPORTED: 'Configuration file format is not supported. Currently, only the Sublime SFTP format is supported.',
+	SETTINGS_FILE_EXISTS: 'A settings file already exists in this location. Do you want to overwrite it?',
+	REQUESTING_PASSWORD: 'Requesting password... (note, passwords can be saved in the service settings file to avoid this prompt).'
 }
 
 module.exports = utils;

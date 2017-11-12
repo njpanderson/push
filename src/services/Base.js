@@ -357,6 +357,9 @@ class ServiceBase {
 	 * @description
 	 * Base service process disconnection callback. Used by Base options.
 	 * Can be extended, ensuring that `super.onDisconnect()` is called.
+	 *
+	 * If `hadError` is `true`, the Push log window will be invoked to show
+	 * the user which error occured.
 	 */
 	onDisconnect(hadError) {
 		this.setProgress(false);
