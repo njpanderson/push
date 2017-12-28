@@ -604,7 +604,7 @@ class ServiceSFTP extends ServiceBase {
 						.then((list) => {
 							list.forEach((item) => {
 								let match,
-									pathName = dir + '/' + item.name;
+									pathName = utils.addTrailingSeperator(dir) + item.name;
 
 								if (ignoreGlobs && ignoreGlobs.length) {
 									match = micromatch([pathName], ignoreGlobs);

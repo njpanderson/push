@@ -186,7 +186,7 @@ class ServiceBase {
 		}
 
 		if (dir.startsWith(root)) {
-			baseDir = dir.replace(root + '/', '');
+			baseDir = utils.trimSeparators(dir.replace(root, ''));
 			recursiveDir = baseDir.split('/');
 			dirList = [];
 
@@ -195,7 +195,9 @@ class ServiceBase {
 				let pathname = (acc === '' ? current : (acc + '/' + current));
 
 				if (pathname !== '') {
-					dirList.push(root + '/' + pathname);
+					dirList.push(
+						utils.addTrailingSeperator(root) + pathname
+					);
 				}
 
 				return pathname;

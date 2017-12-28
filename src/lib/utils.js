@@ -123,6 +123,35 @@ const utils = {
 		return arrayData.filter((e, i, a) => {
 			return (a.indexOf(e) === i);
 		});
+	},
+
+	trimSeparators: function(pathname, separator = '/') {
+		const re = new RegExp(`^\${separator}+|\${separator}+$`, 'g');
+		return pathname.trim(re, '');
+	},
+
+	/**
+	 * Adds an OS-specific trailing separator to a path (unless the path
+	 * consists solely of a separator).
+	 */
+	addTrailingSeperator: function (pathname, separator = '/') {
+		if (!pathname.endsWith(separator)) {
+			return pathname + separator;
+		}
+
+		return pathname;
+	},
+
+	/**
+	 * Adds an OS-specific leading separator to a path (unless the path
+	 * consists solely of a separator).
+	 */
+	addLeadingSeperator: function (pathname, separator = '/') {
+		if (!pathname.startsWith(separator)) {
+			return pathname + pathname;
+		}
+
+		return pathname;
 	}
 };
 
@@ -166,6 +195,6 @@ utils.strings = {
 	IMPORT_FILE_NOT_SUPPORTED: 'Configuration file format is not supported. Currently, only the Sublime SFTP format is supported.',
 	SETTINGS_FILE_EXISTS: 'A settings file already exists in this location. Do you want to overwrite it?',
 	REQUESTING_PASSWORD: 'Requesting password... (note, passwords can be saved in the service settings file to avoid this prompt).'
-}
+};
 
 module.exports = utils;
