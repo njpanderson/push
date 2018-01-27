@@ -49,6 +49,16 @@
             "**/.svn/*"
           ],
           "description": "An array of regular expressions to match against ignored paths."
+        },
+        "njpPush.queueCompleteMessageType": {
+          "type": "string",
+          "default": "status",
+          "description": "How to notify once a queue is completed. Choose 'status' or popup 'message'."
+        },
+        "njpPush.statusMessageColor": {
+          "type": "string",
+          "default": "notification.infoBackground",
+          "description": "Set the colour of a status message (except progress). See https://code.visualstudio.com/docs/getstarted/theme-color-reference"
         }
       }
     },

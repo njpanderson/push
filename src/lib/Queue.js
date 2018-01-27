@@ -58,7 +58,6 @@ class Queue {
 		if (this.tasks && this.tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(`Running ${this.tasks.length - 1} task(s) in queue...`);
-			console.log(`Starting ${this.tasks.length} item(s) in queue...`);
 
 			// Start progress interface
 			return vscode.window.withProgress({
@@ -122,8 +121,6 @@ class Queue {
 		if (this.tasks.length) {
 			// Further tasks to process
 			this.running = true;
-
-			console.log(`Invoking queue item ${this.tasks.length}...`);
 
 			// Shift a task off the tasks array
 			task = this.tasks.shift();
@@ -238,9 +235,17 @@ class Queue {
 		}
 
 		if ((Object.keys(results.fail)).length) {
+			// Show a warning in a message window
 			utils.showWarning(extra.join(' '));
 		} else {
-			utils.showMessage(extra.join(' '));
+			if (utils.getConfig('queueCompleteMessageType') === 'status') {
+				// Show completion in the status bar
+				utils.showStatusMessage('$(issue-closed) ' + extra.join(' '), 2);
+			} else {
+				// Show completion in a message window
+				utils.showMessage(extra.join(' '));
+			}
+
 		}
 	}
 };

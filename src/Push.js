@@ -13,11 +13,6 @@ const constants = require('./lib/constants');
  */
 class Push {
 	constructor() {
-		// this.upload = this.upload.bind(this);
-		// this.download = this.download.bind(this);
-		// this.execUploadQueue = this.execUploadQueue.bind(this);
-		// this.cancelQueues = this.cancelQueues.bind(this);
-		// this.stopQueues = this.stopQueues.bind(this);
 		this.setConfig = this.setConfig.bind(this);
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 
@@ -497,12 +492,15 @@ class Push {
 		channel.clear();
 		this.setContext(Push.contexts.queueInProgress, true);
 
+		// Fetch and execute queue
 		return this.getQueue(queueDef)
 			.exec(this.service.getStateProgress)
 				.then(() => {
+					// Set contextual state that the queue has completed
 					this.setContext(Push.contexts.queueInProgress, false);
 				})
 				.catch((error) => {
+					// Set contextual state that the queue has completed
 					this.setContext(Push.contexts.queueInProgress, false);
 					throw error;
 				});

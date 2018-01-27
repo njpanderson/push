@@ -1,10 +1,14 @@
 const vscode = require('vscode');
 
 const utils = {
+	_timeouts: {},
+	_sb: null,
+
 	/**
 	 * Returns the current config, with any required augmentations made.
+	 * @param {string} item - Retrieve a single configuration item
 	 */
-	getConfig: function() {
+	getConfig: function(item) {
 		let config = Object.assign(
 				{},
 				vscode.workspace.getConfiguration(
@@ -16,12 +20,16 @@ const utils = {
 			settingsGlob;
 
 		// Augment configuration with computed settings
-		if (Array.isArray(config.ignoreGlobs)) {
+		if ((!item || item === 'ignoreGlobs') && Array.isArray(config.ignoreGlobs)) {
 			settingsGlob = `**/${config.settingsFilename}`;
 			config.ignoreGlobs.push(settingsGlob);
 
 			// Ensure glob list only contains unique values
 			config.ignoreGlobs = utils.uniqArray(config.ignoreGlobs);
+		}
+
+		if (item) {
+			return config[item];
 		}
 
 		return config;
@@ -37,6 +45,52 @@ const utils = {
 
 	showWarning: function(message) {
 		utils.displayErrorOrString('showWarningMessage', message, [...arguments].slice(1));
+	},
+
+	/**
+	 * Show a status message, optionally removing it after x seconds.
+	 * @param {string} message - Message to show
+	 * @param {number} [removeAfter=0] - How many seconds to wait before removing the
+	 * message. Leave at 0 for a permanent message.
+	 * @param {string} [color='green'] - Colour of the message.
+	 * @returns vscode.StatusBarItem
+	 */
+	showStatusMessage: function (message, removeAfter = 0, color = null) {
+		this.hideStatusMessage();
+
+		if (!color) {
+			color = new vscode.ThemeColor(this.getConfig('statusMessageColor'));
+		}
+
+		this._sb = new vscode.window.createStatusBarItem(
+			vscode.StatusBarAlignment.left
+		);
+
+		this._sb.text = message;
+		this._sb.color = color;
+		this._sb.show();
+
+		if (removeAfter !== 0) {
+			if (this._timeouts.sb) {
+				clearTimeout(this._timeouts.sb);
+			}
+
+			this._timeouts.sb = setTimeout(() => {
+				this._sb.hide();
+				this._timeouts.sb = null;
+			}, (removeAfter * 1000));
+		}
+
+		return this._sb;
+	},
+
+	/**
+	 * Hides any currently active status message.
+	 */
+	hideStatusMessage: function() {
+		if (this._sb) {
+			this._sb.hide();
+		}
 	},
 
 	displayErrorOrString(method, data, replacementVars = []) {
