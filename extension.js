@@ -17,6 +17,14 @@ exports.activate = (context) => {
 		vscode.commands.registerCommand('push.uploadQueuedItems', push.execUploadQueue, push),
 		vscode.commands.registerCommand('push.clearUploadQueue', push.clearUploadQueue, push),
 		vscode.commands.registerCommand('push.cancelQueues', push.cancelQueues, push),
+		vscode.commands.registerCommand('push.addWatchFile', push.addWatch, push),
+		vscode.commands.registerCommand('push.removeWatchFile', push.removeWatch, push),
+		vscode.commands.registerCommand('push.addWatchFolder', push.addWatch, push),
+		vscode.commands.registerCommand('push.removeWatchFolder', push.removeWatch, push),
+		vscode.commands.registerCommand('push.listWatchers', push.listWatchers, push),
+		vscode.commands.registerCommand('push.startWatch', push.startWatch, push),
+		vscode.commands.registerCommand('push.stopWatch', push.stopWatch, push),
+		vscode.commands.registerCommand('push.clearWatchers', push.clearWatchers, push),
 		vscode.commands.registerCommand('push.editServiceConfig', push.editServiceConfig, push),
 		vscode.commands.registerCommand('push.importConfig', push.importConfig, push)
 	]);

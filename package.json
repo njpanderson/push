@@ -112,59 +112,158 @@
         "command": "push.stopQueues",
         "title": "Cancel currently active queue and force transfers to stop",
         "category": "Push"
+      },
+      {
+        "command": "push.addWatchFile",
+        "title": "Add file to Push watch list",
+        "category": "Push"
+      },
+      {
+        "command": "push.removeWatchFile",
+        "title": "Remove file from Push watch list",
+        "category": "Push"
+      },
+      {
+        "command": "push.addWatchFolder",
+        "title": "Add folder to Push watch list",
+        "category": "Push"
+      },
+      {
+        "command": "push.removeWatchFolder",
+        "title": "Remove folder from Push watch list",
+        "category": "Push"
+      },
+      {
+        "command": "push.startWatch",
+        "title": "Start all Push watch lists",
+        "category": "Push"
+      },
+      {
+        "command": "push.stopWatch",
+        "title": "Stop all Push watch lists",
+        "category": "Push"
+      },
+      {
+        "command": "push.listWatchers",
+        "title": "List all active watchers",
+        "category": "Push"
+      },
+      {
+        "command": "push.clearWatchers",
+        "title": "Clear all watchers",
+        "category": "Push"
       }
     ],
     "menus": {
       "explorer/context": [
         {
+          "when": "push:initialised",
           "command": "push.editServiceConfig",
-          "group": "njp-push@1"
+          "group": "njp-push-config@1"
         },
         {
+          "when": "push:initialised",
           "command": "push.importConfig",
-          "group": "njp-push@1"
+          "group": "njp-push-config@1"
         },
         {
-          "when": "!explorerResourceIsFolder",
+          "when": "push:initialised && !explorerResourceIsFolder",
           "command": "push.upload",
           "group": "njp-push@2"
         },
         {
-          "when": "!explorerResourceIsFolder",
+          "when": "push:initialised && !explorerResourceIsFolder",
           "command": "push.download",
           "group": "njp-push@3"
         },
         {
-          "when": "!explorerResourceIsFolder",
+          "when": "push:initialised && !explorerResourceIsFolder",
           "command": "push.diff",
           "group": "njp-push@4"
         },
         {
-          "when": "explorerResourceIsFolder",
+          "when": "push:initialised && explorerResourceIsFolder",
           "command": "push.uploadFolder",
           "group": "njp-push@5"
         },
         {
-          "when": "explorerResourceIsFolder",
+          "when": "push:initialised && explorerResourceIsFolder",
           "command": "push.downloadFolder",
           "group": "njp-push@6"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.addWatchFile",
+          "group": "njp-push-watch@7"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.removeWatchFile",
+          "group": "njp-push-watch@8"
+        },
+        {
+          "when": "push:initialised && explorerResourceIsFolder",
+          "command": "push.addWatchFolder",
+          "group": "njp-push-watch@7"
+        },
+        {
+          "when": "push:initialised && explorerResourceIsFolder",
+          "command": "push.removeWatchFolder",
+          "group": "njp-push-watch@8"
         }
       ],
       "editor/title/context": [
         {
-          "when": "!explorerResourceIsFolder",
+          "when": "push:initialised && !explorerResourceIsFolder",
           "command": "push.upload",
           "group": "njp-push@1"
         },
         {
-          "when": "!explorerResourceIsFolder",
+          "when": "push:initialised && !explorerResourceIsFolder",
           "command": "push.download",
           "group": "njp-push@2"
         },
         {
-          "when": "!explorerResourceIsFolder",
+          "when": "push:initialised && !explorerResourceIsFolder",
           "command": "push.diff",
           "group": "njp-push@3"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.addWatchFile",
+          "group": "njp-push-watch@7"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.removeWatchFile",
+          "group": "njp-push-watch@8"
+        }
+      ],
+      "editor/context": [
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.upload",
+          "group": "njp-push@1"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.download",
+          "group": "njp-push@2"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.diff",
+          "group": "njp-push@3"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.addWatchFile",
+          "group": "njp-push-watch@7"
+        },
+        {
+          "when": "push:initialised && !explorerResourceIsFolder",
+          "command": "push.removeWatchFile",
+          "group": "njp-push-watch@8"
         }
       ],
       "commandPalette": [
@@ -177,12 +276,32 @@
           "when": "false"
         },
         {
+          "command": "push.addWatchFolder",
+          "when": "false"
+        },
+        {
+          "command": "push.removeWatchFolder",
+          "when": "false"
+        },
+        {
           "command": "push.cancelQueues",
-          "when": "push:queueInProgress"
+          "when": "push:initialised && push:queueInProgress"
         },
         {
           "command": "push.stopQueues",
-          "when": "push:queueInProgress"
+          "when": "push:initialised && push:queueInProgress"
+        },
+        {
+          "command": "push.stopWatch",
+          "when": "push:initialised && push:hasRunningWatchers"
+        },
+        {
+          "command": "push.startWatch",
+          "when": "push:initialised && push:hasStoppedWatchers"
+        },
+        {
+          "command": "push.clearWatchers",
+          "when": "push:initialised && push:hasWatchers"
         }
       ]
     },

@@ -4,6 +4,7 @@ const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
+const Watch = require('./lib/Watch');
 const utils = require('./lib/utils');
 const channel = require('./lib/channel');
 const constants = require('./lib/constants');
@@ -22,7 +23,9 @@ class Push {
 				this.stopCancellableQueues();
 			}
 		});
+
 		this.paths = new Paths();
+		this.watch = new Watch();
 
 		this.config = null;
 
@@ -37,6 +40,7 @@ class Push {
 
 		// Set initial contexts
 		this.setContext(Push.contexts.queueInProgress, false);
+		this.setContext(Push.contexts.initialised, true);
 	}
 
 	execUploadQueue() {
@@ -114,8 +118,51 @@ class Push {
 		}).catch((error) => {
 			channel.appendError(error);
 		});
+	}
 
+	/**
+	 * @description
+	 * Watches the files within the supplied Uri path and uploads them whenever
+	 * a change is detected
+	 * @param {Uri} uri - Folder/File Uri to watch.
+	 */
+	addWatch(uri) {
+		this.watch.add(this.paths.getFileSrc(uri), (uri) => {
+			this.upload(uri);
+		});
+	}
 
+	/**
+	 * Removes an existing watch from a Uri.
+	 * @param {Uri} uri - Folder/File Uri to stop watching.
+	 */
+	removeWatch(uri) {
+		this.watch.remove(this.paths.getFileSrc(uri));
+	}
+
+	listWatchers() {
+		this.watch.list();
+	}
+
+	/**
+	 * Starts the internal watch process and watches the blobs.
+	 */
+	startWatch() {
+		this.watch.toggle(true);
+	}
+
+	/**
+	 * Stops the internal watch process.
+	 */
+	stopWatch() {
+		this.watch.toggle(false);
+	}
+
+	/**
+	 * Clear all (active or disabled) watchers
+	 */
+	clearWatchers() {
+		this.watch.clear();
 	}
 
 	/**
@@ -545,6 +592,7 @@ class Push {
 
 	setContext(context, value) {
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
+		return this;
 	}
 
 	/**
@@ -767,6 +815,7 @@ Push.queueDefs = {
 };
 
 Push.contexts = {
+	initialised: 'initialised',
 	queueInProgress: 'queueInProgress'
 };
 
