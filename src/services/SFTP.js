@@ -13,8 +13,8 @@ const SRC_REMOTE = PathCache.sources.REMOTE;
 const SRC_LOCAL = PathCache.sources.LOCAL;
 
 class ServiceSFTP extends ServiceBase {
-	constructor(options) {
-		super(options);
+	constructor(options, defaults) {
+		super(options, defaults);
 
 		this.mkDir = this.mkDir.bind(this);
 
@@ -24,22 +24,6 @@ class ServiceSFTP extends ServiceBase {
 		this.pathCache = new PathCache();
 		this.sftpError = null;
 		this.globalReject = null;
-
-		// Define SFTP defaults
-		this.serviceDefaults = {
-			host: '',
-			port: 22,
-			username: '',
-			password: '',
-			privateKey: '',
-			root: '/',
-			timeZoneOffset: 0,
-			testCollisionTimeDiffs: true,
-			collisionUploadAction: null,
-			collisionDownloadAction: null,
-			keepaliveInterval: 3000,
-			debug: false
-		};
 
 		// Define SFTP validation rules
 		this.serviceValidation = {
@@ -842,12 +826,27 @@ class ServiceSFTP extends ServiceBase {
 	}
 };
 
+ServiceSFTP.defaults = {
+	host: '',
+	port: 22,
+	username: '',
+	password: '',
+	privateKey: '',
+	root: '/',
+	timeZoneOffset: 0,
+	testCollisionTimeDiffs: true,
+	collisionUploadAction: null,
+	collisionDownloadAction: null,
+	keepaliveInterval: 3000,
+	debug: false
+};
+
 ServiceSFTP.encodingByExtension = {
 	'utf8': [
 		'.txt', '.html', '.shtml', '.js', '.jsx', '.css', '.less', '.sass',
 		'.php', '.asp', '.aspx', '.svg', '.sql', '.rb', '.py', '.log', '.sh', '.bat',
 		'.pl', '.cgi', '.htaccess'
 	]
-}
+};
 
 module.exports = ServiceSFTP;

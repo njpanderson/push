@@ -6,13 +6,13 @@ const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
 
 class ServiceBase {
-	constructor(options) {
+	constructor(options, defaults) {
 		this.setOptions(options);
 
 		this.type = '';
 		this.queueLength = 0;
 		this.progress = null;
-		this.serviceDefaults = {};
+		this.serviceDefaults = defaults;
 		this.config = {};
 		this.persistCollisionOptions = {};
 		this.channel = channel;

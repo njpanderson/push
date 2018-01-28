@@ -98,7 +98,7 @@ class Service {
 			// Instantiate
 			this.activeService = new this.services[this.config.serviceName]({
 				onDisconnect: this.options.onDisconnect
-			});
+			}, this.services[this.config.serviceName].defaults);
 
 			// Invoke settings validation
 			this.activeService.validateServiceSettings(

@@ -12,8 +12,8 @@ const SRC_REMOTE = PathCache.sources.REMOTE;
 const SRC_LOCAL = PathCache.sources.LOCAL;
 
 class File extends ServiceBase {
-	constructor(options) {
-		super(options);
+	constructor(options, defaults) {
+		super(options, defaults);
 
 		this.mkDir = this.mkDir.bind(this);
 
@@ -21,15 +21,6 @@ class File extends ServiceBase {
 		this.pathCache = new PathCache();
 		this.writeStream = null;
 		this.readStream = null;
-
-		// Define File defaults
-		this.serviceDefaults = {
-			root: '/',
-			timeZoneOffset: 0,
-			testCollisionTimeDiffs: true,
-			collisionUploadAction: null,
-			collisionDownloadAction: null
-		};
 
 		// Define File validation rules
 		this.serviceValidation = {
@@ -287,6 +278,14 @@ class File extends ServiceBase {
 			}
 		});
 	}
+};
+
+File.defaults = {
+	root: '/',
+	timeZoneOffset: 0,
+	testCollisionTimeDiffs: true,
+	collisionUploadAction: null,
+	collisionDownloadAction: null
 };
 
 File.transferTypes = {
