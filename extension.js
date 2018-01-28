@@ -1,33 +1,41 @@
 // Import the module and reference it with the alias vscode in your code below
 // The module 'vscode' contains the VS Code extensibility API
 const vscode = require('vscode');
-const Push = require('./src/Push');
+const UI = require('./src/UI');
 
-let push;
+let ui;
 
 exports.activate = (context) => {
-	push = new Push();
+	let subscriptions, sub;
 
-	context.subscriptions.concat([
-		vscode.commands.registerCommand('push.upload', push.upload, push),
-		vscode.commands.registerCommand('push.download', push.download, push),
-		vscode.commands.registerCommand('push.uploadFolder', push.upload, push),
-		vscode.commands.registerCommand('push.downloadFolder', push.download, push),
-		vscode.commands.registerCommand('push.diff', push.diff, push),
-		vscode.commands.registerCommand('push.uploadQueuedItems', push.execUploadQueue, push),
-		vscode.commands.registerCommand('push.clearUploadQueue', push.clearUploadQueue, push),
-		vscode.commands.registerCommand('push.cancelQueues', push.cancelQueues, push),
-		vscode.commands.registerCommand('push.addWatchFile', push.addWatch, push),
-		vscode.commands.registerCommand('push.removeWatchFile', push.removeWatch, push),
-		vscode.commands.registerCommand('push.addWatchFolder', push.addWatch, push),
-		vscode.commands.registerCommand('push.removeWatchFolder', push.removeWatch, push),
-		vscode.commands.registerCommand('push.listWatchers', push.listWatchers, push),
-		vscode.commands.registerCommand('push.startWatch', push.startWatch, push),
-		vscode.commands.registerCommand('push.stopWatch', push.stopWatch, push),
-		vscode.commands.registerCommand('push.clearWatchers', push.clearWatchers, push),
-		vscode.commands.registerCommand('push.editServiceConfig', push.editServiceConfig, push),
-		vscode.commands.registerCommand('push.importConfig', push.importConfig, push)
-	]);
+	ui = new UI();
+
+	subscriptions = {
+		'push.upload': 'upload',
+		'push.download': 'download',
+		'push.uploadFolder': 'upload',
+		'push.downloadFolder': 'download',
+		'push.diff': 'diff',
+		'push.uploadQueuedItems': 'execUploadQueue',
+		'push.clearUploadQueue': 'clearUploadQueue',
+		'push.cancelQueues': 'cancelQueues',
+		'push.addWatchFile': 'addWatch',
+		'push.removeWatchFile': 'removeWatch',
+		'push.addWatchFolder': 'addWatch',
+		'push.removeWatchFolder': 'removeWatch',
+		'push.listWatchers': 'listWatchers',
+		'push.startWatch': 'startWatch',
+		'push.stopWatch': 'stopWatch',
+		'push.clearWatchers': 'clearWatchers',
+		'push.editServiceConfig': 'editServiceConfig',
+		'push.importConfig': 'importConfig'
+	};
+
+	for (sub in subscriptions) {
+		context.subscriptions.push(
+			vscode.commands.registerCommand(sub, ui[subscriptions[sub]], ui)
+		);
+	}
 };
 
 // this method is called when your extension is deactivated
