@@ -29,7 +29,7 @@ const utils = {
 		}
 
 		if (item) {
-			return config[item];
+			return config[item] || null;
 		}
 
 		return config;
