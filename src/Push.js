@@ -82,6 +82,43 @@ class Push {
 	}
 
 	/**
+	 * Discover differences between the local and remote file.
+	 * @param {Uri} uri
+	 */
+	diff(uri) {
+		let config, tmpFile;
+
+		uri = this.paths.getFileSrc(uri);
+		tmpFile = this.paths.getTmpFile();
+		config = this.configWithServiceSettings(uri);
+
+		this.service.exec(
+			'get',
+			config,
+			[
+				tmpFile,
+				this.service.exec(
+					'convertUriToRemote',
+					config,
+					[uri]
+				),
+				'overwrite'
+			]
+		).then(() => {
+			vscode.commands.executeCommand(
+				'vscode.diff',
+				tmpFile,
+				uri,
+				'Diff: ' + this.paths.getBaseName(uri)
+			);
+		}).catch((error) => {
+			channel.appendError(error);
+		});
+
+
+	}
+
+	/**
 	 * Edits (or creates) a server configuration file
 	 * @param {Uri} uri - Uri to start looking for a configuration file
 	 */

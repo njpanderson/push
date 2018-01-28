@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
+const tmp = require('tmp');
 const Glob = require('glob').Glob;
 
 const ExtendedStream = require('./ExtendedStream');
@@ -313,6 +314,15 @@ class Paths {
 				}
 			});
 		});
+	}
+
+	/**
+	 * Create a temporary file and return its filename.
+	 * @return {string} Filename created.
+	 */
+	getTmpFile() {
+		let tmpobj = tmp.fileSync();
+		return vscode.Uri.file(tmpobj.name);
 	}
 }
 

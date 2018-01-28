@@ -335,11 +335,16 @@ class ServiceSFTP extends ServiceBase {
 	 * Put a single file to the SFTP server.
 	 * @param {uri} local - Local source Uri.
 	 * @param {string} remote - Remote destination pathname.
+	 * @param {string} [collisionAction] - What to do on file collision. Use one
+	 * of the utils.collisionOpts collision actions.
 	 */
-	put(local, remote) {
+	put(local, remote, collisionAction) {
 		let remoteDir = path.dirname(remote),
 			remoteFilename = path.basename(remote),
 			localPath = this.paths.getNormalPath(local);
+
+		collisionAction = collisionAction ||
+			this.config.service.collisionUploadAction;
 
 		this.setProgress(`${remoteFilename}...`);
 
@@ -354,7 +359,7 @@ class ServiceSFTP extends ServiceBase {
 		.then((stats) => super.checkCollision(
 			stats.local,
 			stats.remote,
-			this.config.service.collisionUploadAction
+			collisionAction
 		))
 		.then((result) => {
 			// Figure out what to do based on the collision (if any)
@@ -408,13 +413,18 @@ class ServiceSFTP extends ServiceBase {
 	/**
 	 * @param {uri} local - Local destination Uri.
 	 * @param {string} remote - Remote source filename.
+	 * @param {string} [collisionAction] - What to do on file collision. Use one
+	 * of the utils.collisionOpts collision actions.
 	 * @description
 	 * Get a single file from the SFTP server.
 	 */
-	get(local, remote) {
+	get(local, remote, collisionAction) {
 		let localPath = this.paths.getNormalPath(local),
 			remoteDir = path.dirname(remote),
 			remoteFilename = path.basename(remote);
+
+		collisionAction = collisionAction ||
+			this.config.service.collisionDownloadAction;
 
 		this.setProgress(`${remoteFilename}...`);
 
@@ -435,7 +445,7 @@ class ServiceSFTP extends ServiceBase {
 				return super.checkCollision(
 					stats.remote,
 					stats.local,
-					this.config.service.collisionDownloadAction
+					collisionAction
 				);
 			})
 			.then((result) => {

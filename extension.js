@@ -13,6 +13,7 @@ exports.activate = (context) => {
 		vscode.commands.registerCommand('push.download', push.download, push),
 		vscode.commands.registerCommand('push.uploadFolder', push.upload, push),
 		vscode.commands.registerCommand('push.downloadFolder', push.download, push),
+		vscode.commands.registerCommand('push.diff', push.diff, push),
 		vscode.commands.registerCommand('push.uploadQueuedItems', push.execUploadQueue, push),
 		vscode.commands.registerCommand('push.clearUploadQueue', push.clearUploadQueue, push),
 		vscode.commands.registerCommand('push.cancelQueues', push.cancelQueues, push),

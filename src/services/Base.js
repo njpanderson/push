@@ -230,6 +230,8 @@ class ServiceBase {
 	 * `source` objects. Will display a collision picker if this occurs.
 	 * @param {object} source - Source filecache entry.
 	 * @param {object} dest - Destination filecache entry (the item to be replaced).
+	 * @param {string} defaultCollisionOption - One of the utils.collisionOpts
+	 * collision actions.
 	 */
 	checkCollision(source, dest, defaultCollisionOption) {
 		let collisionType, timediff;
@@ -296,6 +298,8 @@ class ServiceBase {
 	 * Base service file upload method.
 	 * @param {string} src - File source path
 	 * @param {string} dest - File destination path
+	 * @param {string} [collisionAction] - What to do on file collision. Use one
+	 * of the utils.collisionOpts collision actions.
 	 * @returns {promise}
 	 */
 	put() {
@@ -306,6 +310,8 @@ class ServiceBase {
 	 * Base service file download method.
 	 * @param {string} src - File source path
 	 * @param {string} dest - File destination path
+	 * @param {string} [collisionAction] - What to do on file collision. Use one
+	 * of the utils.collisionOpts collision actions.
 	 * @returns {promise}
 	 */
 	get() {

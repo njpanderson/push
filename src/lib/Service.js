@@ -44,6 +44,7 @@ class Service {
 	 * @param {string} method - Method name to invoke.
 	 * @param {object} config - Current configuration state.
 	 * @param {array} args - Arguments to send to the method, as an array.
+	 * @return {mixed} Return result from the service method.
 	 */
 	exec(method, config, args = []) {
 		// Set the current service configuration
