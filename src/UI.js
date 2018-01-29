@@ -163,7 +163,10 @@ class UI extends Push {
 						this.openDoc(file.fileName);
 					} else {
 						this.writeAndOpen(
-							constants.DEFAULT_SERVICE_CONFIG,
+							(file.serviceType.label !== 'Empty' ?
+								file.serviceType.settingsPayload :
+								constants.DEFAULT_SERVICE_CONFIG
+							),
 							file.fileName
 						);
 					}

@@ -398,4 +398,7 @@ class ServiceBase {
 	}
 };
 
+ServiceBase.description = '';
+ServiceBase.detail = '';
+
 module.exports = ServiceBase;

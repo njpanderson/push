@@ -1,3 +1,5 @@
+const vscode = require('vscode');
+
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const Paths = require('../lib/Paths');
@@ -22,6 +24,28 @@ class Service {
 		this.options = Object.assign({}, {
 			onDisconnect: null
 		}, options);
+	}
+
+	/**
+	 * Produce a list of the services available.
+	 * @return {array} List of the services.
+	 */
+	getList() {
+		let options = [], service;
+
+		for (service in this.services) {
+			options.push({
+				label: service,
+				description: this.services[service].description,
+				detail: this.services[service].detail,
+				settingsPayload: {
+					service,
+					'SFTP': this.services[service].defaults
+				}
+			});
+		}
+
+		return options;
 	}
 
 	setConfig(config) {

@@ -280,6 +280,8 @@ class File extends ServiceBase {
 	}
 };
 
+File.description = 'Local/network file transfers';
+
 File.defaults = {
 	root: '/',
 	timeZoneOffset: 0,

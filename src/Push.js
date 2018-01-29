@@ -45,6 +45,17 @@ class Push {
 
 	writeAndOpen(content, fileName) {
 		// Write a file then open it
+		if (typeof content !== 'string' && content.constructor === Object) {
+			// Parse pure object content to JSON string
+			content = JSON.stringify(content, null, '\t');
+		}
+
+		// Add comment to the top
+		content =
+			'// Push settings file - generated on ' + (new Date()).toString() + '\n' +
+			'// Note: Comments are supported within Push settings files\n' +
+			content;
+
 		this.paths.writeFile(
 			content,
 			fileName
@@ -63,27 +74,40 @@ class Push {
 				.then((rootPath) => {
 					let fileName = rootPath + Paths.sep + exampleFileName;
 
-					if (rootPath) {
-						if (this.paths.fileExists(fileName) && !forceDialog) {
-							resolve({ fileName, exists: true });
-						} else {
-							vscode.window.showInputBox({
-								prompt: 'Enter a filename for the service settings file:',
-								value: fileName
-							}).then((fileName) => {
-								if (fileName) {
-									resolve({
-										fileName,
-										exists: this.paths.fileExists(fileName)
-									});
-								} else {
-									reject();
-								}
-							});
-						}
-					} else {
-						reject();
+					if (!rootPath) {
+						return reject();
 					}
+
+					if (this.paths.fileExists(fileName) && !forceDialog) {
+						return resolve({ fileName, exists: true });
+					}
+
+					vscode.window.showInputBox({
+						prompt: 'Enter a filename for the service settings file:',
+						value: fileName
+					}).then((fileName) => {
+						if (!fileName) {
+							return reject();
+						}
+
+						return vscode.window.showQuickPick(
+							[{
+								'label': 'Empty',
+								'description': 'Empty template'
+							}].concat(this.service.getList()),
+							{
+								placeHolder: 'Select a service type template.'
+							}
+						).then((serviceType) => {
+							return { fileName, serviceType };
+						});
+					}).then(({ fileName, serviceType }) => {
+						resolve({
+							fileName,
+							exists: this.paths.fileExists(fileName),
+							serviceType
+						});
+					});
 				});
 		});
 	}

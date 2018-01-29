@@ -826,6 +826,8 @@ class ServiceSFTP extends ServiceBase {
 	}
 };
 
+ServiceSFTP.description = 'SFTP/SSH File transfers';
+
 ServiceSFTP.defaults = {
 	host: '',
 	port: 22,
