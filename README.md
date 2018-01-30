@@ -51,33 +51,62 @@ Each available service has its own set of settings which are within the `[Servic
 
 When defining a server settings file, placing it in the root of your workspace will define those settings for the whole workspace. Push also supports adding server settings files to sub-diretories within your workspace. When uploading files from within any directory, Push will look for the nearest server settins file and use it for server-specific settings.
 
-### Available services
+## Available services
 
-#### `SFTP`
+### SFTP
 
-| Setting | Description |
-| --- | --- |
-| `host` | Hostname or IP of the remote host. |
-| `username` | Username of the authenticated user. |
-| `password` | Password for the authenticated user. Leave blank if using keys. |
-| `privateKey` | Private key path, if using keys. Defaults to the global `privateKey` setting. |
-| `root` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
-| `testCollisionTimeDiffs` | If this option is set to `false`, the SFTP service will assume newer files collide, which means all files that exist on the server will produce a collision warning. |
+| Setting | Default | Description |
+| --- | --- | --- |
+| `host` | | Hostname or IP of the remote host. |
+| `username` | | Username of the authenticated user. |
+| `password` | | Password for the authenticated user. Leave blank if using keys. |
+| `privateKey` | | Private key path, if using keys. Defaults to the global `privateKey` setting. |
+| `root` | `/` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
+| `keepaliveInterval` | `3000` | How often, in milliseconds, to send keep-alive packets to the server. Set `0` to disable. |
+| `fileMode` | | If required, a [mode](https://en.wikipedia.org/wiki/File_system_permissions#Numeric_notation) can be applied to files when they are uploaded. Numeric modes are accepted. E.g: `"700"` to give all access to the owner only. An array of modes is also supported. (See below.) |
+| `debug` | `false` | In debug mode, extra information is sent from the underlying SSH client to the console.
 
-#### `File`
+#### `fileMode` as an array
 
-| Setting | Description |
-| --- | --- |
-| `root` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
-| `testCollisionTimeDiffs` | If this option is set to `false`, the File service will assume newer files collide, which means all files that exist on the target folder will produce a collision warning. |
+The `fileMode` setting of the SFTP service can also be expressed as an array of glob strings and modes required. For instance:
+
+```
+	...
+	"fileMode": [{
+		"glob": "*.txt",
+		"mode": "600"
+	}, {
+		"glob": "*.jpg",
+		"mode": "700"
+	}, {
+		"glob": "**/*/",
+		"mode": "655"
+	}]
+```
+
+The above example will perform the following:
+
+ - Filenames ending in **.txt** will be given the mode `600`
+ - Filenames ending in **.jpg** will be given the mode `700`
+ - **All directories** will be given the mode `655`
+
+For those in the know, the underlying glob matching is performed by [micromatch](https://www.npmjs.com/package/micromatch#matching-features), and any glob pattern it supports can be used here.
+
+### File
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `root` | `/` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
 
 ### General service settings
 The following options are available to all services:
 
-| Setting | Description |
-| --- | --- |
-| `collisionUploadAction` | Sets how to proceed when colliding with the same remote file. Set one of `stop` (Stop transfer entirely), `skip` (Skip the file), `overwrite` (Overwrite the file), or `rename` (Keep both files by renaming the source file). This option is ignored if the file type (directory or file) does not match the target.
-| `collisionDownloadAction` | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
+| Setting | Default | Description |
+| --- | --- | --- |
+| `testCollisionTimeDiffs` | `true` | If this option is set to `false`, the service will assume newer files collide, which means all files that exist on the remote will produce a collision warning. |
+| `collisionUploadAction` | (Prompt) | Sets how to proceed when colliding with the same remote file. Set one of `stop` (Stop transfer entirely), `skip` (Skip the file), `overwrite` (Overwrite the file), or `rename` (Keep both files by renaming the source file). This option is ignored if the file type (directory or file) does not match the target.
+| `collisionDownloadAction` | (Prompt) | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
+| `timeZoneOffset` | `0` | The offset, in hours, the time is set to on the origin relative to the local device. I.e. if the origin is GMT+1 and the device is GMT-1, the offset would be `2` |
 
 ## Known Issues
 
@@ -85,6 +114,6 @@ None at present.
 
 ## Release Notes
 
-### 0.0.0
+### 0.1.0
 
 (Not yet released)

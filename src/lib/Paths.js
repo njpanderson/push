@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const tmp = require('tmp');
-const Glob = require('glob').Glob;
+const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
@@ -59,10 +59,18 @@ class Paths {
 
 	/**
 	 * Return a path without a trailing slash.
-	 * @param {string} path
+	 * @param {string} dir - Dir to remove trailing slash
 	 */
 	stripTrailingSlash(dir) {
 		return dir.replace(/\/$/, '');
+	}
+
+	/**
+	 * Return a path with a trailing slash.
+	 * @param {string} dir - Dir to ensure a trailing slash
+	 */
+	addTrailingSlash(dir) {
+		return this.stripTrailingSlash(dir) + '/';
 	}
 
 	/**
@@ -147,7 +155,7 @@ class Paths {
 		include = include.replace(parsed.root, '/');
 
 		return new Promise((resolve, reject) => {
-			new Glob(
+			new glob.Glob(
 				include,
 				this.getGlobOptions({
 					ignore: ignoreGlobs
@@ -169,7 +177,7 @@ class Paths {
 				resolve(uri);
 			}
 
-			new Glob(
+			new glob.Glob(
 				`${this.getNormalPath(uri)}`,
 				this.getGlobOptions({
 					ignore: ignoreGlobs

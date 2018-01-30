@@ -6,13 +6,13 @@ const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
 
 class ServiceBase {
-	constructor(options, defaults) {
+	constructor(options, serviceDefaults) {
 		this.setOptions(options);
 
 		this.type = '';
 		this.queueLength = 0;
 		this.progress = null;
-		this.serviceDefaults = defaults;
+		this.serviceDefaults = serviceDefaults;
 		this.config = {};
 		this.persistCollisionOptions = {};
 		this.channel = channel;
@@ -159,6 +159,10 @@ class ServiceBase {
 		return dirContents.filter((item) => {
 			return (item.name.match(re) !== null);
 		});
+	}
+
+	getModeForPath(path, modes = []) {
+		return this.paths.getMatchForPath(path, modes);
 	}
 
 	/**
@@ -400,5 +404,12 @@ class ServiceBase {
 
 ServiceBase.description = '';
 ServiceBase.detail = '';
+
+ServiceBase.defaults = {
+	timeZoneOffset: 0,
+	testCollisionTimeDiffs: true,
+	collisionUploadAction: null,
+	collisionDownloadAction: null
+};
 
 module.exports = ServiceBase;

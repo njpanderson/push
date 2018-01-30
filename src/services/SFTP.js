@@ -10,7 +10,7 @@ const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
-const SRC_LOCAL = PathCache.sources.LOCAL;
+// const SRC_LOCAL = PathCache.sources.LOCAL;
 
 class ServiceSFTP extends ServiceBase {
 	constructor(options, defaults) {
@@ -20,10 +20,16 @@ class ServiceSFTP extends ServiceBase {
 
 		this.type = 'SFTP';
 		this.clients = {};
-		this.maxClients = 2;
 		this.pathCache = new PathCache();
 		this.sftpError = null;
 		this.globalReject = null;
+
+		this.options.maxClients = 2;
+		this.options.modeGlob = {
+			basename: true,
+			dot: true,
+			nocase: true
+		};
 
 		// Define SFTP validation rules
 		this.serviceValidation = {
@@ -206,13 +212,13 @@ class ServiceSFTP extends ServiceBase {
 				// Create a new client, removing old ones in case there are too many
 				keys = Object.keys(this.clients);
 
-				if (keys.length === this.maxClients) {
+				if (keys.length === this.options.maxClients) {
 					// Remove old clients
 					keys.sort((a, b) => {
 						return this.clients[a].lastUsed - this.clients[b].lastUsed;
 					});
 
-					keys.slice(this.maxClients - 1).forEach((hash) => {
+					keys.slice(this.options.maxClients - 1).forEach((hash) => {
 						results.push(this.removeClient(hash));
 					});
 				}
@@ -385,6 +391,14 @@ class ServiceSFTP extends ServiceBase {
 			}
 		})
 		.then((result) => {
+			if (result !== false) {
+				return this.setRemotePathMode(remote, this.config.service.fileMode)
+					.then(() => result);
+			}
+
+			return result;
+		})
+		.then((result) => {
 			this.setProgress(false);
 			return result;
 		})
@@ -485,6 +499,31 @@ class ServiceSFTP extends ServiceBase {
 			});
 	}
 
+	setRemotePathMode(remote, mode) {
+		return new Promise((resolve, reject) => {
+			let modeMatch;
+
+			if (Array.isArray(mode)) {
+				try {
+					modeMatch = this.config.service.fileMode.filter((match) =>
+						micromatch.isMatch(remote, match.glob, this.options.modeGlob)
+					);
+				} catch(e) { reject(e); }
+
+
+				if (modeMatch.length) {
+					mode = modeMatch[0].mode;
+				}
+			}
+
+			if (mode !== '') {
+				return this.connect().then((client) => {
+					client.sftp.chmod(remote, mode, resolve);
+				});
+			}
+		});
+	}
+
 	clientPut(local, remote) {
 		return new Promise((resolve, reject) => {
 			this.globalReject = reject;
@@ -558,6 +597,13 @@ class ServiceSFTP extends ServiceBase {
 
 					if (existing === null) {
 						return connection.mkdir(dir)
+							.then(() => {
+								// Change path mode
+								return this.setRemotePathMode(
+									this.paths.addTrailingSlash(dir),
+									this.config.service.fileMode
+								);
+							})
 							.then(() => {
 								// Add dir to cache
 								this.pathCache.addCachedFile(
@@ -835,12 +881,9 @@ ServiceSFTP.defaults = {
 	password: '',
 	privateKey: '',
 	root: '/',
-	timeZoneOffset: 0,
-	testCollisionTimeDiffs: true,
-	collisionUploadAction: null,
-	collisionDownloadAction: null,
 	keepaliveInterval: 3000,
-	debug: false
+	debug: false,
+	fileMode: 0
 };
 
 ServiceSFTP.encodingByExtension = {

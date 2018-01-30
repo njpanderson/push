@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 
+const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const Paths = require('../lib/Paths');
@@ -40,7 +41,7 @@ class Service {
 				detail: this.services[service].detail,
 				settingsPayload: {
 					service,
-					'SFTP': this.services[service].defaults
+					'SFTP': this.getServiceDefaults(service)
 				}
 			});
 		}
@@ -122,7 +123,7 @@ class Service {
 			// Instantiate
 			this.activeService = new this.services[this.config.serviceName]({
 				onDisconnect: this.options.onDisconnect
-			}, this.services[this.config.serviceName].defaults);
+			}, this.getServiceDefaults(this.config.serviceName));
 
 			// Invoke settings validation
 			this.activeService.validateServiceSettings(
@@ -130,6 +131,17 @@ class Service {
 				this.config.service
 			);
 		}
+	}
+
+	/**
+	 * Get the default settings for a service, extended from the base defaults
+	 * @param {string} serviceName - Name of the service to retrieve defaults for.
+	 */
+	getServiceDefaults(serviceName) {
+		return Object.assign({},
+			ServiceBase.defaults,
+			this.services[serviceName].defaults
+		);
 	}
 }
 
