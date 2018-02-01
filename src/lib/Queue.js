@@ -3,20 +3,45 @@ const crypto = require('crypto');
 
 const utils = require('./utils');
 const channel = require('./channel');
+const constants = require('./constants');
 
 class Queue {
 	/**
 	 * Class constructor
 	 * @param {OutputChannel} channel - Channel for outputting information
 	 */
-	constructor() {
+	constructor(options) {
 		this.running = false;
 		this.tasks = [];
 		this.currentTask = null;
 		this.progressInterval = null;
 
+		this.setOptions(options);
+
+		this.status = vscode.window.createStatusBarItem(
+			vscode.StatusBarAlignment.Left,
+			constants.STATUS_PRIORITIES.UPLOAD_QUEUE
+		);
+
+		if (typeof this.options.statusCommand === 'string') {
+			this.status.command = this.options.statusCommand;
+		}
+
 		// Global progress callbacks for external use
 		this.progressReject = null;
+	}
+
+	/**
+	 * Set class-specific options.
+	 * @param {object} options
+	 */
+	setOptions(options) {
+		this.options = Object.assign({}, {
+			showStatus: false,
+			statusIcon: 'repo-push',
+			statusToolTip: null,
+			statusCommand: null
+		}, options);
 	}
 
 	/**
@@ -42,12 +67,21 @@ class Queue {
 
 			this.tasks.push(task);
 		}
+
+		this._updateStatus();
 	}
 
 	getTask(id) {
 		return this.tasks.find((item) => {
 			return ('id' in item && item.id === id);
 		})
+	}
+
+	/**
+	 * Get all current task (or an empty array)
+	 */
+	getTasks() {
+		return this.tasks;
 	}
 
 	/**
@@ -92,6 +126,7 @@ class Queue {
 					this.execQueueItems(
 						(results) => {
 							clearInterval(this.progressInterval);
+							this._updateStatus();
 							resolve(results);
 						}
 					);
@@ -246,6 +281,25 @@ class Queue {
 				utils.showMessage(extra.join(' '));
 			}
 
+		}
+	}
+
+	/**
+	 * Update the general watcher status.
+	 */
+	_updateStatus() {
+		let tasks = this.tasks.filter((task) => task.id);
+
+		if (tasks.length && this.options.showStatus) {
+			this.status.text = `$(${this.options.statusIcon}) ${tasks.length}`;
+
+			if (typeof this.options.statusToolTip === 'function') {
+				this.status.tooltip = this.options.statusToolTip(tasks.length);
+			}
+
+			this.status.show();
+		} else {
+			this.status.hide();
 		}
 	}
 };

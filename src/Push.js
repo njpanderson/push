@@ -39,6 +39,20 @@ class Push extends PushBase {
 		return this.execQueue(Push.queueDefs.upload);
 	}
 
+	listQueueItems(queueDef) {
+		if (this.queues[queueDef.id]) {
+			channel.appendInfo('Items queued for upload:');
+
+			this.queues[queueDef.id].getTasks().forEach((item) => {
+				if (item.actionTaken) {
+					channel.appendLine(item.actionTaken);
+				}
+			});
+		} else {
+			channel.appendInfo('No current upload queue items');
+		}
+	}
+
 	cancelQueues() {
 		this.stopCancellableQueues();
 	}
@@ -106,6 +120,8 @@ class Push extends PushBase {
 	/**
 	 * @param {array} tasks - Tasks to execute. Must contain the properties detailed below.
 	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately.
+	 * @param {object} [queueDef=Push.queueDefs.default] - Which queue to use.
+	 * @param {boolean} [showStatus=false] - Show the length of the queue in the status bar.
 	 * @description
 	 * Queues a task for a service method after doing required up-front work.
 	 *
@@ -114,8 +130,13 @@ class Push extends PushBase {
 	 * - `uriContext` (`uri`): URI context for the method.
 	 * - `args` (`array`): Array of arguments to send to the method.
 	 */
-	queue(tasks = [], runImmediately = false, queueDef = Push.queueDefs.default) {
-		const queue = this.getQueue(queueDef);
+	queue(
+		tasks = [],
+		runImmediately = false,
+		queueDef = Push.queueDefs.default,
+		queueOptions
+	) {
+		const queue = this.getQueue(queueDef, queueOptions);
 
 		if (!queue) {
 			throw new Error('No valid queue defined in Push#queue');
@@ -183,7 +204,13 @@ class Push extends PushBase {
 						uriContext: uri,
 						args: [uri, remoteUri],
 						id: remoteUri + this.paths.getNormalPath(uri)
-					}], false, Push.queueDefs.upload);
+					}], false, Push.queueDefs.upload, {
+						showStatus: true,
+						statusToolTip: (num) => {
+							return `${num} item` + (num === 1 ? '' : 's') + ' to upload';
+						},
+						statusCommand: 'push.uploadQueuedItems'
+					});
 				});
 		}
 	}
@@ -191,15 +218,16 @@ class Push extends PushBase {
 	/**
 	 * Retrieve a queue instance by its definition.
 	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
+	 * @param {boolean} [showStatus=false] - Show the queue length in the status bar.
 	 * @returns {object} A single instance of Queue.
 	 */
-	getQueue(queueDef) {
+	getQueue(queueDef, queueOptions) {
 		if (typeof queueDef !== 'object' || !queueDef.id) {
 			throw new Error('Invalid queue definition type.');
 		}
 
 		if (!this.queues[queueDef.id]) {
-			this.queues[queueDef.id] = new Queue();
+			this.queues[queueDef.id] = new Queue(queueOptions);
 		}
 
 		return this.queues[queueDef.id];

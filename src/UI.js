@@ -12,6 +12,13 @@ class UI extends Push {
 	}
 
 	/**
+	 * Show the current upload queue in the console
+	 */
+	showUploadQueue() {
+		this.listQueueItems(Push.queueDefs.upload);
+	}
+
+	/**
 	 * Uploads a single file or directory by its Uri.
 	 * @param {Uri} uri
 	 */

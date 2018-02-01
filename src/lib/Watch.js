@@ -1,8 +1,8 @@
 const vscode = require('vscode');
 
 const Paths = require('./Paths');
-const utils = require('./utils');
 const channel = require('./channel');
+const constants = require('./constants');
 
 const paths = new Paths();
 
@@ -15,9 +15,11 @@ class Watch {
 		this.watchList = [];
 
 		this.status = vscode.window.createStatusBarItem(
-			vscode.StatusBarAlignment.Left
+			vscode.StatusBarAlignment.Left,
+			constants.STATUS_PRIORITIES.WATCH
 		);
-		this.status.command = 'push.listWatchers'
+
+		this.status.command = 'push.listWatchers';
 	}
 
 	/**

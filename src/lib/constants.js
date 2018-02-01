@@ -10,5 +10,11 @@ module.exports = {
                 '\t\t\/\/ Add service configuration here...',
             '\t}',
         '}'
-    ].join('\n')
+    ].join('\n'),
+
+    STATUS_PRIORITIES: {
+        UPLOAD_QUEUE: 1,
+        WATCH: 2,
+        UPLOAD_STATUS: 3
+    }
 };
