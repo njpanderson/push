@@ -46,7 +46,9 @@ class UI extends Push {
 	}
 
 	/**
-	 * Discover differences between the local and remote file.
+	 * @description
+	 * Discover differences between the local and remote file. Uses the contextual
+	 * service to retrieve the remote URI and vscode to diff the files.
 	 * @param {Uri} uri
 	 */
 	diff(uri) {

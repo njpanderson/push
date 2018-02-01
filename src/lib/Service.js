@@ -24,7 +24,6 @@ class Service extends PushBase {
 
 		this.activeService = null;
 		this.paths = new Paths();
-		this.config = {};
 	}
 
 	/**
@@ -33,7 +32,7 @@ class Service extends PushBase {
 	 */
 	editServiceConfig(uri) {
 		let rootPaths, dirName, settingsFile,
-			settingsFilename = utils.getConfig('settingsFilename');
+			settingsFilename = this.config.settingsFilename;
 
 		uri = this.paths.getFileSrc(uri);
 		dirName = this.paths.getDirName(uri, true);
@@ -83,7 +82,7 @@ class Service extends PushBase {
 	 */
 	importConfig(uri) {
 		let className, pathName, basename, instance, settings,
-			settingsFilename = utils.getConfig('settingsFilename');
+			settingsFilename = this.config.settingsFilename;
 
 		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
 
@@ -208,6 +207,10 @@ class Service extends PushBase {
 		});
 	}
 
+	/**
+	 * Set class-specific options (Which have nothing to do with the config).
+	 * @param {object} options
+	 */
 	setOptions(options) {
 		this.options = Object.assign({}, {
 			onDisconnect: null
@@ -236,10 +239,23 @@ class Service extends PushBase {
 		return options;
 	}
 
+	/**
+	 * @description
+	 * Similar to base setConfig but allows a mutated config including ad-hoc
+	 * service settings. Used primarily with Service#exec to invoke service
+	 * specific methods with a service augmented config.
+	 *
+	 * If the serviceName setting changes, this function will also trigger a
+	 * restart of the service instance.
+	 * @param {object} [config] - optional config set to apply.
+	 */
 	setConfig(config) {
-		let restart = (config.serviceName !== this.config.serviceName);
+		let restart = (
+			typeof config !== 'undefined' &&
+			config.serviceName !== this.config.serviceName
+		);
 
-		this.config = config;
+		this.config = Object.assign({}, utils.getConfig(), config);
 
 		if (restart) {
 			// Service name is different or set - instantiate.

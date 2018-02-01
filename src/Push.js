@@ -13,7 +13,6 @@ class Push extends PushBase {
 	constructor() {
 		super();
 
-		this.setConfig = this.setConfig.bind(this);
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 
 		this.settings = new ServiceSettings();
@@ -26,15 +25,9 @@ class Push extends PushBase {
 		this.paths = new Paths();
 		this.watch = new Watch();
 
-		this.config = null;
-
 		this.queues = {};
 
-		// Set initial config
-		this.setConfig();
-
 		// Create event handlers
-		vscode.workspace.onDidChangeConfiguration(this.setConfig);
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
 
 		// Set initial contexts
@@ -52,13 +45,6 @@ class Push extends PushBase {
 
 	stopQueues() {
 		this.stopCancellableQueues(true);
-	}
-
-	/**
-	 * Sets the current configuration for the active workspace.
-	 */
-	setConfig() {
-		this.config = utils.getConfig();
 	}
 
 	/**

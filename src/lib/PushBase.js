@@ -2,10 +2,25 @@ const vscode = require('vscode');
 
 const Paths = require('./Paths');
 const channel = require('./channel');
+const utils = require('./utils');
 
 class PushBase {
 	constructor() {
 		this.paths = new Paths();
+		this.setConfig = this.setConfig.bind(this);
+
+		// Set initial config
+		this.setConfig();
+
+		// Create event handlers
+		vscode.workspace.onDidChangeConfiguration(this.setConfig);
+	}
+
+	/**
+	 * Sets the current configuration for the active workspace.
+	 */
+	setConfig() {
+		this.config = utils.getConfig();
 	}
 
 	/**
