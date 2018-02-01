@@ -516,10 +516,14 @@ class ServiceSFTP extends ServiceBase {
 				}
 			}
 
-			if (mode !== '') {
+			if (mode !== '' && typeof mode === 'string' && mode.length >= 3) {
+				// Set mode and resolve
 				return this.connect().then((client) => {
 					client.sftp.chmod(remote, mode, resolve);
 				});
+			} else {
+				// Just resolve
+				resolve();
 			}
 		});
 	}
@@ -883,7 +887,7 @@ ServiceSFTP.defaults = {
 	root: '/',
 	keepaliveInterval: 3000,
 	debug: false,
-	fileMode: 0
+	fileMode: ''
 };
 
 ServiceSFTP.encodingByExtension = {
