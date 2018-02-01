@@ -3,10 +3,16 @@ const vscode = require('vscode');
 const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
-const Paths = require('../lib/Paths');
+const PushBase = require('./PushBase');
+const Paths = require('./Paths');
+const utils = require('./utils');
+const channel = require('./channel');
+const constants = require('./constants');
 
-class Service {
+class Service extends PushBase {
 	constructor(options) {
+		super();
+
 		this.setOptions(options);
 
 		this.getStateProgress = this.getStateProgress.bind(this);
@@ -19,6 +25,187 @@ class Service {
 		this.activeService = null;
 		this.paths = new Paths();
 		this.config = {};
+	}
+
+	/**
+	 * Edits (or creates) a server configuration file
+	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 */
+	editServiceConfig(uri) {
+		let rootPaths, dirName, settingsFile,
+			settingsFilename = utils.getConfig('settingsFilename');
+
+		uri = this.paths.getFileSrc(uri);
+		dirName = this.paths.getDirName(uri, true);
+
+		// Find the nearest settings file
+		settingsFile = this.paths.findFileInAncestors(
+			settingsFilename,
+			dirName
+		);
+
+		if (dirName !== ".") {
+			// If a directory is defined, use it as the root path
+			rootPaths = [{
+				uri: vscode.Uri.file(dirName)
+			}]
+		} else {
+			rootPaths = this.paths.getWorkspaceRootPaths();
+		}
+
+		if (settingsFile) {
+			// Edit the settings file found
+			this.openDoc(settingsFile);
+		} else {
+			// Produce a prompt to create a new settings file
+			this.getFileNamePrompt(settingsFilename, rootPaths)
+				.then((file) => {
+					if (file.exists) {
+						this.openDoc(file.fileName);
+					} else {
+						this.writeAndOpen(
+							(file.serviceType.label !== 'Empty' ?
+								file.serviceType.settingsPayload :
+								constants.DEFAULT_SERVICE_CONFIG
+							),
+							file.fileName
+						);
+					}
+				});
+		}
+	}
+
+	/**
+	 * Imports a configuration file.
+	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 * @param {string} type - Type of config to import. Currently only 'SSFTP'
+	 * is supported.
+	 */
+	importConfig(uri) {
+		let className, pathName, basename, instance, settings,
+			settingsFilename = utils.getConfig('settingsFilename');
+
+		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
+
+		if (!(basename = this.paths.getBaseName(pathName))) {
+			channel.appendError(utils.strings.NO_IMPORT_FILE);
+		}
+
+		// Figure out which config type this is and import
+		for (className in constants.CONFIG_FORMATS) {
+			if (constants.CONFIG_FORMATS[className].test(basename)) {
+				className = require(`./importers/${className}`);
+				instance = new className();
+
+				return instance.import(pathName)
+					.then((result) => {
+						settings = result;
+
+						return this.getFileNamePrompt(
+							settingsFilename,
+							this.paths.getDirName(pathName),
+							true,
+							false
+						);
+					})
+					.then((result) => {
+						if (result.exists) {
+							// Settings file already exists at this location!
+							return vscode.window.showInformationMessage(
+								utils.strings.SETTINGS_FILE_EXISTS,
+								{
+									title: 'Overwrite'
+								}, {
+									isCloseAffordance: true,
+									title: 'Cancel'
+								}
+							).then((collisionAnswer) => ({
+								fileName: result.fileName,
+								write: (collisionAnswer.title === 'Overwrite')
+							}));
+						} else {
+							// Just create and open
+							return ({ fileName: result.fileName, write: true });
+						}
+					})
+					.then((result) => {
+						if (result.write) {
+							// Write the file
+							this.writeAndOpen(
+								`\/\/ Settings imported from ${pathName}\n` +
+								JSON.stringify(settings, null, '\t'),
+								result.fileName
+							);
+						}
+					})
+					.catch((error) => {
+						channel.appendError(error);
+					});
+			}
+		}
+
+		channel.appendError(utils.strings.IMPORT_FILE_NOT_SUPPORTED);
+	}
+
+	/**
+	 * Produce a settings filename prompt.
+	 * @param {string} exampleFileName - Filename example to start with.
+	 * @param {vscode.WorkspaceFolder[]} rootPaths - A list of root paths to choose from.
+	 * @param {boolean} forceDialog - Force a name prompt if the file exists already.
+	 * If `false`, will not display a dialog even if the file exists.
+	 * @param {boolean} fromTemplate - Produce a list of service templates with which
+	 * to fill the file.
+	 */
+	getFileNamePrompt(exampleFileName, rootPaths, forceDialog = false, fromTemplate = true) {
+		return new Promise((resolve, reject) => {
+			// Produce a filename prompt
+			this.getRootPathPrompt(rootPaths)
+				.then((rootPath) => {
+					let fileName = rootPath + Paths.sep + exampleFileName;
+
+					if (!rootPath) {
+						return reject();
+					}
+
+					// File exists but forceDialog is false - just keep going
+					if (this.paths.fileExists(fileName) && !forceDialog) {
+						return resolve({ fileName, exists: true });
+					}
+
+					// Produce a file prompt
+					vscode.window.showInputBox({
+						prompt: 'Enter a filename for the service settings file:',
+						value: fileName
+					}).then((fileName) => {
+						// Show a service type picker (unless fromTemplate is false)
+						if (!fromTemplate) {
+							return { fileName };
+						}
+
+						if (!fileName) {
+							return reject();
+						}
+
+						return vscode.window.showQuickPick(
+							[{
+								'label': 'Empty',
+								'description': 'Empty template'
+							}].concat(this.getList()),
+							{
+								placeHolder: 'Select a service type template.'
+							}
+						).then((serviceType) => {
+							return { fileName, serviceType };
+						});
+					}).then(({ fileName, serviceType }) => {
+						resolve({
+							fileName,
+							exists: this.paths.fileExists(fileName),
+							serviceType
+						});
+					});
+				});
+		});
 	}
 
 	setOptions(options) {

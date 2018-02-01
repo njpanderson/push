@@ -2,14 +2,17 @@ const vscode = require('vscode');
 
 const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
+const PushBase = require('./lib/PushBase');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
 const Watch = require('./lib/Watch');
 const utils = require('./lib/utils');
 const channel = require('./lib/channel');
 
-class Push {
+class Push extends PushBase {
 	constructor() {
+		super();
+
 		this.setConfig = this.setConfig.bind(this);
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 
@@ -41,102 +44,6 @@ class Push {
 
 	execUploadQueue() {
 		return this.execQueue(Push.queueDefs.upload);
-	}
-
-	writeAndOpen(content, fileName) {
-		// Write a file then open it
-		if (typeof content !== 'string' && content.constructor === Object) {
-			// Parse pure object content to JSON string
-			content = JSON.stringify(content, null, '\t');
-		}
-
-		// Add comment to the top
-		content =
-			'// Push settings file - generated on ' + (new Date()).toString() + '\n' +
-			'// Note: Comments are supported within Push settings files\n' +
-			content;
-
-		this.paths.writeFile(
-			content,
-			fileName
-		)
-			.then((fileName) => {
-				this.openDoc(fileName);
-			})
-			.catch((error) => {
-				channel.appendError(error);
-			});
-	}
-
-	getFileNamePrompt(exampleFileName, rootPaths, forceDialog = false) {
-		return new Promise((resolve, reject) => {
-			this.getRootPathPrompt(rootPaths)
-				.then((rootPath) => {
-					let fileName = rootPath + Paths.sep + exampleFileName;
-
-					if (!rootPath) {
-						return reject();
-					}
-
-					if (this.paths.fileExists(fileName) && !forceDialog) {
-						return resolve({ fileName, exists: true });
-					}
-
-					vscode.window.showInputBox({
-						prompt: 'Enter a filename for the service settings file:',
-						value: fileName
-					}).then((fileName) => {
-						if (!fileName) {
-							return reject();
-						}
-
-						return vscode.window.showQuickPick(
-							[{
-								'label': 'Empty',
-								'description': 'Empty template'
-							}].concat(this.service.getList()),
-							{
-								placeHolder: 'Select a service type template.'
-							}
-						).then((serviceType) => {
-							return { fileName, serviceType };
-						});
-					}).then(({ fileName, serviceType }) => {
-						resolve({
-							fileName,
-							exists: this.paths.fileExists(fileName),
-							serviceType
-						});
-					});
-				});
-		});
-	}
-
-	/**
-	 * Will either prompt the user to select a root path, or in the case that
-	 * only one `rootPaths` element exists, will resolve to that path.
-	 * @param {vscode.WorkspaceFolder[]} rootPaths
-	 * @returns {promise} A promise eventually resolving to a single Uri.
-	 */
-	getRootPathPrompt(rootPaths) {
-		return new Promise((resolve) => {
-			if (typeof rootPaths === 'string') {
-				resolve(rootPaths);
-				return;
-			}
-
-			if (rootPaths.length > 1) {
-				// First, select a root path
-				vscode.window.showQuickPick(
-					rootPaths.map((item) => this.paths.getNormalPath(item.uri)),
-					{
-						placeHolder: 'Select a workspace root path:'
-					}
-				).then(resolve);
-			} else {
-				resolve(this.paths.getNormalPath(rootPaths[0].uri));
-			}
-		});
 	}
 
 	cancelQueues() {
@@ -207,45 +114,6 @@ class Push {
 			// No settings for this context - show an error
 			channel.appendError(utils.strings.NO_SERVICE_FILE, this.config.settingsFilename);
 			return false;
-		}
-	}
-
-	/**
-	 * Opens a text document and displays it within the editor window.
-	 * @param {string|Uri} file - File to open. Must be local.
-	 */
-	openDoc(file) {
-		let document;
-
-		// Shows the document as an editor tab
-		function show(document) {
-			vscode.window.showTextDocument(
-				document,
-				{
-					preview: true,
-					preserveFocus: false
-				}
-			);
-		}
-
-		// Convert string (or invalid scheme) into a Uri with a scheme of "file"
-		if (!(file instanceof vscode.Uri) || file.scheme !== 'file') {
-			file = vscode.Uri.file(this.paths.getNormalPath(file));
-		}
-
-		// Find and open document
-		document = vscode.workspace.openTextDocument(file);
-
-		if (document instanceof Promise) {
-			// Document is opening, wait and display
-			document.then(show)
-				.catch((error) => {
-					channel.appendError(error);
-					throw error;
-				});
-		} else {
-			// Display immediately
-			show(document);
 		}
 	}
 

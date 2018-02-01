@@ -1,9 +1,7 @@
 const vscode = require('vscode');
 
 const Push = require('./Push');
-const utils = require('./lib/utils');
 const channel = require('./lib/channel');
-const constants = require('./lib/constants');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -102,6 +100,9 @@ class UI extends Push {
 		this.watch.remove(this.paths.getFileSrc(uri));
 	}
 
+	/**
+	 * Lists active watchers
+	 */
 	listWatchers() {
 		this.watch.list();
 	}
@@ -128,120 +129,17 @@ class UI extends Push {
 	}
 
 	/**
-	 * Edits (or creates) a server configuration file
-	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
-		let rootPaths, dirName, settingsFile;
-
-		uri = this.paths.getFileSrc(uri);
-		dirName = this.paths.getDirName(uri, true);
-
-		// Find the nearest settings file
-		settingsFile = this.paths.findFileInAncestors(
-			this.config.settingsFilename,
-			dirName
-		);
-
-		if (dirName !== ".") {
-			// If a directory is defined, use it as the root path
-			rootPaths = [{
-				uri: vscode.Uri.file(dirName)
-			}]
-		} else {
-			rootPaths = this.paths.getWorkspaceRootPaths();
-		}
-
-		if (settingsFile) {
-			// Edit the settings file found
-			this.openDoc(settingsFile);
-		} else {
-			// Produce a prompt to create a new settings file
-			this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
-				.then((file) => {
-					if (file.exists) {
-						this.openDoc(file.fileName);
-					} else {
-						this.writeAndOpen(
-							(file.serviceType.label !== 'Empty' ?
-								file.serviceType.settingsPayload :
-								constants.DEFAULT_SERVICE_CONFIG
-							),
-							file.fileName
-						);
-					}
-				});
-		}
+		this.service.editServiceConfig(uri);
 	}
 
 	/**
-	 * Imports a configuration file from Sublime SFTP
-	 * @param {Uri} uri - Uri to start looking for a configuration file
-	 * @param {string} type - Type of config to import. Currently only 'SSFTP'
-	 * is supported.
+	 * @see Service#importConfig
 	 */
 	importConfig(uri) {
-		let className, pathName, basename, instance, settings;
-
-		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
-
-		if (!(basename = this.paths.getBaseName(pathName))) {
-			channel.appendError(utils.strings.NO_IMPORT_FILE);
-		}
-
-		// Figure out which config type this is and import
-		for (className in constants.CONFIG_FORMATS) {
-			if (constants.CONFIG_FORMATS[className].test(basename)) {
-				className = require(`./lib/importers/${className}`);
-				instance = new className();
-
-				return instance.import(pathName)
-					.then((result) => {
-						settings = result;
-
-						return this.getFileNamePrompt(
-							this.config.settingsFilename,
-							this.paths.getDirName(pathName),
-							true
-						);
-					})
-					.then((result) => {
-						if (result.exists) {
-							// Settings file already exists at this location!
-							return vscode.window.showInformationMessage(
-								utils.strings.SETTINGS_FILE_EXISTS,
-								{
-									title: 'Overwrite'
-								}, {
-									isCloseAffordance: true,
-									title: 'Cancel'
-								}
-							).then((collisionAnswer) => ({
-								fileName: result.fileName,
-								write: (collisionAnswer.title === 'Overwrite')
-							}));
-						} else {
-							// Just create and open
-							return ({ fileName: result.fileName, write: true });
-						}
-					})
-					.then((result) => {
-						if (result.write) {
-							// Write the file
-							this.writeAndOpen(
-								`\/\/ Settings imported from ${pathName}\n` +
-								JSON.stringify(settings, null, '\t'),
-								result.fileName
-							);
-						}
-					})
-					.catch((error) => {
-						channel.appendError(error);
-					});
-			}
-		}
-
-		channel.appendError(utils.strings.IMPORT_FILE_NOT_SUPPORTED);
+		this.service.importConfig(uri);
 	}
 }
 
