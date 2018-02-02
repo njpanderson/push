@@ -1,13 +1,14 @@
+const vscode = require("vscode");
 const SFTPClient = require('ssh2-sftp-client');
 const fs = require('fs');
 const path = require('path');
 const homedir = require('os').homedir;
 const micromatch = require("micromatch");
-const vscode = require("vscode");
 
 const ServiceBase = require('./Base');
 const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
+const channel = require('../lib/channel');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
 // const SRC_LOCAL = PathCache.sources.LOCAL;
@@ -104,15 +105,15 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {Object} client - SFTP client returned from {@link this.getClient}
 	 */
 	openConnection(client) {
-		let options = this.getClientOptions(this.config.service);
-
 		return new Promise((resolve, reject) => {
-			client.sftp.connect(options)
+			client.sftp.connect(client.options)
 				.then(() => {
+					let output = `SFTP client connected to host ${client.options.host}:${client.options.port}`;
+
 					this.onConnect();
-					console.log(
-						`SFTP client connected to host ${options.host}:${options.port}`
-					);
+
+					channel.appendInfo(output);
+					console.log(output);
 
 					return client;
 				})
@@ -128,7 +129,7 @@ class ServiceSFTP extends ServiceBase {
 								if (result) {
 									// Temporarily set the password in the service config
 									this.config.service.password = result;
-									resolve(this.openConnection(client, options));
+									resolve(this.openConnection(client, client.options));
 								} else {
 									reject(error);
 								}
@@ -229,7 +230,8 @@ class ServiceSFTP extends ServiceBase {
 						// Create a new client
 						this.clients[hash] = {
 							lastUsed: 0,
-							sftp: new SFTPClient()
+							sftp: new SFTPClient(),
+							options: this.getClientOptions(this.config.service)
 						};
 
 						this.clients[hash].sftp.client
@@ -240,11 +242,15 @@ class ServiceSFTP extends ServiceBase {
 								// Check for local or global error (created by error event)
 								let hadError = (error || this.sftpError);
 
-								if (hadError.level === 'client-authentication') {
-									// Error is regarding authentication - don't consider fatal
-									hadError = false;
+								if (hadError && hadError.level) {
+									if (hadError.level === 'client-authentication') {
+										// Error is regarding authentication - don't consider fatal
+										hadError = false;
+									} else {
+										hadError = true;
+									}
 								} else {
-									hadError = true;
+									hadError = false;
 								}
 
 								// Fire onDisconnect event method
@@ -294,6 +300,8 @@ class ServiceSFTP extends ServiceBase {
 	 */
 	removeClient(hash) {
 		if (this.clients[hash]) {
+			channel.appendInfo(`SFTP client disconnected from host ${this.clients[hash].options.host}:${this.clients[hash].options.port}`);
+
 			return this.clients[hash].sftp.end()
 				.then(() => {
 					this.clients[hash] = null;
@@ -519,7 +527,11 @@ class ServiceSFTP extends ServiceBase {
 			if (mode !== '' && typeof mode === 'string' && mode.length >= 3) {
 				// Set mode and resolve
 				return this.connect().then((client) => {
-					client.sftp.chmod(remote, mode, resolve);
+					try {
+						client.sftp.chmod(remote, mode, resolve);
+					} catch(e) {
+						reject(e);
+					}
 				});
 			} else {
 				// Just resolve

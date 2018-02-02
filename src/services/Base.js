@@ -376,10 +376,10 @@ class ServiceBase {
 	onDisconnect(hadError) {
 		this.setProgress(false);
 
-		// Alert user via channel
-		channel['append' + (hadError ? 'Error' : 'Info')](
-			`Service "${this.type}" has disconnected.`
-		);
+		// Alert user via channel (disabled in lieu of service's own message)
+		// channel['append' + (hadError ? 'Error' : 'Info')](
+		// 	`Service "${this.type}" has disconnected.`
+		// );
 
 		if (typeof this.options.onDisconnect === 'function') {
 			this.options.onDisconnect(this);
