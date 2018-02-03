@@ -145,23 +145,22 @@ class File extends ServiceBase {
 
 	/**
 	 * Effectively stops the read and write streams by end() and destroy().
-	 * @param {function} fnCallback - Optional callback function to call after stopping.
 	 */
-	stop(fnCallback) {
-		// Stop read stream
-		if (this.readStream) {
-			this.readStream.destroy();
-		}
+	stop() {
+		return new Promise((resolve) => {
+			// Stop read stream
+			if (this.readStream) {
+				this.readStream.destroy();
+			}
 
-		// Stop write stream
-		if (this.writeStream) {
-			this.writeStream.end();
-			this.writeStream.destroy();
-		}
+			// Stop write stream
+			if (this.writeStream) {
+				this.writeStream.end();
+				this.writeStream.destroy();
+			}
 
-		if (typeof fnCallback === 'function') {
-			fnCallback();
-		}
+			resolve();
+		});
 	}
 
 	/**

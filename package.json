@@ -109,12 +109,12 @@
       },
       {
         "command": "push.cancelQueues",
-        "title": "Cancel currently active queue",
+        "title": "Cancel active queue",
         "category": "Push"
       },
       {
         "command": "push.stopQueues",
-        "title": "Cancel currently active queue and force transfers to stop",
+        "title": "Stop transfer and cancel active queue",
         "category": "Push"
       },
       {

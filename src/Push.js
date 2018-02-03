@@ -15,12 +15,7 @@ class Push extends PushBase {
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 
-		this.settings = new ServiceSettings();
-		this.service = new Service({
-			onDisconnect: () => {
-				this.stopCancellableQueues();
-			}
-		});
+		this.initService();
 
 		this.paths = new Paths();
 		this.watch = new Watch();
@@ -33,6 +28,15 @@ class Push extends PushBase {
 		// Set initial contexts
 		this.setContext(Push.contexts.queueInProgress, false);
 		this.setContext(Push.contexts.initialised, true);
+	}
+
+	initService() {
+		this.settings = new ServiceSettings();
+		this.service = new Service({
+			onDisconnect: () => {
+				this.stopCancellableQueues();
+			}
+		});
 	}
 
 	execUploadQueue() {
@@ -51,14 +55,6 @@ class Push extends PushBase {
 		} else {
 			channel.appendInfo('No current upload queue items');
 		}
-	}
-
-	cancelQueues() {
-		this.stopCancellableQueues();
-	}
-
-	stopQueues() {
-		this.stopCancellableQueues(true);
 	}
 
 	/**
@@ -290,12 +286,26 @@ class Push extends PushBase {
 			title: 'Push'
 		}, (progress) => {
 			return new Promise((resolve, reject) => {
+				let timer;
+
 				progress.report({ message: 'Stopping...' });
+
+				// Give X seconds to stop or force
+				timer = setTimeout(() => {
+					let message = `Queue ${queueDef.id} task force stopped after ` +
+						`${Push.globals.FORCE_STOP_TIMEOUT} seconds.`;
+
+					this.service.restartServiceInstance();
+
+					channel.appendError(message);
+					reject(message);
+				}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
 
 				this.getQueue(queueDef)
 					.stop()
 					.then((result) => {
 						resolve(result);
+						channel.appendInfo(`Queue ${queueDef.id} cancelled`);
 					})
 					.catch((error) => {
 						reject(error);
@@ -303,7 +313,12 @@ class Push extends PushBase {
 
 				if (force) {
 					// Ensure the service stops in addition to the queue emptying
-					this.service.stop();
+					this.service.stop()
+						.then(() => {
+							clearTimeout(timer);
+						}, () => {
+							clearTimeout(timer);
+						});
 				}
 			});
 		});
@@ -482,6 +497,10 @@ Push.queueDefs = {
 		id: 'upload',
 		cancellable: false
 	}
+};
+
+Push.globals = {
+	FORCE_STOP_TIMEOUT: 5 // In seconds
 };
 
 Push.contexts = {

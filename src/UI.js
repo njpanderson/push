@@ -137,6 +137,14 @@ class UI extends Push {
 		this.watch.clear();
 	}
 
+	cancelQueues() {
+		this.stopCancellableQueues();
+	}
+
+	stopQueues() {
+		this.stopCancellableQueues(true);
+	}
+
 	/**
 	 * @see Service#editServiceConfig
 	 */
