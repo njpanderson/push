@@ -119,22 +119,22 @@
       },
       {
         "command": "push.addWatchFile",
-        "title": "Add file to Push watch list",
+        "title": "Create Push watch with file",
         "category": "Push"
       },
       {
         "command": "push.removeWatchFile",
-        "title": "Remove file from Push watch list",
+        "title": "Remove file from Push watch",
         "category": "Push"
       },
       {
         "command": "push.addWatchFolder",
-        "title": "Add folder to Push watch list",
+        "title": "Create Push watch with folder",
         "category": "Push"
       },
       {
         "command": "push.removeWatchFolder",
-        "title": "Remove folder from Push watch list",
+        "title": "Remove folder from Push watch",
         "category": "Push"
       },
       {
