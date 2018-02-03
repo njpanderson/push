@@ -6,8 +6,10 @@ const ServiceFile = require('../services/File');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
 const utils = require('./utils');
+const config = require('./config');
 const channel = require('./channel');
 const constants = require('./constants');
+const i18n = require('../lang/i18n');
 
 class Service extends PushBase {
 	constructor(options) {
@@ -87,7 +89,7 @@ class Service extends PushBase {
 		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
 
 		if (!(basename = this.paths.getBaseName(pathName))) {
-			channel.appendError(utils.strings.NO_IMPORT_FILE);
+			channel.appendLocalisedError('no_import_file');
 		}
 
 		// Figure out which config type this is and import
@@ -111,16 +113,16 @@ class Service extends PushBase {
 						if (result.exists) {
 							// Settings file already exists at this location!
 							return vscode.window.showInformationMessage(
-								utils.strings.SETTINGS_FILE_EXISTS,
+								i18n.t('settings_file_exists'),
 								{
-									title: 'Overwrite'
+									title: i18n.t('overwrite')
 								}, {
 									isCloseAffordance: true,
-									title: 'Cancel'
+									title: i18n.t('cancel')
 								}
 							).then((collisionAnswer) => ({
 								fileName: result.fileName,
-								write: (collisionAnswer.title === 'Overwrite')
+								write: (collisionAnswer.title === i18n.t('cancel'))
 							}));
 						} else {
 							// Just create and open
@@ -131,7 +133,7 @@ class Service extends PushBase {
 						if (result.write) {
 							// Write the file
 							this.writeAndOpen(
-								`\/\/ Settings imported from ${pathName}\n` +
+								'\/\/ ' + i18n.t('comm_settings_imported', pathName) +
 								JSON.stringify(settings, null, '\t'),
 								result.fileName
 							);
@@ -143,7 +145,7 @@ class Service extends PushBase {
 			}
 		}
 
-		channel.appendError(utils.strings.IMPORT_FILE_NOT_SUPPORTED);
+		channel.appendLocalisedError('import_file_not_supported');
 	}
 
 	/**
@@ -173,7 +175,7 @@ class Service extends PushBase {
 
 					// Produce a file prompt
 					vscode.window.showInputBox({
-						prompt: 'Enter a filename for the service settings file:',
+						prompt: i18n.t('enter_service_settings_filename'),
 						value: fileName
 					}).then((fileName) => {
 						// Show a service type picker (unless fromTemplate is false)
@@ -187,11 +189,11 @@ class Service extends PushBase {
 
 						return vscode.window.showQuickPick(
 							[{
-								'label': 'Empty',
-								'description': 'Empty template'
+								'label': i18n.t('empty'),
+								'description': i18n.t('empty_template')
 							}].concat(this.getList()),
 							{
-								placeHolder: 'Select a service type template.'
+								placeHolder: i18n.t('select_service_type_template')
 							}
 						).then((serviceType) => {
 							return { fileName, serviceType };
@@ -247,15 +249,15 @@ class Service extends PushBase {
 	 *
 	 * If the serviceName setting changes, this function will also trigger a
 	 * restart of the service instance.
-	 * @param {object} [config] - optional config set to apply.
+	 * @param {object} [configObject] - optional config set to apply.
 	 */
-	setConfig(config) {
+	setConfig(configObject) {
 		let restart = (
-			typeof config !== 'undefined' &&
-			config.serviceName !== this.config.serviceName
+			typeof configObject !== 'undefined' &&
+			configObject.serviceName !== this.config.serviceName
 		);
 
-		this.config = Object.assign({}, utils.getConfig(), config);
+		this.config = Object.assign({}, config.get(), configObject);
 
 		if (restart) {
 			// Service name is different or set - instantiate.

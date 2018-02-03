@@ -3,6 +3,8 @@ const vscode = require('vscode');
 const Paths = require('./Paths');
 const channel = require('./channel');
 const utils = require('./utils');
+const config = require('./config');
+const i18n = require('../lang/i18n');
 
 class PushBase {
 	constructor() {
@@ -20,7 +22,11 @@ class PushBase {
 	 * Sets the current configuration for the active workspace.
 	 */
 	setConfig() {
-		this.config = utils.getConfig();
+		this.config = config.get();
+
+		if (this.setContexts) {
+			this.setContexts();
+		}
 	}
 
 	/**
@@ -71,8 +77,8 @@ class PushBase {
 
 		// Add comment to the top
 		content =
-			'// Push settings file - generated on ' + (new Date()).toString() + '\n' +
-			'// Note: Comments are supported within Push settings files\n' +
+			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) +
+			'// ' + i18n.t('comm_push_settings2') +
 			content;
 
 		this.paths.writeFile(
@@ -105,7 +111,7 @@ class PushBase {
 				vscode.window.showQuickPick(
 					rootPaths.map((item) => this.paths.getNormalPath(item.uri)),
 					{
-						placeHolder: 'Select a workspace root path:'
+						placeHolder: i18n.t('select_workspace_root')
 					}
 				).then(resolve);
 			} else {

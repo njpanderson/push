@@ -1,12 +1,12 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
-const Glob = require('glob').Glob;
 
 const ServiceBase = require('./Base');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
+const i18n = require('../lang/i18n');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
 const SRC_LOCAL = PathCache.sources.LOCAL;
@@ -53,10 +53,11 @@ class File extends ServiceBase {
 	}
 
 	/**
-	 * Put a single file to the remote location.
+	 * Get a single file from the remote location.
 	 * @param {uri} local - Local Uri.
 	 * @param {uri} remote - Remote Uri.
 	 */
+	// TODO: check the remote file exists and error remote_file_not_found if not
 	get(local, remote) {
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
@@ -168,14 +169,14 @@ class File extends ServiceBase {
 	 * Will reject on an incompatible collision.
 	 * @param {string} dest - Destination directory to create
 	 */
-	mkDir(dest) {
-		return this.list(path.dirname(dest))
+	mkDir(dir) {
+		return this.list(path.dirname(dir))
 			.then(() => {
-				let existing = this.pathCache.getFileByPath(SRC_REMOTE, dest);
+				let existing = this.pathCache.getFileByPath(SRC_REMOTE, dir);
 
 				if (existing === null) {
 					return new Promise((resolve, reject) => {
-						fs.mkdir(dest, (error) => {
+						fs.mkdir(dir, (error) => {
 							if (error) {
 								reject(error);
 							}
@@ -183,7 +184,7 @@ class File extends ServiceBase {
 							// Add dir to cache
 							this.pathCache.addCachedFile(
 								SRC_REMOTE,
-								dest,
+								dir,
 								((new Date()).getTime() / 1000),
 								'd'
 							);
@@ -193,8 +194,7 @@ class File extends ServiceBase {
 					});
 				} else if (existing.type === 'f') {
 					return Promise.reject(new Error(
-						'Directory could not be created' +
-						' (a file with the same name exists on the remote!)'
+						i18n.t('directory_not_created_remote_mismatch', dir)
 					));
 				}
 			});
@@ -279,7 +279,7 @@ class File extends ServiceBase {
 	}
 };
 
-File.description = 'Local/network file transfers';
+File.description = i18n.t('file_class_description');
 
 File.defaults = {
 	root: '/'

@@ -4,6 +4,7 @@ const path = require('path');
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
+const i18n = require('../lang/i18n');
 
 class ServiceBase {
 	constructor(options, serviceDefaults) {
@@ -75,8 +76,8 @@ class ServiceBase {
 		for (key in spec) {
 			if (spec.hasOwnProperty(key)) {
 				if (!settings[key]) {
-					channel.appendError(
-						utils.strings.SERVICE_SETTING_MISSING,
+					channel.appendLocalisedError(
+						'service_setting_missing',
 						this.type,
 						key
 					);
@@ -210,7 +211,7 @@ class ServiceBase {
 			return this.mkDirByList(dirList, fnDir);
 		}
 
-		return Promise.reject('Directory is outside of root and cannot be created.');
+		return Promise.reject(i18n.t('directory_out_of_root_no_create'));
 	}
 
 	mkDirByList(list, fnDir) {

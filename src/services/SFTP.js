@@ -9,6 +9,7 @@ const ServiceBase = require('./Base');
 const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
 const channel = require('../lib/channel');
+const i18n = require('../lang/i18n');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
 // const SRC_LOCAL = PathCache.sources.LOCAL;
@@ -92,7 +93,11 @@ class ServiceSFTP extends ServiceBase {
 				if (error.code === 'ENOTFOUND' && error.level === 'client-socket') {
 					// This is likely the error that means the client couldn't connect
 					throw new Error(
-						`Could not connect to server host ${this.config.service.host}:${this.config.service.port}`
+						i18n.t(
+							'sftp_could_not_connect_server',
+							this.config.service.host,
+							this.config.service.port
+						)
 					);
 				}
 
@@ -108,12 +113,13 @@ class ServiceSFTP extends ServiceBase {
 		return new Promise((resolve, reject) => {
 			client.sftp.connect(client.options)
 				.then(() => {
-					let output = `SFTP client connected to host ${client.options.host}:${client.options.port}`;
-
 					this.onConnect();
 
-					channel.appendInfo(output);
-					console.log(output);
+					channel.appendLocalisedInfo(
+						'sftp_client_connected',
+						client.options.host,
+						client.options.port
+					);
 
 					return client;
 				})
@@ -121,7 +127,7 @@ class ServiceSFTP extends ServiceBase {
 				.catch((error) => {
 					if (error.level === 'client-authentication') {
 						// Put a note in the log to remind users that a password can be set
-						this.channel.appendInfo(utils.strings.REQUESTING_PASSWORD);
+						this.channel.appendLocalisedInfo('requesting_password');
 
 						// Offer to use a password
 						this.requestAuthentication()
@@ -154,8 +160,7 @@ class ServiceSFTP extends ServiceBase {
 			})
 			.catch(() => {
 				throw new Error(
-					'SFTP could not find or access the root path. Please check' +
-					` the "${this.config.settingsFilename}" settings file.`
+					i18n('sftp_missing_root', this.config.settingsFilename)
 				);
 			});
 	}
@@ -235,9 +240,9 @@ class ServiceSFTP extends ServiceBase {
 						};
 
 						this.clients[hash].sftp.client
-							.on('keyboard-interactive', (name, instructions, prompts, finish) => {
-								console.log('keyboard-interactive event');
-							})
+							// .on('keyboard-interactive', (name, instructions, prompts, finish) => {
+							// 	console.log('keyboard-interactive event');
+							// })
 							.on('close', (error) => {
 								// Check for local or global error (created by error event)
 								let hadError = (error || this.sftpError);
@@ -287,7 +292,7 @@ class ServiceSFTP extends ServiceBase {
 		// Add a debugging logger, if requested
 		if (service.debug) {
 			options.debug = (data) => {
-				console.log(`Client debug data: "${data}"`);
+				channel.appendLine(`SFTP: "${data}"`);
 			}
 		}
 
@@ -300,7 +305,11 @@ class ServiceSFTP extends ServiceBase {
 	 */
 	removeClient(hash) {
 		if (this.clients[hash]) {
-			channel.appendInfo(`SFTP client disconnected from host ${this.clients[hash].options.host}:${this.clients[hash].options.port}`);
+			channel.appendLocalisedInfo(
+				'sftp_disconnected',
+				this.clients[hash].options.host,
+				this.clients[hash].options.port
+			);
 
 			return this.clients[hash].sftp.end()
 				.then(() => {
@@ -445,7 +454,7 @@ class ServiceSFTP extends ServiceBase {
 			.then(() => this.getFileStats(remote, local))
 			.then((stats) => {
 				if (!stats.remote) {
-					throw(`Remote file "${remote}" does not exist.`);
+					throw(i18n.t('remote_file_not_found', remote));
 				}
 
 				return super.checkCollision(
@@ -577,7 +586,6 @@ class ServiceSFTP extends ServiceBase {
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
-							console.log(`creating write stream for ${local}...`);
 							let write = fs.createWriteStream(local);
 
 							function cleanUp(error) {
@@ -631,8 +639,7 @@ class ServiceSFTP extends ServiceBase {
 							});
 					} else if (existing.type === 'f') {
 						return Promise.reject(
-							`Directory "${dir}" could not be created` +
-							` (a file with the same name exists on the remote!)`
+							i18n.t('directory_not_created_remote_mismatch', dir)
 						);
 					}
 				});
@@ -883,12 +890,12 @@ class ServiceSFTP extends ServiceBase {
 		return vscode.window.showInputBox({
 			ignoreFocusOut: true,
 			password: true,
-			prompt: 'Enter SSH password (will not be saved)'
+			prompt: i18n.t('sftp_enter_ssh_pass')
 		});
 	}
 };
 
-ServiceSFTP.description = 'SFTP/SSH File transfers';
+ServiceSFTP.description = i18n.t('sftp_class_description');
 
 ServiceSFTP.defaults = {
 	host: '',

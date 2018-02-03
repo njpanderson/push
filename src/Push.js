@@ -6,14 +6,15 @@ const PushBase = require('./lib/PushBase');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
 const Watch = require('./lib/Watch');
-const utils = require('./lib/utils');
 const channel = require('./lib/channel');
+const i18n = require('./lang/i18n');
 
 class Push extends PushBase {
 	constructor() {
 		super();
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
+		this.setContexts = this.setContexts.bind(this);
 
 		this.initService();
 
@@ -22,12 +23,24 @@ class Push extends PushBase {
 
 		this.queues = {};
 
+		// Set initial contexts
+		this.setContexts(true);
+
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
+		// vscode.workspace.onDidChangeConfiguration(this.setContexts);
+	}
 
-		// Set initial contexts
-		this.setContext(Push.contexts.queueInProgress, false);
+	/**
+	 * Set (or re-set) contexts
+	 */
+	setContexts(initial) {
+		this.setContext(Push.contexts.uploadQueue, this.config.uploadQueue);
 		this.setContext(Push.contexts.initialised, true);
+
+		if (initial === true) {
+			this.setContext(Push.contexts.queueInProgress, false);
+		}
 	}
 
 	initService() {
@@ -40,12 +53,16 @@ class Push extends PushBase {
 	}
 
 	execUploadQueue() {
+		if (!this.config.uploadQueue) {
+			return channel.appendLocalisedInfo('upload_queue_disabled');
+		}
+
 		return this.execQueue(Push.queueDefs.upload);
 	}
 
 	listQueueItems(queueDef) {
 		if (this.queues[queueDef.id]) {
-			channel.appendInfo('Items queued for upload:');
+			channel.appendLocalisedInfo();
 
 			this.queues[queueDef.id].getTasks().forEach((item) => {
 				if (item.actionTaken) {
@@ -53,7 +70,7 @@ class Push extends PushBase {
 				}
 			});
 		} else {
-			channel.appendInfo('No current upload queue items');
+			channel.appendLocalisedInfo('no_current_upload_queue');
 		}
 	}
 
@@ -72,7 +89,7 @@ class Push extends PushBase {
 			true
 		);
 
-		if (settings) {
+		if (this.config.uploadQueue && settings) {
 			// File being changed is a within a service context - queue for uploading
 			this.queueForUpload(textDocument.uri);
 		}
@@ -96,7 +113,7 @@ class Push extends PushBase {
 			// Settings retrieved from JSON file within context
 			if (!settings.data.service) {
 				// Show a service error
-				channel.appendError(utils.strings.SERVICE_NOT_DEFINED, this.config.settingsFilename);
+				channel.appendLocalisedError('service_not_defined', this.config.settingsFilename);
 				return false;
 			}
 
@@ -108,7 +125,7 @@ class Push extends PushBase {
 			return newConfig;
 		} else {
 			// No settings for this context - show an error
-			channel.appendError(utils.strings.NO_SERVICE_FILE, this.config.settingsFilename);
+			channel.appendLocalisedError('no_service_file', this.config.settingsFilename);
 			return false;
 		}
 	}
@@ -159,8 +176,6 @@ class Push extends PushBase {
 				}
 
 				if (config) {
-					console.log(`Running queue entry ${method}...`);
-
 					// Execute the service method, returning any results and/or promises
 					return this.service.exec(method, config, args);
 				}
@@ -203,7 +218,7 @@ class Push extends PushBase {
 					}], false, Push.queueDefs.upload, {
 						showStatus: true,
 						statusToolTip: (num) => {
-							return `${num} item` + (num === 1 ? '' : 's') + ' to upload';
+							return i18n.t('num_to_upload', num);
 						},
 						statusCommand: 'push.uploadQueuedItems'
 					});
@@ -288,12 +303,15 @@ class Push extends PushBase {
 			return new Promise((resolve, reject) => {
 				let timer;
 
-				progress.report({ message: 'Stopping...' });
+				progress.report({ message: i18n.t('stopping') });
 
 				// Give X seconds to stop or force
 				timer = setTimeout(() => {
-					let message = `Queue ${queueDef.id} task force stopped after ` +
-						`${Push.globals.FORCE_STOP_TIMEOUT} seconds.`;
+					let message = i18n.t(
+						'queue_force_stopped',
+						Push.globals.FORCE_STOP_TIMEOUT,
+						queueDef.id
+					);
 
 					this.service.restartServiceInstance();
 
@@ -305,7 +323,7 @@ class Push extends PushBase {
 					.stop()
 					.then((result) => {
 						resolve(result);
-						channel.appendInfo(`Queue ${queueDef.id} cancelled`);
+						channel.appendLocalisedInfo('queue_cancelled', queueDef.id);
 					})
 					.catch((error) => {
 						reject(error);
@@ -376,8 +394,8 @@ class Push extends PushBase {
 					}
 				} else {
 					// Only one file is being transfered so warn the user it ain't happening
-					channel.appendError(
-						utils.strings.CANNOT_ACTION_IGNORED_FILE,
+					channel.appendLocalisedError(
+						'cannot_action_ignored_file',
 						action,
 						this.paths.getBaseName(uri)
 					);
@@ -473,10 +491,7 @@ class Push extends PushBase {
 				.then((files) => {
 					if (files.length > 1) {
 						// More than one settings file found within the current directory
-						channel.appendError(
-							utils.strings.MULTIPLE_SERVICE_FILES + ' ' +
-							utils.strings.TRANSFER_NOT_POSSIBLE
-						);
+						channel.appendLocalisedError('multiple_service_files_no_transfer');
 
 						reject();
 					} else {
@@ -504,6 +519,7 @@ Push.globals = {
 };
 
 Push.contexts = {
+	uploadQueue: 'uploadQueue',
 	initialised: 'initialised',
 	queueInProgress: 'queueInProgress'
 };

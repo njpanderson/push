@@ -1,3 +1,5 @@
+const i18n = require('../lang/i18n');
+
 module.exports = {
     CONFIG_FORMATS: {
         'SSFTP': /sftp-config\.json/i
@@ -7,7 +9,7 @@ module.exports = {
         '{',
             '\t"service": "[ServiceName]",',
             '\t"[ServiceName]": {',
-                '\t\t\/\/ Add service configuration here...',
+                '\t\t\/\/ ' + i18n.t('comm_add_service_config'),
             '\t}',
         '}'
     ].join('\n'),

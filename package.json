@@ -23,6 +23,11 @@
       "type": "object",
       "title": "Push",
       "properties": {
+        "njpPush.locale": {
+          "type": "string",
+          "default": "en_gb",
+          "description": "Locale to use (Only en_gb supported at the moment.)"
+        },
         "njpPush.settingsFilename": {
           "type": "string",
           "default": ".push.settings.json",
@@ -306,6 +311,10 @@
         {
           "command": "push.clearWatchers",
           "when": "push:initialised && push:hasWatchers"
+        },
+        {
+          "command": "push.uploadQueuedItems",
+          "when": "push:uploadQueue"
         }
       ]
     },

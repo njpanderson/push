@@ -3,6 +3,7 @@ const vscode = require('vscode');
 const Paths = require('./Paths');
 const channel = require('./channel');
 const constants = require('./constants');
+const i18n = require('../lang/i18n');
 
 const paths = new Paths();
 
@@ -38,7 +39,7 @@ class Watch {
 			this.watchList[item].initWatcher();
 		}
 
-		channel.appendInfo('Added watch for ' + paths.getNormalPath(uri));
+		channel.appendLocalisedInfo('added_watch_for', paths.getNormalPath(uri));
 		this._updateStatus();
 	}
 
@@ -54,7 +55,7 @@ class Watch {
 			this.watchList.splice(item, 1);
 		}
 
-		channel.appendInfo('Removed watch for ' + paths.getNormalPath(uri));
+		channel.appendLocalisedInfo('removed_watch_for', paths.getNormalPath(uri));
 		this._updateStatus();
 	}
 
@@ -90,7 +91,7 @@ class Watch {
 		this.watchList.forEach((item) => item.removeWatcher());
 		this.watchList = [];
 
-		channel.appendInfo('Cleared all watchers.');
+		channel.appendLocalisedInfo('cleared_all_watchers');
 		this._updateStatus();
 	}
 
@@ -99,20 +100,17 @@ class Watch {
 	 */
 	list() {
 		if (this.watchList.length) {
-			channel.appendInfo('Watched paths:');
+			channel.appendLocalisedInfo("watched_paths");
 
 			this.watchList.forEach((item) => {
 				channel.appendLine(
-					item.path +
-					' (fired ' + item.data.triggers + ' ' +
-						(item.data.triggers === 1 ? 'time' : 'times') +
-					')'
+					i18n.t('path_with_trigger_count', item.path, item.data.triggers)
 				);
 			});
 
 			channel.appendLine('');
 		} else {
-			channel.appendInfo('No paths watched.');
+			channel.appendLocalisedInfo('no_paths_watched');
 		}
 
 		channel.show();

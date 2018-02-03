@@ -2,8 +2,10 @@ const vscode = require('vscode');
 const crypto = require('crypto');
 
 const utils = require('./utils');
+const config = require('./config');
 const channel = require('./channel');
 const constants = require('./constants');
+const i18n = require('../lang/i18n');
 
 class Queue {
 	/**
@@ -91,7 +93,7 @@ class Queue {
 	exec(fnProgress) {
 		if (this.tasks && this.tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
-			channel.appendLine(`Running ${this.tasks.length - 1} task(s) in queue...`);
+			channel.appendLine(i18n.t('running_tasks_in_queue', (this.tasks.length - 1)));
 
 			// Start progress interface
 			return vscode.window.withProgress({
@@ -103,7 +105,7 @@ class Queue {
 					// of the promise
 					this.progressReject = reject;
 
-					progress.report({ message: 'Processing' });
+					progress.report({ message: i18n.t('processing') });
 
 					// Create an interval to monitor the fnProgress function return value
 					this.progressInterval = setInterval(() => {
@@ -115,10 +117,10 @@ class Queue {
 
 						if (typeof state === 'string') {
 							// Value is defined - write to progress
-							progress.report({ message: `Processing ${state}` });
+							progress.report({ message: i18n.t('processing_with_state', state) });
 						} else {
-							// No value - just use a generic progress
-							progress.report({ message: 'Processing' });
+							// No value - just use a generic progressing notice
+							progress.report({ message: i18n.t('processing') });
 						}
 					}, 10);
 
@@ -133,7 +135,7 @@ class Queue {
 				});
 			});
 		} else {
-			return Promise.reject(`Queue is empty.`);
+			return Promise.reject(i18n.t('queue_empty'));
 		}
 	}
 
@@ -223,7 +225,7 @@ class Queue {
 	 */
 	stop() {
 		if (this.tasks.length && this.running && this.progressReject) {
-			channel.appendInfo(`Stopping queue...`);
+			channel.appendInfo(i18n.t('stopping_queue'));
 
 			// Remove all pending tasks from this queue
 			this.tasks = [];
@@ -246,7 +248,7 @@ class Queue {
 	reportQueueResults(results) {
 		let actionTaken,
 			extra = [
-				'Queue complete.'
+				i18n.t('queue_complete')
 			];
 
 		for (actionTaken in results.fail) {
@@ -254,26 +256,22 @@ class Queue {
 				channel.show(true);
 			}
 
-			if (results.fail[actionTaken].length === 1) {
-				extra.push(`${results.fail[actionTaken].length} item failed.`);
-			} else {
-				extra.push(`${results.fail[actionTaken].length} items failed.`);
-			}
+			extra.push(i18n.t('queue_items_failed', results.fail[actionTaken].length));
 		}
 
 		for (actionTaken in results.success) {
-			if (results.success[actionTaken].length === 1) {
-				extra.push(`${results.success[actionTaken].length} item ${actionTaken}.`);
-			} else {
-				extra.push(`${results.success[actionTaken].length} items ${actionTaken}.`);
-			}
+			extra.push(i18n.t(
+				'queue_items_actioned',
+				results.success[actionTaken].length,
+				actionTaken
+			));
 		}
 
 		if ((Object.keys(results.fail)).length) {
 			// Show a warning in a message window
 			utils.showWarning(extra.join(' '));
 		} else {
-			if (utils.getConfig('queueCompleteMessageType') === 'status') {
+			if (config.get('queueCompleteMessageType') === 'status') {
 				// Show completion in the status bar
 				utils.showStatusMessage('$(issue-closed) ' + extra.join(' '), 2);
 			} else {
