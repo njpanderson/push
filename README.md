@@ -1,6 +1,6 @@
 # Push
 
-**Note: This extension is under heavy development and should be considered pre-alpha. Do not use unless you are happy to potentially lose data within your VS Code workspaces.**
+**Note: This extension is under heavy development and should be considered pre-beta. If you would like to test it, please contact me.**
 
 Push is a file transfer extension. It is inspired in part by Sublime's fantastic SFTP plugin as well as Coda's workflow features, and provides you with a tool to upload and download files within a workspace.
 
@@ -12,6 +12,17 @@ It currently provides:
  - Transfer of folders
  - Queueing (and transfer after save bulk)
  - Watching of files within the project
+
+## Quick setup
+
+Push supports many options and configuration modes. The most common of which is a single SFTP setup for an active workspace. The following steps will help you get set up in no time:
+
+ 1. Install push, either from the VS Code extension marketplace or by downloading the latest vsix file.
+ 2. In the command palette, choose **Create/Edit Push configuration** and then confirm the location, then choose the **SFTP** template.
+ 3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, `password` (if not using keys), and a `root` path.
+ 4. You should then be able to upload files within the workspace by using the explorer menu, title bars, or command palette.
+
+For more complete setup and configuration details, feel free to read on.
 
 ## Extension Settings
 

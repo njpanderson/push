@@ -8,7 +8,7 @@
     "vscode": "^1.14.0"
   },
   "license": "SEE LICENSE IN <LICENSE>",
-  "keywords": ["sftp", "transfer", "upload", "syncing", "sync", "download", "put", "get", "push"],
+  "keywords": ["sftp", "transfer", "upload", "sync", "push"],
   "repository": {
     "type": "git",
     "url": "git://github.com/njpanderson/push.git"
