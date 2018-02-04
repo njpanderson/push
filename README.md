@@ -78,7 +78,7 @@ Selecting this option will create a watcher for the file, or in the case of a fo
 
 #### Listing watched files
 
-If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower?raw=true&sanitize=true) icon in the status bar:
+If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar:
 
 ![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
 
