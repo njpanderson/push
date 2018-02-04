@@ -14,7 +14,6 @@ module.exports = {
 	'queue_complete': 'Queue complete.',
 	'queue_items_failed': '${1} p{1:item:items} failed.',
 	'queue_items_actioned': '${1} p{1:item:items} ${2}.',
-	'overwrite': 'Overwrite',
 	'cancel': 'Cancel',
 	'enter_service_settings_filename': 'Enter a filename for the service settings file:',
 	'empty': 'Empty',

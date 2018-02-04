@@ -30,7 +30,7 @@ This extension contributes the following settings:
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `locale` | `en-gb` | Language file to use. Currently, only English (British) is supported.
+| `locale` | `en-gb` | Language to use. See "Push in your language".
 | `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
 | `debugMode` | `false` | Enable debug mode for more logging. Useful if reporting errors. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
@@ -184,11 +184,11 @@ The `fileMode` setting of the SFTP service can also be expressed as an array of 
 
 The above example will perform the following:
 
- - Filenames ending in **.txt** will be given the mode `600`
- - Filenames ending in **.jpg** will be given the mode `700`
+ - Files with names ending in **.txt** will be given the mode `600`
+ - Files with names ending in **.jpg** will be given the mode `700`
  - **All directories** will be given the mode `655`
 
-For those in the know, the underlying glob matching is performed by [micromatch](https://www.npmjs.com/package/micromatch#matching-features), and any glob pattern it supports can be used here.
+For those interested, the underlying glob matching is performed by [micromatch](https://www.npmjs.com/package/micromatch#matching-features), and any glob pattern it supports can be used here.
 
 ### File
 
@@ -212,13 +212,24 @@ The following options are available to all services:
 ## Known Issues
 
  - SFTP may have trouble connecting to SSH servers with interactive authentication. This is possibly an issue with the underlying libraries and I am looking to solve this in the future.
+ - Some localised strings may not translate until VS Code is reloaded.
  - Any issues not listed here? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
 
 ## Roadmap
 
  - Adding Amazon S3 support.
- - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
+ - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)! 
 
-## Localising push
+## Push in your language
 
-If you are keen on getting Push into your language, and understand JavaScript - get in touch if you're interesting in helping to localise Push. Just start an issue with your details and we can work something out.
+Currently, Push supports the following languages which can be selected within the configuration:
+
+| Language | Code | Quality | Contributor |
+| --- | --- | --- | --- |
+| 🇬🇧 English (British) | `en_gb` | High | (Built in) |
+| 🇯🇵 Japanese | `ja` | Poor | (Built in) |
+| 🇮🇹 Italian | `it` | Low-Medum | (Built in) |
+
+If you'd like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
+
+Get in touch via the issues if you're interesting in helping to localise Push.

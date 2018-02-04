@@ -59,7 +59,7 @@ class i18n {
 					value
 				);
 				string = string.replace(
-					RegExp('p\\{' + (index + 1) + '\\:([^:]+)\\:([^\\}]+)\\}', 'g'),
+					RegExp('p\\{' + (index + 1) + '\\:([^:]*)\\:([^\\}]*)\\}', 'g'),
 					(typeof value === 'number' && value !== 1) ? '$2' : '$1'
 				);
 			});
