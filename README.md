@@ -52,11 +52,11 @@ There are a few methods you can use to upload on-demand. Two of which are the co
 
 **Command palette:**
 
-![Uploading with the command Palette](/img/command-palette-upload.png?raw=true)
+![Uploading with the command Palette](https://raw.github.com/njpanderson/push/master/img/command-palette-upload.png)
 
 **Context menu:**
 
-![Uploading with the context menu](/img/context-upload.png?raw=true)
+<img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276">
 
 The same two methods can be used to perform downloads, as well as most of the other features of Push.
 
@@ -64,9 +64,7 @@ The same two methods can be used to perform downloads, as well as most of the ot
 
 Another great feature of Push is that it will keep a list of all files you have edited within VS Code and let you upload them with a single shortcut. This defaults to `cmd-alt-p` (or `ctrl-alt-p` on Windows).
 
-Whenever a file is saved, and the queue is enabled, a small ![Upload queue](/img/repo-push.svg?raw=true) icon with the number of queued items will appear in the status bar.
-
-![Status bar with files in the queue](/img/status-has-queue.png?raw=true)
+Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/repo-push.svg?raw=true&sanitize=true) icon with the number of queued items will appear in the status bar.
 
 Use the above shortcut, or select "Upload queued items" in the command palette to upload all of the files in a single operation.
 
@@ -74,15 +72,17 @@ Use the above shortcut, or select "Upload queued items" in the command palette t
 
 A third method of uploading files is to use the watch tool. This can be accessed from the explorer context menu:
 
-![Context menu with watch selected](/img/context-watch.png?raw=true)
+<img src="https://raw.github.com/njpanderson/push/master/img/context-watch.png" width="269" alt="Explorer context menu with watch selected"/>
 
 Selecting this option will create a watcher for the file, or in the case of a folder, all of the files within it. Whenever any one of them is altered or created by either VS Code or another app, Push will attempt to upload them.
 
 #### Listing watched files
 
-If you loose track of which files and folders are being watched, either click on the icon in the status bar:
+If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower?raw=true&sanitize=true) icon in the status bar:
 
+![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
 
+A list of the files and folders being watched will be produced. You can use this list as a reference when removing previously added watchers.
 
 ## Server settings files
 
