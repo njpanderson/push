@@ -13,7 +13,7 @@ It currently provides:
  - Queueing (and transfer after save bulk)
  - Watching of files within the project
 
-## Quick setup
+## ⚡️ Quick setup
 
 Push supports many options and configuration modes. The most common of which is a single SFTP setup for an active workspace. The following steps will help you get set up in no time:
 
