@@ -17,7 +17,7 @@ It currently provides:
 
 Push supports many options and configuration modes. The most common of which is a single SFTP setup for an active workspace. The following steps will help you get set up in no time:
 
- 1. Install push, either from the VS Code extension marketplace or by downloading the latest vsix file.
+ 1. Install push, ~~either from the VS Code extension marketplace or~~ by downloading the [latest vsix file](http://neilinscotland.net/push/push-latest.vsix).
  2. In the command palette, choose **Create/Edit Push configuration** and then confirm the location, then choose the **SFTP** template.
  3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, `password` (if not using keys), and a `root` path.
  4. You should then be able to upload files within the workspace by using the explorer menu, title bars, or command palette.
@@ -53,7 +53,7 @@ When Push uploads a file within the workspace, it does a few things to make sure
 
 #### Root path resolving
 
-If, for instance, an SFTP connection has been defined in the settings file for your workspace, and it has a `root` of `/home/myaccount/public`, all files in your workspace will be uploaded to there as a base path. 
+If, for instance, an SFTP connection has been defined in the settings file for your workspace, and it has a `root` of `/home/myaccount/public`, all files in your workspace will be uploaded to there as a base path.
 
 For instance, if your workspace root was `/Users/myusername/Projects/myproject/` and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
 
