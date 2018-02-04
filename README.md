@@ -66,7 +66,7 @@ Another great feature of Push is that it will keep a list of all files you have 
 
 Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/repo-push.svg?raw=true&sanitize=true) icon with the number of queued items will appear in the status bar.
 
-Use the above shortcut, or select "Upload queued items" in the command palette to upload all of the files in a single operation.
+Use the above shortcut, or select **Upload queued items** in the command palette to upload all of the files in a single operation.
 
 ### File watching
 
@@ -78,17 +78,17 @@ Selecting this option will create a watcher for the file, or in the case of a fo
 
 #### Listing watched files
 
-If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar, or choose "List active watchers" from the command palette. A list of watchers similar to the below will appear:
+If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar, or choose **List active watchers** from the command palette. A list of watchers similar to the below will appear:
 
 ![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
 
 You can use this list as a reference when removing previously added watchers.
 
-## Server settings files
+## Service settings files
 
-To customise the server settings for a workspace, add a file (by default, called `.push.settings.json`) to your workspace with the following format:
+To customise the server settings for a workspace, either use the context menu in the file explorer and choose **Create/edit Push configuration**, or add a file (by default, called `.push.settings.json`) to your workspace with the following format:
 
-```
+```javascript
 {
 	"service": "[ServiceName]",
 	"[ServiceName]": {
@@ -99,25 +99,49 @@ To customise the server settings for a workspace, add a file (by default, called
 
 Each available service has its own set of settings which are within the `[ServiceName]` object on the main server settings object. For instance, if using the `SFTP` service, your config might look something like this:
 
-```
+```javascript
 {
+	// Service name here is "SFTP"
 	"service": "SFTP",
+	// "SFTP" here matches the service name
 	"SFTP": {
+		// SFTP Specific options
 		"host": "upload.bobssite.com",
 		"username": "bob"
 		"password": "xxxxxxx",
-		"root": "/home/bob"
+		"root": "/home/bob",
+		// Global service options
+		"collisionUploadAction": "overwrite"
 	}
 }
 ```
 
-### Server settings file locations
+### Multiple service settings files
 
 When defining a server settings file, placing it in the root of your workspace will define those settings for the whole workspace. Push also supports adding server settings files to sub-diretories within your workspace. When uploading files from within any directory, Push will look for the nearest server settins file and use it for server-specific settings.
+
+This is a very powerful feature which means multiple settings files can be defined within one workspace to upload to either different servers, define different options per folder, or to use entirely different services across a project. For example, the following setup defines two services:
+
+```
+<workspace root>
+├── dir1
+│   ├── .push.settings.json
+│   └── filename.txt
+├── dir2
+│   ├── .push.settings.json
+│   ├── filename2.txt
+│   └── another-file.jpg
+```
+
+In the scenario above, if `filename.txt` and `filename2.txt` were both edited, the upload queue would have 2 items in it, and both would be uploaded using their individual settings files.
+
+**Note:**  While this is a very useful feature, it does have one drawback - you cannot upload a path containing more than one settings file at a time. I.e. if a folder `base` has two subfolders, each with their own `.push.settings.json` file, the `base` folder cannot not be uploaded via the context menus.
 
 ## Available services
 
 ### SFTP
+
+The SFTP service will upload files to remote SSH/SFTP servers.
 
 | Setting | Default | Description |
 | --- | --- | --- |
@@ -134,8 +158,7 @@ When defining a server settings file, placing it in the root of your workspace w
 
 The `fileMode` setting of the SFTP service can also be expressed as an array of glob strings and modes required. For instance:
 
-```
-	...
+```json
 	"fileMode": [{
 		"glob": "*.txt",
 		"mode": "600"
@@ -158,11 +181,14 @@ For those in the know, the underlying glob matching is performed by [micromatch]
 
 ### File
 
+The File service will upload files to another location on your computer. This is done with a standard copy operation. It might seem fairly basic, but can potentially be quite powerful if combined with other syncing solutions or mapped drives (e.g. uploading to `/Volumes/xyz`.)
+
 | Setting | Default | Description |
 | --- | --- | --- |
 | `root` | `/` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
 
 ### General service settings
+
 The following options are available to all services:
 
 | Setting | Default | Description |
