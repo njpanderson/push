@@ -78,11 +78,11 @@ Selecting this option will create a watcher for the file, or in the case of a fo
 
 #### Listing watched files
 
-If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar:
+If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar, or choose "List active watchers" from the command palette. A list of watchers similar to the below will appear:
 
 ![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
 
-A list of the files and folders being watched will be produced. You can use this list as a reference when removing previously added watchers.
+You can use this list as a reference when removing previously added watchers.
 
 ## Server settings files
 
@@ -174,7 +174,13 @@ The following options are available to all services:
 
 ## Known Issues
 
-None at present.
+ - SFTP may have trouble connecting to SSH servers with interactive authentication. This is possibly an issue with the underlying libraries and I am looking to solve this in the future.
+ - Any issues not listed here? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
+
+## Roadmap
+
+ - Adding Amazon S3 support.
+ - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
 
 ## Localising push
 
