@@ -1,12 +1,14 @@
 {
   "name": "push",
   "displayName": "Push",
-  "description": "SFTP & FTP Syncing",
+  "description": "SFTP and File based uploading",
   "version": "0.1.0",
   "publisher": "njpanderson",
   "engines": {
     "vscode": "^1.14.0"
   },
+  "license": "SEE LICENSE IN <LICENSE>",
+  "keywords": ["sftp", "transfer", "upload", "syncing", "sync", "download", "put", "get", "push"],
   "repository": {
     "type": "git",
     "url": "git://github.com/njpanderson/push.git"
