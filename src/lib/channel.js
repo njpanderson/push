@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 
 const utils = require('./utils');
+const configService = require('./config');
 const i18n = require('../lang/i18n');
 
 class Channel {
@@ -24,7 +25,7 @@ class Channel {
 		let message, config;
 
 		if (error instanceof Error) {
-			config = utils.getConfig();
+			config = configService.get();
 			message = error.message;
 
 			if (config.debugMode && error.fileName && error.lineNumber) {
