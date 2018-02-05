@@ -181,8 +181,10 @@ class ServiceBase {
 	 * @param {string} root - Root path, for validation
 	 * @param {function} fnDir - Callback function. Invoked for each new directory
 	 * required during creation.
+	 * @params {string} [dirSeparator='/'] - Directory separator character, for
+	 * splitting directories.
 	 */
-	mkDirRecursive(dir, root, fnDir) {
+	mkDirRecursive(dir, root, fnDir, dirSeparator = '/') {
 		let baseDir, recursiveDir, dirList;
 
 		if (dir === root) {
@@ -191,17 +193,17 @@ class ServiceBase {
 		}
 
 		if (dir.startsWith(root)) {
-			baseDir = utils.trimSeparators(dir.replace(root, ''));
-			recursiveDir = baseDir.split('/');
+			baseDir = utils.trimSeparators(dir.replace(root, ''), dirSeparator);
+			recursiveDir = baseDir.split(dirSeparator);
 			dirList = [];
 
 			// First, create a directory list for the Promise loop to iterate over
 			recursiveDir.reduce((acc, current) => {
-				let pathname = (acc === '' ? current : (acc + '/' + current));
+				let pathname = (acc === '' ? current : (acc + dirSeparator + current));
 
 				if (pathname !== '') {
 					dirList.push(
-						utils.addTrailingSeperator(root) + pathname
+						utils.addTrailingSeperator(root, dirSeparator) + pathname
 					);
 				}
 
@@ -412,5 +414,7 @@ ServiceBase.defaults = {
 	collisionUploadAction: null,
 	collisionDownloadAction: null
 };
+
+ServiceBase.pathSep = Paths.sep;
 
 module.exports = ServiceBase;

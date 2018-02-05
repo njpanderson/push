@@ -46,7 +46,7 @@ class File extends ServiceBase {
 			File.transferTypes.PUT,
 			local,
 			vscode.Uri.file(remote),
-			this.config.service.root,
+			vscode.Uri.file(this.config.service.root),
 			'>> ',
 			this.config.service.collisionUploadAction
 		);
@@ -64,7 +64,7 @@ class File extends ServiceBase {
 			File.transferTypes.GET,
 			vscode.Uri.file(remote),
 			local,
-			path.dirname(this.config.serviceFilename),
+			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
 			'<< ',
 			this.config.service.collisionDownloadAction
 		);
@@ -73,20 +73,21 @@ class File extends ServiceBase {
 	/**
 	 * Transfers a single file from location to another.
 	 * @param {number} transferType - One of the {@link File.transferTypes} types.
-	 * @param {uri} src - Source Uri.
-	 * @param {uri} dest - Destination Uri.
-	 * @param {string} rootDir - Root directory. Used for validation.
+	 * @param {Uri} src - Source Uri.
+	 * @param {Uri} dest - Destination Uri.
+	 * @param {Uri} root - Root directory. Used for validation.
 	 */
-	transfer(transferType, src, dest, rootDir, collisionAction) {
+	transfer(transferType, src, dest, root, collisionAction) {
 		let destPath = this.paths.getNormalPath(dest),
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
+			rootDir = this.paths.getNormalPath(root),
 			logPrefix = (transferType === File.transferTypes.PUT ? '>> ' : '<< '),
 			srcType = (transferType === File.transferTypes.PUT ? SRC_REMOTE : SRC_LOCAL);
 
 		this.setProgress(`${destFilename}...`);
 
-		return this.mkDirRecursive(destDir, rootDir, this.mkDir)
+		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
 			.then(() => this.getFileStats(dest, src, srcType))
 			.then((stats) => super.checkCollision(
 				stats.local,
