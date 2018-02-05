@@ -329,11 +329,14 @@ class Paths {
 	 * @return {string} Filename created.
 	 */
 	getTmpFile() {
-		let tmpobj = tmp.fileSync();
+		let tmpobj = tmp.fileSync({
+			prefix: Paths.tmpFilePrefix
+		});
 		return vscode.Uri.file(tmpobj.name);
 	}
 }
 
 Paths.sep = path.sep;
+Paths.tmpFilePrefix = 'vscode-push-tmp-';
 
 module.exports = Paths;

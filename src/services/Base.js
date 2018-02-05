@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 const path = require('path');
+const tmp = require('tmp');
 
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
@@ -192,7 +193,8 @@ class ServiceBase {
 			return Promise.resolve();
 		}
 
-		if (dir.startsWith(root)) {
+		if (dir.startsWith(root) || dir.includes(tmp.tmpdir)) {
+			// Dir starts with the root path, or is part of the temporary file path
 			baseDir = utils.trimSeparators(dir.replace(root, ''), dirSeparator);
 			recursiveDir = baseDir.split(dirSeparator);
 			dirList = [];
