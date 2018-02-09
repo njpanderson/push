@@ -75,7 +75,7 @@ The same two methods can be used to perform downloads, as well as most of the ot
 
 Another great feature of Push is that it will keep a list of all files you have edited within VS Code and let you upload them with a single shortcut. This defaults to `cmd-alt-p` (or `ctrl-alt-p` on Windows).
 
-Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/repo-push.svg?raw=true&sanitize=true) icon with the number of queued items will appear in the status bar.
+Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/queue.png) icon with the number of queued items will appear in the status bar.
 
 Use the above shortcut, or select **Upload queued items** in the command palette to upload all of the files in a single operation.
 
@@ -89,7 +89,7 @@ Selecting this option will create a watcher for the file, or in the case of a fo
 
 #### Listing watched files
 
-If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar, or choose **List active watchers** from the command palette. A list of watchers similar to the below will appear:
+If you loose track of which files and folders are being watched, either click on the ![Watching](https://raw.github.com/njpanderson/push/master/img/watching.png) icon in the status bar, or choose **List active watchers** from the command palette. A list of watchers similar to the below will appear:
 
 ![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
 
@@ -218,7 +218,7 @@ The following options are available to all services:
 ## Roadmap
 
  - Adding Amazon S3 support.
- - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)! 
+ - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
 
 ## Push in your language
 
