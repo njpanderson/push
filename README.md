@@ -1,6 +1,6 @@
 # Push
 
-**Note: This extension is under heavy development and should be considered pre-beta. If you would like to test it, please contact me.**
+**Warning: This extension is currently in preview. If you would like to test it, and experience bugs or issues, please see "Reporting Bugs" at the bottom.**
 
 Push is a file transfer extension. It is inspired in part by Sublime's fantastic SFTP plugin as well as Coda's workflow features, and provides you with a tool to upload and download files within a workspace.
 
@@ -209,14 +209,22 @@ The following options are available to all services:
 | `collisionDownloadAction` | (Prompt) | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
 | `timeZoneOffset` | `0` | The offset, in hours, the time is set to on the origin relative to the local device. I.e. if the origin is GMT+1 and the device is GMT-1, the offset would be `2` |
 
-## Known Issues
+## Known issues
 
  - SFTP may have trouble connecting to SSH servers with interactive authentication. This is possibly an issue with the underlying libraries and I am looking to solve this in the future.
  - Some localised strings may not translate until VS Code is reloaded.
- - Any issues not listed here? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
+
+## Reporting bugs
+
+Found a bug? Great! Let me know about it in the [Github issue tracker](https://github.com/njpanderson/push/issues) and I'll try to get back to you within a few days. It's a personal project of mine so I can't always reply quickly, but I'll do my best.
+
+### Help! Push deleted all my files, wiped my server and/or made my wife leave me!
+
+First of all, that's terrible and of course I wouldn't wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which potentially cause data loss.
 
 ## Roadmap
 
+ - Better display for the watch/upload queue.
  - Adding Amazon S3 support.
  - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
 
