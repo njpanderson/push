@@ -17,7 +17,7 @@ It currently provides:
 
 Push supports many options and configuration modes. The most common of which is a single SFTP setup for an active workspace. The following steps will help you get set up in no time:
 
- 1. Install push, ~~either from the VS Code extension marketplace or~~ by downloading the [latest vsix file](http://neilinscotland.net/push/push-latest.vsix).
+ 1. Install Push from the [VS Code extension marketplace](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push).
  2. In the command palette, choose **Create/Edit Push configuration** and then confirm the location, then choose the **SFTP** template.
  3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, `password` (if not using keys), and a `root` path.
  4. You should then be able to upload files within the workspace by using the explorer menu, title bars, or command palette.
@@ -34,7 +34,7 @@ This extension contributes the following settings:
 | `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
 | `debugMode` | `false` | Enable debug mode for more logging. Useful if reporting errors. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
-| `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last push. |
+| `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last upload. |
 | `ignoreGlobs` | `**/.DS_Store`,<br>`**/Thumbs.db`,<br>`**/desktop.ini`,<br>`**/.git/\*`,<br>`**/.svn/*` | A list of file globs to ignore when uploading. |
 | `queueCompleteMessageType` | `status` | Choose how to be notified on queue completion. Either `status`, or `message` for a permanent reminder. |
 | `statusMessageColor` | `notification.`<br>`infoBackground` | Choose the colour of the queue completion status message. |
