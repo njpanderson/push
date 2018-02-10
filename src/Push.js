@@ -153,7 +153,8 @@ class Push extends PushBase {
 
 	/**
 	 * @param {array} tasks - Tasks to execute. Must contain the properties detailed below.
-	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately.
+	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately (if the queue isn't already
+	 * running).
 	 * @param {object} [queueDef=Push.queueDefs.default] - Which queue to use.
 	 * @param {boolean} [showStatus=false] - Show the length of the queue in the status bar.
 	 * @description
@@ -177,7 +178,7 @@ class Push extends PushBase {
 		}
 
 		// Add initial init to a new queue
-		if (queue.tasks.length === 0) {
+		if (queue.tasks.length === 0 && !queue.running) {
 			queue.addTask(() => {
 				return this.service.activeService &&
 					this.service.activeService.init(queue.tasks.length);
@@ -207,7 +208,7 @@ class Push extends PushBase {
 			});
 		});
 
-		if (runImmediately) {
+		if (runImmediately && !queue.running) {
 			return this.execQueue(queueDef);
 		}
 
@@ -433,10 +434,16 @@ class Push extends PushBase {
 
 		return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 			.then((filteredUri) => {
-				let config;
+				let config, remotePath;
 
 				if (filteredUri !== false) {
 					config = this.configWithServiceSettings(filteredUri);
+
+					remotePath = this.service.exec(
+						'convertUriToRemote',
+						config,
+						[filteredUri]
+					);
 
 					if (config) {
 						// Add to queue and return
@@ -446,12 +453,9 @@ class Push extends PushBase {
 							uriContext: filteredUri,
 							args: [
 								filteredUri,
-								this.service.exec(
-									'convertUriToRemote',
-									config,
-									[filteredUri]
-								)
-							]
+								remotePath
+							],
+							id: remotePath + this.paths.getNormalPath(filteredUri)
 						}], true);
 					}
 				} else {
@@ -498,7 +502,14 @@ class Push extends PushBase {
 			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
+						let remotePath;
+
 						uri = vscode.Uri.file(uri);
+						remotePath = this.service.exec(
+							'convertUriToRemote',
+							config,
+							[uri]
+						);
 
 						return {
 							method,
@@ -506,12 +517,9 @@ class Push extends PushBase {
 							uriContext: uri,
 							args: [
 								uri,
-								this.service.exec(
-									'convertUriToRemote',
-									config,
-									[uri]
-								)
-							]
+								remotePath
+							],
+							id: remotePath + this.paths.getNormalPath(uri)
 						};
 					});
 
@@ -523,10 +531,13 @@ class Push extends PushBase {
 			return this.service.exec('listRecursiveFiles', config, [remoteUri, ignoreGlobs])
 				.then((files) => {
 					let tasks = files.map((file) => {
-						let uri = this.service.exec(
+						let uri;
+
+						file = file.pathName || file;
+						uri = this.service.exec(
 							'convertRemoteToUri',
 							config,
-							[file.pathName || file]
+							[file]
 						);
 
 						return {
@@ -535,8 +546,9 @@ class Push extends PushBase {
 							uriContext: uri,
 							args: [
 								uri,
-								file.pathName || file
-							]
+								file
+							],
+							id: file + this.paths.getNormalPath(uri)
 						};
 					});
 

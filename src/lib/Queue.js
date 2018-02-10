@@ -94,6 +94,11 @@ class Queue {
 	 * @param {function} fnProgress - Function to call when requesting progress updates.
 	 */
 	exec(fnProgress) {
+		// Failsafe to prevent a queue running more than once at a time
+		if (this.running) {
+			return false;
+		}
+
 		if (this.tasks && this.tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(i18n.t('running_tasks_in_queue', (this.tasks.length - 1)));
@@ -192,7 +197,8 @@ class Queue {
 						channel.show();
 
 						// Empty tasks array
-						this.tasks = [];
+						// this.tasks = [];
+						this.stop();
 
 						// Trigger callback
 						fnCallback(results);
@@ -227,18 +233,21 @@ class Queue {
 	 * has completed, or immediately resolved if there is no current task.
 	 */
 	stop() {
-		if (this.tasks.length && this.running && this.progressReject) {
+		if (this.running) {
 			channel.appendInfo(i18n.t('stopping_queue'));
 
 			// Remove all pending tasks from this queue
 			this.tasks = [];
+			this.running = false;
 
 			if (this.progressInterval) {
 				clearInterval(this.progressInterval);
 			}
 
-			// Reject the globally assigned progress promise
-			this.progressReject();
+			if (this.progressReject) {
+				// Reject the globally assigned progress promise
+				this.progressReject();
+			}
 		}
 
 		return this.currentTask || Promise.resolve();
