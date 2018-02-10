@@ -14,6 +14,16 @@ class BaseImporter {
 	parseJSON(fileContents) {
 		return jsonc.parse(fileContents);
 	}
+
+	addArrayData(data, key, datum) {
+		if (!data[key]) {
+			data[key] = [];
+		}
+
+		data[key].push(datum);
+
+		return data;
+	}
 }
 
 module.exports = BaseImporter;

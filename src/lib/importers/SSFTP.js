@@ -39,6 +39,15 @@ class SSFTP extends BaseImporter {
 				ob.SFTP.collisionDownloadAction = 'overwrite';
 			}
 
+			['dir_permissions', 'file_permissions'].forEach((setting) => {
+				if (SSFTP.tests.fileMode.test(settings[setting])) {
+					ob.SFTP = this.addArrayData(ob.SFTP, 'fileMode', {
+						'glob': '**/*/',
+						'mode': settings[setting]
+					});
+				}
+			});
+
 			resolve(ob);
 		});
 	}
@@ -49,5 +58,9 @@ class SSFTP extends BaseImporter {
 		);
 	}
 }
+
+SSFTP.tests = {
+	fileMode: /0?\d{3}/
+};
 
 module.exports = SSFTP;
