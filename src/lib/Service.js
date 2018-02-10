@@ -120,10 +120,12 @@ class Service extends PushBase {
 									isCloseAffordance: true,
 									title: i18n.t('cancel')
 								}
-							).then((collisionAnswer) => ({
-								fileName: result.fileName,
-								write: (collisionAnswer.title === i18n.t('cancel'))
-							}));
+							).then((collisionAnswer) => {
+								return ({
+									fileName: result.fileName,
+									write: (collisionAnswer.title === i18n.t('overwrite'))
+								});
+							});
 						} else {
 							// Just create and open
 							return ({ fileName: result.fileName, write: true });
