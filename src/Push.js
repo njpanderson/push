@@ -67,8 +67,8 @@ class Push extends PushBase {
 	initService() {
 		this.settings = new ServiceSettings();
 		this.service = new Service({
-			onDisconnect: () => {
-				this.stopCancellableQueues();
+			onDisconnect: (hadError) => {
+				this.stopCancellableQueues(!!hadError, !!hadError);
 			}
 		});
 	}
@@ -258,7 +258,9 @@ class Push extends PushBase {
 	/**
 	 * Retrieve a queue instance by its definition.
 	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
-	 * @param {boolean} [showStatus=false] - Show the queue length in the status bar.
+	 * @param {object|boolean} [queueOptions] - Either set the queue options, or
+	 * set to `false` to ensure a queue is not created if it doesn't already
+	 * exit
 	 * @returns {object} A single instance of Queue.
 	 */
 	getQueue(queueDef, queueOptions) {
@@ -267,6 +269,11 @@ class Push extends PushBase {
 		}
 
 		if (!this.queues[queueDef.id]) {
+			if (queueOptions === false) {
+				// No new queue wanted, just return null;
+				return null;
+			}
+
 			this.queues[queueDef.id] = new Queue(queueDef.id, queueOptions);
 		}
 
@@ -322,12 +329,16 @@ class Push extends PushBase {
 	/**
 	 * Stop any current queue operations.
 	 */
-	stopCancellableQueues(force = false) {
-		let def;
+	stopCancellableQueues(force = false, silent = false) {
+		let def, queue;
 
 		for (def in Push.queueDefs) {
-			if (Push.queueDefs[def].cancellable) {
-				this.stopQueue(Push.queueDefs[def], force);
+			if (
+				(queue = this.getQueue(Push.queueDefs[def])) &&
+				Push.queueDefs[def].cancellable &&
+				queue.running
+			) {
+				this.stopQueue(Push.queueDefs[def], force, silent);
 			}
 		}
 	}
@@ -335,9 +346,12 @@ class Push extends PushBase {
 	/**
 	 * Stops a queue.
 	 * @param {object} queueDef - Queue definition
-	 * @param {boolean} force - `true` to force a service disconnect as well as stopping the queue
+	 * @param {boolean} force - Set `true` to force a service disconnect as well
+	 * as stopping the queue.
+	 * @param {boolean} silent - Set `true` to stop a channel notice when
+	 * stopping the queue.
 	 */
-	stopQueue(queueDef, force = false) {
+	stopQueue(queueDef, force = false, silent = false) {
 		// Get the queue by definition and run its #stop method.
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
@@ -359,7 +373,7 @@ class Push extends PushBase {
 
 						this.service.restartServiceInstance();
 
-						channel.appendError(message);
+						!silent && channel.appendError(message);
 						reject(message);
 					}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
 				}
@@ -368,7 +382,10 @@ class Push extends PushBase {
 					.stop()
 					.then((result) => {
 						resolve(result);
-						channel.appendLocalisedInfo('queue_cancelled', queueDef.id);
+						!silent && channel.appendLocalisedInfo(
+							'queue_cancelled',
+							queueDef.id
+						);
 					})
 					.catch((error) => {
 						reject(error);

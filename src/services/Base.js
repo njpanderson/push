@@ -387,7 +387,7 @@ class ServiceBase {
 		// );
 
 		if (typeof this.options.onDisconnect === 'function') {
-			this.options.onDisconnect(this);
+			this.options.onDisconnect(hadError);
 		}
 	}
 
