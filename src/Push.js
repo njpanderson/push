@@ -3,6 +3,7 @@ const vscode = require('vscode');
 const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
 const PushBase = require('./lib/PushBase');
+const Explorer = require('./lib/explorer/Explorer');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/Queue');
 const Watch = require('./lib/Watch');
@@ -15,11 +16,15 @@ class Push extends PushBase {
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
+		this.refreshWatchList = this.refreshWatchList.bind(this);
 
 		this.initService();
 
 		this.paths = new Paths();
+		this.explorer = new Explorer(this.config);
+
 		this.watch = new Watch();
+		this.watch.onWatchUpdate = this.refreshWatchList;
 
 		this.queues = {};
 
@@ -29,6 +34,22 @@ class Push extends PushBase {
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
 		// vscode.workspace.onDidChangeConfiguration(this.setContexts);
+	}
+
+	/**
+	 * Localised setConfig, also sets context and explorer config
+	 */
+	setConfig() {
+		super.setConfig();
+		console.log('local setconfig');
+
+		if (this.setContexts) {
+			this.setContexts();
+		}
+
+		if (this.explorer) {
+			this.explorer.setConfig(this.config);
+		}
 	}
 
 	/**
@@ -179,12 +200,20 @@ class Push extends PushBase {
 					// Execute the service method, returning any results and/or promises
 					return this.service.exec(method, config, args);
 				}
-			}, actionTaken, id);
+			}, {
+				id,
+				actionTaken,
+				uriContext
+			});
 		});
 
 		if (runImmediately) {
 			return this.execQueue(queueDef);
 		}
+
+		this.refreshQueues({
+			queues: this.queues
+		});
 	}
 
 	/**
@@ -238,7 +267,7 @@ class Push extends PushBase {
 		}
 
 		if (!this.queues[queueDef.id]) {
-			this.queues[queueDef.id] = new Queue(queueOptions);
+			this.queues[queueDef.id] = new Queue(queueDef.id, queueOptions);
 		}
 
 		return this.queues[queueDef.id];
@@ -263,12 +292,26 @@ class Push extends PushBase {
 			.then(() => {
 				// Set contextual state that the queue has completed
 				this.setContext(Push.contexts.queueInProgress, false);
+				this.refreshQueues();
 			})
 			.catch((error) => {
 				// Set contextual state that the queue has completed
 				this.setContext(Push.contexts.queueInProgress, false);
+				this.refreshQueues();
 				throw error;
 			});
+	}
+
+	refreshQueues() {
+		this.explorer.refresh({
+			queues: this.queues
+		});
+	}
+
+	refreshWatchList(watchList) {
+		this.explorer.refresh({
+			watchList: watchList
+		});
 	}
 
 	setContext(context, value) {
@@ -305,19 +348,21 @@ class Push extends PushBase {
 
 				progress.report({ message: i18n.t('stopping') });
 
-				// Give X seconds to stop or force
-				timer = setTimeout(() => {
-					let message = i18n.t(
-						'queue_force_stopped',
-						Push.globals.FORCE_STOP_TIMEOUT,
-						queueDef.id
-					);
+				if (force) {
+					// Give X seconds to stop or force
+					timer = setTimeout(() => {
+						let message = i18n.t(
+							'queue_force_stopped',
+							queueDef.id,
+							Push.globals.FORCE_STOP_TIMEOUT
+						);
 
-					this.service.restartServiceInstance();
+						this.service.restartServiceInstance();
 
-					channel.appendError(message);
-					reject(message);
-				}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
+						channel.appendError(message);
+						reject(message);
+					}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
+				}
 
 				this.getQueue(queueDef)
 					.stop()

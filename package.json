@@ -23,6 +23,14 @@
   ],
   "main": "./extension",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "push.pushExplorer",
+          "name": "Push"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "Push",
@@ -114,7 +122,11 @@
       {
         "command": "push.uploadQueuedItems",
         "title": "Upload queued items",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/repo-push.svg",
+          "light": "resources/light/repo-push.svg"
+        }
       },
       {
         "command": "push.cancelQueues",
@@ -149,12 +161,20 @@
       {
         "command": "push.startWatch",
         "title": "Start all Push watch lists",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/radio-tower.svg",
+          "light": "resources/light/radio-tower.svg"
+        }
       },
       {
         "command": "push.stopWatch",
         "title": "Stop all Push watch lists",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/x.svg",
+          "light": "resources/light/x.svg"
+        }
       },
       {
         "command": "push.listWatchers",
@@ -319,6 +339,33 @@
         {
           "command": "push.uploadQueuedItems",
           "when": "push:uploadQueue"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "push.stopWatch",
+          "when": "view == push.pushExplorer && push:initialised && push:hasRunningWatchers",
+          "group": "navigation@1"
+        },
+        {
+          "command": "push.startWatch",
+          "when": "view == push.pushExplorer && push:initialised && push:hasStoppedWatchers",
+          "group": "navigation@2"
+        },
+        {
+          "command": "push.uploadQueuedItems",
+          "when": "view == push.pushExplorer && push:initialised && push:queue-upload-itemCount",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "push.removeWatchFile",
+          "when": "viewItem == watch:file"
+        },
+        {
+          "command": "push.removeWatchFolder",
+          "when": "viewItem == watch:folder"
         }
       ]
     },

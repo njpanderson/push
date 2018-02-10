@@ -12,7 +12,8 @@ class Queue {
 	 * Class constructor
 	 * @param {OutputChannel} channel - Channel for outputting information
 	 */
-	constructor(options) {
+	constructor(id, options) {
+		this.id = id;
 		this.running = false;
 		this.tasks = [];
 		this.currentTask = null;
@@ -49,25 +50,27 @@ class Queue {
 	/**
 	 * Adds a task to the queue
 	 * @param {function} fn - Function to add.
-	 * @param {string} [actionTaken] - Name of the function/operation performed in
-	 * past tense (i.e. "uploaded").
+	 * @param {object} [data] - Queue metadata:
+	 *  - `actionTaken` Name of the function/operation performed in past tense
+	 *     (i.e. "uploaded").
+	 *  - `id` Identifier for the task.
+	 *  - `uriContext` Contextual URI for the task.
 	 */
-	addTask(fn, actionTaken, id) {
+	addTask(fn, data) {
 		let hash = crypto.createHash('sha256'),
 			task = { fn };
 
-		if (id) {
-			hash.update(id);
-			task.id = hash.digest('hex');
+		// Hash the ID
+		if (data && data.id) {
+			hash.update(data.id);
+			data.id = hash.digest('hex');
 		}
 
-		if (id === undefined || !this.getTask(task.id)) {
+		if ((!data || data.id === undefined) || !this.getTask(data.id)) {
 			// Only push the task if one doesn't already exist with this id
-			if (actionTaken) {
-				task.actionTaken = actionTaken;
-			}
-
-			this.tasks.push(task);
+			this.tasks.push(
+				Object.assign(task, data)
+			);
 		}
 
 		this._updateStatus();
@@ -288,6 +291,8 @@ class Queue {
 	_updateStatus() {
 		let tasks = this.tasks.filter((task) => task.id);
 
+		this._setContext(Queue.contexts.itemCount, tasks.length);
+
 		if (tasks.length && this.options.showStatus) {
 			this.status.text = `$(${this.options.statusIcon}) ${tasks.length}`;
 
@@ -300,6 +305,21 @@ class Queue {
 			this.status.hide();
 		}
 	}
+
+	/**
+	 * Sets the VS Code context for this extension
+	 * @param {string} context - Context item name
+	 * @param {mixed} value - Context value
+	 */
+	_setContext(context, value) {
+		console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
+		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
+		return this;
+	}
 };
+
+Queue.contexts = {
+	itemCount: 'itemCount'
+}
 
 module.exports = Queue;

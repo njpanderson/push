@@ -104,10 +104,14 @@ class UI extends Push {
 
 	/**
 	 * Removes an existing watch from a Uri.
-	 * @param {Uri} uri - Folder/File Uri to stop watching.
+	 * @param {Uri|TreeItem} uri - Folder/File Uri or TreeItem to stop watching.
 	 */
-	removeWatch(uri) {
-		this.watch.remove(this.paths.getFileSrc(uri));
+	removeWatch(context) {
+		if (context instanceof vscode.TreeItem) {
+			context = context.resourceUri;
+		}
+
+		this.watch.remove(this.paths.getFileSrc(context));
 	}
 
 	/**
