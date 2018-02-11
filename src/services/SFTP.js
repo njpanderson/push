@@ -604,7 +604,7 @@ class ServiceSFTP extends ServiceBase {
 							stream.pipe(write);
 						})
 						.catch((error) => {
-							throw(new Error(`${remote}: ${error.message}`);
+							throw(new Error(`${remote}: ${error.message}`));
 						});
 				});
 			});

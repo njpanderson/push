@@ -250,7 +250,8 @@ class Push extends PushBase {
 						statusToolTip: (num) => {
 							return i18n.t('num_to_upload', num);
 						},
-						statusCommand: 'push.uploadQueuedItems'
+						statusCommand: 'push.uploadQueuedItems',
+						emptyOnFail: false
 					});
 				});
 		}

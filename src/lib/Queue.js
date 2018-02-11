@@ -43,7 +43,8 @@ class Queue {
 			showStatus: false,
 			statusIcon: 'repo-push',
 			statusToolTip: null,
-			statusCommand: null
+			statusCommand: null,
+			emptyOnFail: true
 		}, options);
 	}
 
@@ -167,8 +168,8 @@ class Queue {
 			// Further tasks to process
 			this.running = true;
 
-			// Shift a task off the tasks array
-			task = this.tasks.shift();
+			// Get the first task in the queue
+			task = this.tasks[0];
 
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()
@@ -187,7 +188,7 @@ class Queue {
 					}
 
 					// Loop
-					this.execQueueItems(fnCallback, results);
+					this.loop(fnCallback, results);
 				})
 				.catch((error) => {
 					// Function/Promise was rejected
@@ -198,7 +199,7 @@ class Queue {
 
 						// Empty tasks array
 						// this.tasks = [];
-						this.stop();
+						this.stop(true, this.options.emptyOnFail);
 
 						// Trigger callback
 						fnCallback(results);
@@ -215,7 +216,7 @@ class Queue {
 						channel.appendError(error);
 
 						// Loop
-						this.execQueueItems(fnCallback, results);
+						this.loop(fnCallback, results);
 					}
 				});
 		} else {
@@ -228,24 +229,42 @@ class Queue {
 	}
 
 	/**
+	 * Looper function for #execQueueItems
+	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
+	 * @param {object} results - Results object, as supplied to #execQueueItems
+	 */
+	loop(fnCallback, results) {
+		this.tasks.shift();
+		this.execQueueItems(fnCallback, results);
+	}
+
+	/**
 	 * Stops a queue by removing all items from it.
 	 * @returns {promise} - A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
-	stop() {
+	stop(silent = false, clearQueue = true) {
 		if (this.running) {
-			channel.appendInfo(i18n.t('stopping_queue'));
+			if (!silent) {
+				// If this stop isn't an intentional use action, let's allow
+				// for silence here.
+				channel.appendInfo(i18n.t('stopping_queue'));
+			}
 
-			// Remove all pending tasks from this queue
-			this.tasks = [];
+			if (clearQueue) {
+				// Remove all pending tasks from this queue
+				this.tasks = [];
+			}
+
 			this.running = false;
 
 			if (this.progressInterval) {
+				// Stop the status progress monitor timer
 				clearInterval(this.progressInterval);
 			}
 
 			if (this.progressReject) {
-				// Reject the globally assigned progress promise
+				// Reject the globally assigned progress promise (if set)
 				this.progressReject();
 			}
 		}
@@ -295,7 +314,7 @@ class Queue {
 	}
 
 	/**
-	 * Update the general watcher status.
+	 * Update the general queue status.
 	 */
 	_updateStatus() {
 		let tasks = this.tasks.filter((task) => task.id);
@@ -316,7 +335,7 @@ class Queue {
 	}
 
 	/**
-	 * Sets the VS Code context for this extension
+	 * Sets the VS Code context for this queue
 	 * @param {string} context - Context item name
 	 * @param {mixed} value - Context value
 	 */
