@@ -97,7 +97,7 @@ class Queue {
 	exec(fnProgress) {
 		// Failsafe to prevent a queue running more than once at a time
 		if (this.running) {
-			return false;
+			return Promise.reject(i18n.t('queue_running'));
 		}
 
 		if (this.tasks && this.tasks.length) {
