@@ -99,7 +99,11 @@ class i18n {
 			return this.strings.localised[key];
 		}
 
-		return this.strings.base[key];
+		if (this.strings.base[key]) {
+			return this.strings.base[key];
+		}
+
+		return `!!${key}!!`;
 	}
 };
 
