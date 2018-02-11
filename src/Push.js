@@ -228,9 +228,7 @@ class Push extends PushBase {
 			return this.execQueue(queueDef);
 		}
 
-		this.refreshQueues({
-			queues: this.queues
-		});
+		this.refreshExplorerQueues();
 	}
 
 	/**
@@ -354,17 +352,17 @@ class Push extends PushBase {
 			.then(() => {
 				// Set contextual state that the queue has completed
 				this.setContext(Push.contexts.queueInProgress, false);
-				this.refreshQueues();
+				this.refreshExplorerQueues();
 			})
 			.catch((error) => {
 				// Set contextual state that the queue has completed
 				this.setContext(Push.contexts.queueInProgress, false);
-				this.refreshQueues();
+				this.refreshExplorerQueues();
 				throw error;
 			});
 	}
 
-	refreshQueues() {
+	refreshExplorerQueues() {
 		this.explorer.refresh({
 			queues: this.queues
 		});
