@@ -1,21 +1,17 @@
 const vscode = require('vscode');
 
-const utils = require('../lib/utils');
 const config = require('../lib/config');
 
 /**
  * Internationalisation (i18n) class.
  * Language files are a combination of ISO 639-1 language codes and ISO 3166-1
- * Alpha-2 codes of country names. Country code is optional if a language does not
+ * Alpha-2 codes of country codes. Country code is optional if a language does not
  * require that definition, e.g. 'ja' (Japanese) vs 'en_gb' (British English).
  */
 class i18n {
 	constructor() {
-		this._locale;
-
-		this.re = {
-			has_placeholders: /(\$|p)\{\d+\}/
-		};
+		// Set default locale
+		this._locale = 'en_gb';
 
 		this.strings = {
 			base: require(`./en_gb`),
@@ -27,7 +23,10 @@ class i18n {
 		vscode.workspace.onDidChangeConfiguration(() => this.setLocale());
 	}
 
-
+	/**
+	 * Set the currently active locale.
+	 * @param {string} locale - The active locale to set.
+	 */
 	setLocale(locale) {
 		let fileName;
 
@@ -44,7 +43,7 @@ class i18n {
 	}
 
 	/**
-	 * Fetch a string in the current locale
+	 * Fetch a translated string in the current locale
 	 * @param {string} key - String key from the relevant translation file.
 	 * @param {...mixed} $1 - Replacement variables, to replace with indexed matches
 	 * in the string value.
@@ -52,7 +51,7 @@ class i18n {
 	t(key) {
 		let string = this.getLocalisedString(key);
 
-		if (this.re.has_placeholders.test(string)) {
+		if (i18n.tests.has_placeholders.test(string)) {
 			[...arguments].slice(1).forEach((value, index) => {
 				string = string.replace(
 					RegExp('\\$\\{' + (index + 1) + '\\}', 'g'),
@@ -94,6 +93,13 @@ class i18n {
 		return object;
 	}
 
+	/**
+	 * @description
+	 * Returns the localised string for a key. Will return the base key with markings if a localised
+	 * or the base key cannot be found.
+	 * @param {string} key - String key to fetch.
+	 * @returns {string} - The found localised string.
+	 */
 	getLocalisedString(key) {
 		if (this.strings.localised[key]) {
 			return this.strings.localised[key];
@@ -105,6 +111,10 @@ class i18n {
 
 		return `!!${key}!!`;
 	}
+};
+
+i18n.tests = {
+	has_placeholders: /(\$|p)\{\d+\}/
 };
 
 module.exports = new i18n();
