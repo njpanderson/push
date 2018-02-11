@@ -83,11 +83,11 @@ class Explorer {
 	getUploadQueue() {
 		if (this.data.queues && this.data.queues.upload) {
 			return Promise.resolve(
-				this.data.queues.upload.getTasks().map((queueItem) => {
-					if (queueItem.id) {
+				this.data.queues.upload.tasks.map((task) => {
+					if (task.id && task.data.uriContext) {
 						return new Item(
 							this.paths.getPathWithoutWorkspace(
-								queueItem.uriContext,
+								task.data.uriContext,
 								vscode.workspace
 							),
 							vscode.TreeItemCollapsibleState.None,

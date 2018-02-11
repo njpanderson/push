@@ -1,11 +1,11 @@
 const vscode = require('vscode');
-const crypto = require('crypto');
 
-const utils = require('./utils');
-const config = require('./config');
-const channel = require('./channel');
-const constants = require('./constants');
-const i18n = require('../lang/i18n');
+const QueueTask = require('./QueueTask');
+const utils = require('../utils');
+const config = require('../config');
+const channel = require('../channel');
+const constants = require('../constants');
+const i18n = require('../../lang/i18n');
 
 class Queue {
 	/**
@@ -15,7 +15,7 @@ class Queue {
 	constructor(id, options) {
 		this.id = id;
 		this.running = false;
-		this.tasks = [];
+		this._tasks = [];
 		this.currentTask = null;
 		this.progressInterval = null;
 
@@ -35,6 +35,13 @@ class Queue {
 	}
 
 	/**
+	 * Get all current task (or an empty array)
+	 */
+	get tasks() {
+		return this._tasks;
+	}
+
+	/**
 	 * Set class-specific options.
 	 * @param {object} options
 	 */
@@ -49,45 +56,30 @@ class Queue {
 	}
 
 	/**
-	 * Adds a task to the queue
-	 * @param {function} fn - Function to add.
-	 * @param {object} [data] - Queue metadata:
-	 *  - `actionTaken` Name of the function/operation performed in past tense
-	 *     (i.e. "uploaded").
-	 *  - `id` Identifier for the task.
-	 *  - `uriContext` Contextual URI for the task.
+	 * Adds a task to the end of the current queue.
+	 * @param {QueueTask} task - Task to be added.
 	 */
-	addTask(fn, data) {
-		let hash = crypto.createHash('sha256'),
-			task = { fn };
-
-		// Hash the ID
-		if (data && data.id) {
-			hash.update(data.id);
-			data.id = hash.digest('hex');
+	addTask(task) {
+		if (!(task instanceof QueueTask)) {
+			throw new TypeError('Queue task is not of type QueueTask');
 		}
 
-		if ((!data || data.id === undefined) || !this.getTask(data.id)) {
+		if (!this.getTask(task.id)) {
 			// Only push the task if one doesn't already exist with this id
-			this.tasks.push(
-				Object.assign(task, data)
-			);
+			this._tasks.push(task);
 		}
 
 		this._updateStatus();
 	}
 
-	getTask(id) {
-		return this.tasks.find((item) => {
-			return ('id' in item && item.id === id);
-		})
+	addTasks(tasks) {
+		this._tasks = this._tasks.concat(tasks);
 	}
 
-	/**
-	 * Get all current task (or an empty array)
-	 */
-	getTasks() {
-		return this.tasks;
+	getTask(id) {
+		return this._tasks.find((task) => {
+			return (task.id !== undefined && task.id === id);
+		})
 	}
 
 	/**
@@ -102,9 +94,9 @@ class Queue {
 
 		this.setContext(Queue.contexts.running, true);
 
-		if (this.tasks && this.tasks.length) {
+		if (this._tasks && this._tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
-			channel.appendLine(i18n.t('running_tasks_in_queue', (this.tasks.length - 1)));
+			channel.appendLine(i18n.t('running_tasks_in_queue', (this._tasks.length - 1)));
 
 			// Start progress interface
 			return vscode.window.withProgress({
@@ -166,12 +158,12 @@ class Queue {
 			};
 		}
 
-		if (this.tasks.length) {
+		if (this._tasks.length) {
 			// Further tasks to process
 			this.running = true;
 
 			// Get the first task in the queue
-			task = this.tasks[0];
+			task = this._tasks[0];
 
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()
@@ -180,12 +172,12 @@ class Queue {
 					if (result !== false) {
 						// Add to success list if the result from the function is anything
 						// other than `false`
-						if (task.actionTaken) {
-							if (!results.success[task.actionTaken]) {
-								results.success[task.actionTaken] = [];
+						if (task.data.actionTaken) {
+							if (!results.success[task.data.actionTaken]) {
+								results.success[task.data.actionTaken] = [];
 							}
 
-							results.success[task.actionTaken].push(result);
+							results.success[task.data.actionTaken].push(result);
 						}
 					}
 
@@ -208,11 +200,11 @@ class Queue {
 						throw error;
 					} else if (typeof error === 'string') {
 						// String based errors add to fail list, but don't stop
-						if (!results.fail[task.actionTaken]) {
-							results.fail[task.actionTaken] = [];
+						if (!results.fail[task.data.actionTaken]) {
+							results.fail[task.data.actionTaken] = [];
 						}
 
-						results.fail[task.actionTaken].push(error);
+						results.fail[task.data.actionTaken].push(error);
 
 						channel.appendError(error);
 
@@ -235,7 +227,7 @@ class Queue {
 	 * @param {object} results - Results object, as supplied to #execQueueItems
 	 */
 	loop(fnCallback, results) {
-		this.tasks.shift();
+		this._tasks.shift();
 		this.execQueueItems(fnCallback, results);
 	}
 
@@ -254,7 +246,7 @@ class Queue {
 
 			if (clearQueue) {
 				// Remove all pending tasks from this queue
-				this.tasks = [];
+				this.empty();
 			}
 
 			this.complete(results, fnCallback);
@@ -285,6 +277,13 @@ class Queue {
 		if (typeof fnCallback === 'function') {
 			fnCallback(results);
 		}
+	}
+
+	/**
+	 * Empties the current queue
+	 */
+	empty() {
+		this._tasks = [];
 	}
 
 	/**
@@ -332,7 +331,7 @@ class Queue {
 	 * Update the general queue status.
 	 */
 	_updateStatus() {
-		let tasks = this.tasks.filter((task) => task.id);
+		let tasks = this._tasks.filter((task) => task.id);
 
 		this.setContext(Queue.contexts.itemCount, tasks.length);
 

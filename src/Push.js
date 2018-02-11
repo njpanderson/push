@@ -5,7 +5,8 @@ const Service = require('./lib/Service');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
 const Paths = require('./lib/Paths');
-const Queue = require('./lib/Queue');
+const Queue = require('./lib/queue/Queue');
+const QueueTask = require('./lib/queue/QueueTask');
 const Watch = require('./lib/Watch');
 const channel = require('./lib/channel');
 const i18n = require('./lang/i18n');
@@ -75,19 +76,11 @@ class Push extends PushBase {
 		});
 	}
 
-	execUploadQueue() {
-		if (!this.config.uploadQueue) {
-			return channel.appendLocalisedInfo('upload_queue_disabled');
-		}
-
-		return this.execQueue(Push.queueDefs.upload);
-	}
-
 	listQueueItems(queueDef) {
 		if (this.queues[queueDef.id]) {
 			channel.appendLocalisedInfo();
 
-			this.queues[queueDef.id].getTasks().forEach((item) => {
+			this.queues[queueDef.id].tasks.forEach((item) => {
 				if (item.actionTaken) {
 					channel.appendLine(item.actionTaken);
 				}
@@ -185,45 +178,48 @@ class Push extends PushBase {
 
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
-			queue.addTask(() => {
+			queue.addTask(new QueueTask(() => {
 				return this.service.activeService &&
 					this.service.activeService.init(queue.tasks.length);
-			});
+			}));
 		}
 
-		tasks.forEach(({
-			method,
-			actionTaken,
-			uriContext,
-			args,
-			id,
-			onTaskComplete
-		}) => {
+		tasks.forEach((task) => {
+			if (task instanceof QueueTask) {
+				// Add the task as-is
+				return queue.addTask(task);
+			}
+
 			// Add queue item with contextual config
-			queue.addTask(() => {
-				let config;
+			queue.addTask(
+				new QueueTask(
+					(() => {
+						let config;
 
-				if (uriContext) {
-					// Add service settings to the current configuration
-					config = this.configWithServiceSettings(uriContext);
-				} else {
-					throw new Error('No uriContext set from queue source.');
-				}
+						if (task.uriContext) {
+							// Add service settings to the current configuration
+							config = this.configWithServiceSettings(task.uriContext);
+						} else {
+							throw new Error('No uriContext set from queue source.');
+						}
 
-				if (config) {
-					// Execute the service method, returning any results and/or promises
-					return this.service.exec(method, config, args)
-						.then((result) => {
-							if (typeof onTaskComplete === 'function') {
-								onTaskComplete.call(this, result);
-							}
-						});
-				}
-			}, {
-				id,
-				actionTaken,
-				uriContext
-			});
+						if (config) {
+							// Execute the service method, returning any results and/or promises
+							return this.service.exec(task.method, config, task.args)
+								.then((result) => {
+									if (typeof task.onTaskComplete === 'function') {
+										task.onTaskComplete.call(this, result);
+									}
+								});
+						}
+					}),
+					task.id,
+					{
+						actionTaken: task.actionTaken,
+						uriContext: task.uriContext
+					}
+				)
+			);
 		});
 
 		if (runImmediately) {
@@ -271,6 +267,23 @@ class Push extends PushBase {
 					});
 				});
 		}
+	}
+
+	execUploadQueue() {
+		let uploadQueue;
+
+		if (!this.config.uploadQueue) {
+			return channel.appendLocalisedInfo('upload_queue_disabled');
+		}
+
+		uploadQueue = this.getQueue(Push.queueDefs.upload);
+
+		this.queue(uploadQueue.tasks, true)
+			.then(() => {
+				uploadQueue.empty();
+			});
+
+		return uploadQueue
 	}
 
 	/**
