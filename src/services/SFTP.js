@@ -556,7 +556,9 @@ class ServiceSFTP extends ServiceBase {
 			this.connect().then((client) => {
 				client.put(local, remote)
 					.then(resolve)
-					.catch(reject);
+					.catch((error) => {
+						reject(new Error(`${remote}: ${error.message}`));
+					});
 			});
 		});
 	}
@@ -602,7 +604,7 @@ class ServiceSFTP extends ServiceBase {
 							stream.pipe(write);
 						})
 						.catch((error) => {
-							throw(error.message);
+							throw(new Error(`${remote}: ${error.message}`);
 						});
 				});
 			});
