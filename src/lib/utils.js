@@ -180,17 +180,17 @@ utils.collisionOpts = {
 };
 
 utils.collisionOptsAll = {
-	skip: i18n.t({
+	skip: i18n.o({
 		label: 'skip_all',
 		detail: 'skip_uploading_all_existing',
 		baseOption: utils.collisionOpts.skip
 	}),
-	overwrite: i18n.t({
+	overwrite: i18n.o({
 		label: 'overwrite_all',
 		detail: 'replace_all_existing',
 		baseOption: utils.collisionOpts.overwrite
 	}),
-	rename: i18n.t({
+	rename: i18n.o({
 		label: 'rename_all',
 		detail: 'keep_all_existing_by_renaming_uploaded',
 		baseOption: utils.collisionOpts.rename

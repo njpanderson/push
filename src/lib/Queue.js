@@ -100,6 +100,8 @@ class Queue {
 			return Promise.reject(i18n.t('queue_running'));
 		}
 
+		this.setContext(Queue.contexts.running, true);
+
 		if (this.tasks && this.tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(i18n.t('running_tasks_in_queue', (this.tasks.length - 1)));
@@ -197,9 +199,8 @@ class Queue {
 						channel.appendError(error);
 						channel.show();
 
-						// Empty tasks array
-						// this.tasks = [];
-						this.stop(true, this.options.emptyOnFail);
+						// Stop queue
+						this.stop(true, this.options.emptyOnFail, results, fnCallback);
 
 						// Trigger callback
 						fnCallback(results);
@@ -220,8 +221,8 @@ class Queue {
 					}
 				});
 		} else {
-			// Task queue is empty - send the resuts to the callback and report internally
-			this.running = false;
+			// Complete queue
+			this.complete(results, fnCallback);
 
 			this.reportQueueResults(results);
 			fnCallback(results);
@@ -243,7 +244,7 @@ class Queue {
 	 * @returns {promise} - A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
-	stop(silent = false, clearQueue = true) {
+	stop(silent = false, clearQueue = true, results, fnCallback) {
 		if (this.running) {
 			if (!silent) {
 				// If this stop isn't an intentional use action, let's allow
@@ -256,7 +257,7 @@ class Queue {
 				this.tasks = [];
 			}
 
-			this.running = false;
+			this.complete(results, fnCallback);
 
 			if (this.progressInterval) {
 				// Stop the status progress monitor timer
@@ -270,6 +271,20 @@ class Queue {
 		}
 
 		return this.currentTask || Promise.resolve();
+	}
+
+	/**
+	 * Invoked on queue completion.
+	 * @param {mixed} results - Result data from the queue process
+	 * @param {function} fnCallback - Callback function to invoke
+	 */
+	complete(results, fnCallback) {
+		this.running = false;
+		this.setContext(Queue.contexts.running, false);
+
+		if (typeof fnCallback === 'function') {
+			fnCallback(results);
+		}
 	}
 
 	/**
@@ -319,7 +334,7 @@ class Queue {
 	_updateStatus() {
 		let tasks = this.tasks.filter((task) => task.id);
 
-		this._setContext(Queue.contexts.itemCount, tasks.length);
+		this.setContext(Queue.contexts.itemCount, tasks.length);
 
 		if (tasks.length && this.options.showStatus) {
 			this.status.text = `$(${this.options.statusIcon}) ${tasks.length}`;
@@ -339,7 +354,7 @@ class Queue {
 	 * @param {string} context - Context item name
 	 * @param {mixed} value - Context value
 	 */
-	_setContext(context, value) {
+	setContext(context, value) {
 		console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
 		return this;
@@ -347,7 +362,8 @@ class Queue {
 };
 
 Queue.contexts = {
-	itemCount: 'itemCount'
+	itemCount: 'itemCount',
+	running: 'running'
 }
 
 module.exports = Queue;

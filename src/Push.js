@@ -16,7 +16,7 @@ class Push extends PushBase {
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
-		this.refreshWatchList = this.refreshWatchList.bind(this);
+		this.refreshExplorerWatchList = this.refreshExplorerWatchList.bind(this);
 
 		this.initService();
 
@@ -24,7 +24,7 @@ class Push extends PushBase {
 		this.explorer = new Explorer(this.config);
 
 		this.watch = new Watch();
-		this.watch.onWatchUpdate = this.refreshWatchList;
+		this.watch.onWatchUpdate = this.refreshExplorerWatchList;
 
 		this.queues = {};
 
@@ -33,7 +33,7 @@ class Push extends PushBase {
 
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		// vscode.workspace.onDidChangeConfiguration(this.setContexts);
+		vscode.workspace.onDidChangeConfiguration(this.setContexts);
 	}
 
 	/**
@@ -56,14 +56,16 @@ class Push extends PushBase {
 	 * Set (or re-set) contexts
 	 */
 	setContexts(initial) {
-		this.setContext(Push.contexts.uploadQueue, this.config.uploadQueue);
-		this.setContext(Push.contexts.initialised, true);
+		this.setContext(Push.contexts.hasUploadQueue, this.config.uploadQueue);
 
 		if (initial === true) {
-			this.setContext(Push.contexts.queueInProgress, false);
+			this.setContext(Push.contexts.initialised, true);
 		}
 	}
 
+	/**
+	 * Initialises the service class.
+	 */
 	initService() {
 		this.settings = new ServiceSettings();
 		this.service = new Service({
@@ -224,7 +226,7 @@ class Push extends PushBase {
 			});
 		});
 
-		if (runImmediately && !queue.running) {
+		if (runImmediately) {
 			return this.execQueue(queueDef);
 		}
 
@@ -334,46 +336,58 @@ class Push extends PushBase {
 	}
 
 	/**
-	 * Execute a queue, invoking its individual tasks in serial.
-	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
+	 * Execute a queue (by running its #exec method).
+	 * @param {object} queueDef - One of the {@link Push.queueDefs} queue definitions.
 	 * @returns {promise} A promise, eventually resolving once the queue is complete.
 	 */
 	execQueue(queueDef) {
-		if (typeof queueDef !== 'object' || !queueDef.id) {
+		const queue = this.getQueue(queueDef);
+
+		if (!(queue instanceof Queue)) {
 			throw new Error('Invalid queue definition type.');
 		}
 
+		if (queue.running) {
+			return null;
+		}
+
 		channel.clear();
-		this.setContext(Push.contexts.queueInProgress, true);
 
 		// Fetch and execute queue
-		return this.getQueue(queueDef)
+		return queue
 			.exec(this.service.getStateProgress)
 			.then(() => {
-				// Set contextual state that the queue has completed
-				this.setContext(Push.contexts.queueInProgress, false);
 				this.refreshExplorerQueues();
 			})
 			.catch((error) => {
-				// Set contextual state that the queue has completed
-				this.setContext(Push.contexts.queueInProgress, false);
 				this.refreshExplorerQueues();
 				throw error;
 			});
 	}
 
+	/**
+	 * Refresh the Push explorer queue data.
+	 */
 	refreshExplorerQueues() {
 		this.explorer.refresh({
 			queues: this.queues
 		});
 	}
 
-	refreshWatchList(watchList) {
+	/**
+	 * Refresh the Push explorer watch list data.
+	 */
+	refreshExplorerWatchList(watchList) {
 		this.explorer.refresh({
 			watchList: watchList
 		});
 	}
 
+	/**
+	 * Sets the VS Code context for general Push states
+	 * @param {string} context - Context item name
+	 * @param {mixed} value - Context value
+	 */
 	setContext(context, value) {
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
@@ -459,8 +473,9 @@ class Push extends PushBase {
 
 	/**
 	 * Transfers a single file.
-	 * @param {uri} uri - Uri of file to transfer
-	 * @param {string} method - Either 'get' or 'put;
+	 * @param {Uri} uri - Uri of file to transfer.
+	 * @param {string} method - Either 'get' or 'put'.
+	 * @returns {promise} - A promise, resolving when the file has transferred.
 	 */
 	transfer(uri, method) {
 		let ignoreGlobs = [], action, actionTaken;
@@ -521,6 +536,12 @@ class Push extends PushBase {
 			});
 	}
 
+	/**
+	 * Transfers a directory of files.
+	 * @param {Uri} uri - Uri of the directory to transfer.
+	 * @param {*} method - Either 'get' or 'put'.
+	 * @returns {promise} - A promise, resolving when the directory has transferred.
+	 */
 	transferDirectory(uri, method) {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;
 
@@ -609,6 +630,10 @@ class Push extends PushBase {
 		}
 	}
 
+	/**
+	 * Ensures that a Uri path only contains one service settings file (e.g. .push.settings.json).
+	 * @param {Uri} uri - Uri to test.
+	 */
 	ensureSingleService(uri) {
 		return new Promise((resolve, reject) => {
 			this.paths.getDirectoryContentsAsFiles(
@@ -649,9 +674,8 @@ Push.globals = {
 };
 
 Push.contexts = {
-	uploadQueue: 'uploadQueue',
-	initialised: 'initialised',
-	queueInProgress: 'queueInProgress'
+	hasUploadQueue: 'hasUploadQueue',
+	initialised: 'initialised'
 };
 
 module.exports = Push;

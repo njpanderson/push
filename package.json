@@ -318,11 +318,11 @@
         },
         {
           "command": "push.cancelQueues",
-          "when": "push:initialised && push:queueInProgress"
+          "when": "push:initialised && push:queue-default-running"
         },
         {
           "command": "push.stopQueues",
-          "when": "push:initialised && push:queueInProgress"
+          "when": "push:initialised && push:queue-default-running"
         },
         {
           "command": "push.stopWatch",
@@ -338,7 +338,7 @@
         },
         {
           "command": "push.uploadQueuedItems",
-          "when": "push:uploadQueue"
+          "when": "push:hasUploadQueue"
         }
       ],
       "view/title": [
@@ -354,7 +354,7 @@
         },
         {
           "command": "push.uploadQueuedItems",
-          "when": "view == push.pushExplorer && push:initialised && push:queue-upload-itemCount",
+          "when": "view == push.pushExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
           "group": "navigation@3"
         }
       ],
