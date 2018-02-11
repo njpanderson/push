@@ -1,7 +1,5 @@
 const crypto = require('crypto');
 
-let taskCount = 0;
-
 /**
  * A single queue task
  * @param {function} fn - Function to call when the queue task is invoked.
@@ -48,14 +46,6 @@ class QueueTask {
 		}
 
 		hash = crypto.createHash('sha256');
-
-		// if (typeof id === 'undefined' || !id) {
-		// 	// Assign ID
-		// 	id = QueueTask.anonPrefix + taskCount;
-
-		// 	// Increment ID
-		// 	taskCount += 1;
-		// }
 
 		// Hash the ID
 		hash.update(id);
