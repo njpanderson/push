@@ -222,12 +222,12 @@ class Push extends PushBase {
 	 * @param {uri} uri - File Uri to queue
 	 */
 	queueForUpload(uri) {
-		let remoteUri;
+		let remotePath;
 
 		uri = this.paths.getFileSrc(uri);
 
 		if (this.service) {
-			remoteUri = this.service.exec(
+			remotePath = this.service.exec(
 				'convertUriToRemote',
 				this.configWithServiceSettings(uri),
 				[uri]
@@ -243,8 +243,8 @@ class Push extends PushBase {
 						method: 'put',
 						actionTaken: 'uploaded',
 						uriContext: uri,
-						args: [uri, remoteUri],
-						id: remoteUri + this.paths.getNormalPath(uri)
+						args: [uri, remotePath],
+						id: remotePath + this.paths.getNormalPath(uri)
 					}], false, Push.queueDefs.upload, {
 						showStatus: true,
 						statusToolTip: (num) => {
