@@ -161,9 +161,13 @@ class Push extends PushBase {
 	 * Queues a task for a service method after doing required up-front work.
 	 *
 	 * ### Task properties:
-	 * - `method` (`string`): Method to run.
-	 * - `uriContext` (`uri`): URI context for the method.
-	 * - `args` (`array`): Array of arguments to send to the method.
+	 * Each task item may contain the following properties:
+	 * - `method` (`string`): Method name to invoke on the service instance.
+	 * - `actionTaken` (`string`): String defining the past tense of the action taken for reporting.
+	 * - `uriContext` (`uri`): URI context for the method, if applicable.
+	 * - `args` (`array`): Array of arguments to send to the method being invoked.
+	 * - `id` (`string`): A unique identifier for the task. Used for duplicate detection.
+	 * - `onTaskComplete` (`function`): A function to invoke on individual task completion.
 	 */
 	queue(
 		tasks = [],
@@ -185,7 +189,14 @@ class Push extends PushBase {
 			});
 		}
 
-		tasks.forEach(({ method, actionTaken, uriContext, args, id }) => {
+		tasks.forEach(({
+			method,
+			actionTaken,
+			uriContext,
+			args,
+			id,
+			onTaskComplete
+		}) => {
 			// Add queue item with contextual config
 			queue.addTask(() => {
 				let config;
@@ -199,7 +210,12 @@ class Push extends PushBase {
 
 				if (config) {
 					// Execute the service method, returning any results and/or promises
-					return this.service.exec(method, config, args);
+					return this.service.exec(method, config, args)
+						.then((result) => {
+							if (typeof onTaskComplete === 'function') {
+								onTaskComplete.call(this, result);
+							}
+						});
 				}
 			}, {
 				id,
@@ -255,6 +271,43 @@ class Push extends PushBase {
 					});
 				});
 		}
+	}
+
+	/**
+	 * Compares a local file with the remote equivalent using the service mapping rules.
+	 * @param {Uri} uri - Uri of the local file to compare.
+	 */
+	diffRemote(uri) {
+		let config, tmpFile, remotePath;
+
+		tmpFile = this.paths.getTmpFile();
+		config = this.configWithServiceSettings(uri);
+		remotePath = this.service.exec(
+			'convertUriToRemote',
+			config,
+			[uri]
+		);
+
+		// Use the queue to get a file then diff it
+		return this.queue([{
+			method: 'get',
+			actionTaken: 'downloaded',
+			uriContext: uri,
+			args: [
+				tmpFile,
+				remotePath,
+				'overwrite'
+			],
+			id: tmpFile + remotePath,
+			onTaskComplete: () => {
+				vscode.commands.executeCommand(
+					'vscode.diff',
+					tmpFile,
+					uri,
+					'Diff: ' + this.paths.getBaseName(uri)
+				);
+			}
+		}], true, Push.queueDefs.diff);
 	}
 
 	/**
@@ -581,6 +634,10 @@ class Push extends PushBase {
 Push.queueDefs = {
 	default: {
 		id: 'default',
+		cancellable: true
+	},
+	diff: {
+		id: 'diff',
 		cancellable: true
 	},
 	upload: {

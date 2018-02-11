@@ -10,6 +10,7 @@ module.exports = {
 	'processing': 'Processing',
 	'processing_with_state': 'Processing ${1}',
 	'queue_empty': 'Queue is empty.',
+	'queue_running': 'Queue is running.',
 	'stopping_queue': 'Stopping queue...',
 	'queue_complete': 'Queue complete.',
 	'queue_items_failed': '${1} p{1:item:items} failed.',

@@ -10,6 +10,7 @@ module.exports = {
 	'processing': 'in lavorazione',
 	'processing_with_state': 'Elaborazione ${1}',
 	'queue_empty': 'La coda è vuota.',
+	'queue_running': 'La coda è in esecuzione.',
 	'stopping_queue': 'Arresto della coda ...',
 	'queue_complete': 'Coda completa.',
 	'queue_items_failed': '${1}p{1:elemento non riuscito.:articoli falliti.}',

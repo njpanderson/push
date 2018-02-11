@@ -60,34 +60,7 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	diff(uri) {
-		let config, tmpFile;
-
-		uri = this.paths.getFileSrc(uri);
-		tmpFile = this.paths.getTmpFile();
-		config = this.configWithServiceSettings(uri);
-
-		this.service.exec(
-			'get',
-			config,
-			[
-				tmpFile,
-				this.service.exec(
-					'convertUriToRemote',
-					config,
-					[uri]
-				),
-				'overwrite'
-			]
-		).then(() => {
-			vscode.commands.executeCommand(
-				'vscode.diff',
-				tmpFile,
-				uri,
-				'Diff: ' + this.paths.getBaseName(uri)
-			);
-		}).catch((error) => {
-			channel.appendError(error);
-		});
+		this.diffRemote(this.paths.getFileSrc(uri));
 	}
 
 	/**

@@ -10,6 +10,7 @@ module.exports = {
 	'processing': '処理',
 	'processing_with_state': '処理${1}',
 	'queue_empty': 'キューは空です。',
+	'queue_running': 'キューは操作可能です。',
 	'stopping_queue': 'キューを停止しています...',
 	'queue_complete': 'キューが完了しました。',
 	'queue_items_failed': '${1}p{1:項目:件}が失敗しました',
