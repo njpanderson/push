@@ -9,17 +9,14 @@ const crypto = require('crypto');
  */
 class QueueTask {
 	constructor(fn, id, data) {
-		this._id = {
-			id,
-			hash: null
-		};
+		this._id = { id };
 
 		this._data = data || {};
 		this._fn = fn;
 	}
 
 	get id() {
-		if (!this._id.hash) {
+		if (typeof this._id.hash === 'undefined') {
 			this._id.hash = this._generateId(this._id.id);
 		}
 
@@ -40,9 +37,9 @@ class QueueTask {
 
 	_generateId(id) {
 		let hash;
-
+		console.log('generateId', id);
 		if (typeof id === 'undefined' || !id) {
-			return undefined;
+			return null;
 		}
 
 		hash = crypto.createHash('sha256');
