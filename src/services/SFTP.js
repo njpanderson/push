@@ -141,6 +141,9 @@ class ServiceSFTP extends ServiceBase {
 								}
 							});
 					} else {
+						// This likely ain't happening - let's just ditch the client and reject
+						this.destroyClient(client);
+
 						reject(error);
 					}
 				});
@@ -194,6 +197,11 @@ class ServiceSFTP extends ServiceBase {
 			Promise.all(tasks)
 				.then(resolve);
 		});
+	}
+
+	destroyClient(client) {
+		client.sftp.end();
+		client.sftp = null;
 	}
 
 	/**
