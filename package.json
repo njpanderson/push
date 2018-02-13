@@ -55,6 +55,11 @@
           "default": "",
           "description": "Defines the default SSH key file for SFTP."
         },
+        "njpPush.privateSSHKeyPassphrase": {
+          "type": "string",
+          "default": "",
+          "description": "Defines the default SSH key passphrase, if needed."
+        },
         "njpPush.uploadQueue": {
           "type": "boolean",
           "default": true,

@@ -34,6 +34,7 @@ This extension contributes the following settings:
 | `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
 | `debugMode` | `false` | Enable debug mode for more logging. Useful if reporting errors. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
+| `privateSSHKeyPassphrase` | (Empty) | If you're using a private key with a passphrase, enter it here. |
 | `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last upload. |
 | `ignoreGlobs` | `**/.DS_Store`,<br>`**/Thumbs.db`,<br>`**/desktop.ini`,<br>`**/.git/\*`,<br>`**/.svn/*` | A list of file globs to ignore when uploading. |
 | `queueCompleteMessageType` | `status` | Choose how to be notified on queue completion. Either `status`, or `message` for a permanent reminder. |
@@ -159,7 +160,8 @@ The SFTP service will upload files to remote SSH/SFTP servers.
 | `host` | | Hostname or IP of the remote host. |
 | `username` | | Username of the authenticated user. |
 | `password` | | Password for the authenticated user. Leave blank if using keys. |
-| `privateKey` | | Private key path, if using keys. Defaults to the global `privateKey` setting. |
+| `privateKey` | | Private key path, if using keys. Defaults to the global `privateSSHKey` setting. |
+| `keyPassphrase` | | Private key passphrase, if needed. Defaults to the global `privateSSHKeyPassphrase` setting. |
 | `root` | `/` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
 | `keepaliveInterval` | `3000` | How often, in milliseconds, to send keep-alive packets to the server. Set `0` to disable. |
 | `fileMode` | | If required, a [mode](https://en.wikipedia.org/wiki/File_system_permissions#Numeric_notation) can be applied to files when they are uploaded. Numeric modes are accepted. E.g: `"700"` to give all access to the owner only. An array of modes is also supported. (See below.) |

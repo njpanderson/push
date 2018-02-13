@@ -127,6 +127,15 @@ class ServiceSFTP extends ServiceBase {
 				.catch((error) => {
 					if (error.level === 'client-authentication') {
 						// Put a note in the log to remind users that a password can be set
+						if (client.options.privateKeyFile !== '') {
+							// If there was a keyfile yet we're at this point, it might have broken
+							channel.appendLocalisedInfo(
+								'key_file_not_working',
+								client.options.privateKeyFile,
+								client.options.username,
+							);
+						}
+
 						this.channel.appendLocalisedInfo('requesting_password');
 
 						// Offer to use a password
@@ -200,8 +209,10 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	destroyClient(client) {
-		client.sftp.end();
-		client.sftp = null;
+		if (client.sftp) {
+			client.sftp.end();
+			client.sftp = null;
+		}
 	}
 
 	/**
@@ -216,7 +227,7 @@ class ServiceSFTP extends ServiceBase {
 			keys;
 
 		return new Promise((resolve) => {
-			if (this.clients[hash]) {
+			if (this.clients[hash] && this.clients[hash].sftp) {
 				// Return the existing client instance
 				this.clients[hash].lastUsed = date.getTime();
 
@@ -283,14 +294,17 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {object} service
 	 */
 	getClientOptions(service) {
-		let options = {
-			host: service.host,
-			port: service.port,
-			username: service.username,
-			privateKey: this._getPrivateKey(),
-			keepaliveInterval: service.keepaliveInterval,
-			tryKeyboard: true
-		};
+		let sshKey = this._getPrivateKey(),
+			options = {
+				host: service.host,
+				port: service.port,
+				username: service.username,
+				privateKey: sshKey && sshKey.contents,
+				privateKeyFile: sshKey && sshKey.file,
+				passphrase: service.keyPassphrase || this.config.privateSSHKeyPassphrase,
+				keepaliveInterval: service.keepaliveInterval,
+				tryKeyboard: true
+			};
 
 		// Add a password, if set
 		if (service.password) {
@@ -816,11 +830,23 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {string} file
 	 */
 	_getPrivateKey() {
-		let keyFile = this.config.service.privateKey || this.config.privateSSHKey,
-			homeDir, defaultKeyFiles, a;
+		let keyFile, homeDir, defaultKeyFiles, a;
+
+		keyFile = String(
+			this.config.service.privateKey ||
+			this.config.privateSSHKey ||
+			''
+		).trim();
 
 		if (fs.existsSync(keyFile)) {
-			return fs.readFileSync(keyFile, 'UTF-8');
+			return {
+				'file': keyFile,
+				'contents': fs.readFileSync(keyFile, 'UTF-8')
+			};
+		} else if (keyFile !== '') {
+			// File doesn't exist and wasn't empty
+			channel.appendLocalisedError('key_file_not_found', keyFile);
+			return false;
 		}
 
 		// Fall back to attempting to find by default
@@ -837,7 +863,10 @@ class ServiceSFTP extends ServiceBase {
 				this.config.service.privateKey = defaultKeyFiles[a];
 
 				// ... Then return
-				return fs.readFileSync(defaultKeyFiles[a], 'UTF-8');
+				return {
+					'file': defaultKeyFiles[a],
+					'contents': fs.readFileSync(defaultKeyFiles[a], 'UTF-8')
+				};
 			}
 		}
 	}
@@ -913,6 +942,7 @@ ServiceSFTP.defaults = {
 	username: '',
 	password: '',
 	privateKey: '',
+	keyPassphrase: '',
 	root: '/',
 	keepaliveInterval: 3000,
 	debug: false,
