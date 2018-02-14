@@ -3,8 +3,10 @@ const vscode = require('vscode');
 const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
 const PushBase = require('./lib/PushBase');
+const Explorer = require('./lib/explorer/Explorer');
 const Paths = require('./lib/Paths');
-const Queue = require('./lib/Queue');
+const Queue = require('./lib/queue/Queue');
+const QueueTask = require('./lib/queue/QueueTask');
 const Watch = require('./lib/Watch');
 const channel = require('./lib/channel');
 const i18n = require('./lang/i18n');
@@ -15,11 +17,15 @@ class Push extends PushBase {
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
+		this.refreshExplorerWatchList = this.refreshExplorerWatchList.bind(this);
 
 		this.initService();
 
 		this.paths = new Paths();
+		this.explorer = new Explorer(this.config);
+
 		this.watch = new Watch();
+		this.watch.onWatchUpdate = this.refreshExplorerWatchList;
 
 		this.queues = {};
 
@@ -28,43 +34,53 @@ class Push extends PushBase {
 
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		// vscode.workspace.onDidChangeConfiguration(this.setContexts);
+		vscode.workspace.onDidChangeConfiguration(this.setContexts);
+	}
+
+	/**
+	 * Localised setConfig, also sets context and explorer config
+	 */
+	setConfig() {
+		super.setConfig();
+		console.log('local setconfig');
+
+		if (this.setContexts) {
+			this.setContexts();
+		}
+
+		if (this.explorer) {
+			this.explorer.setConfig(this.config);
+		}
 	}
 
 	/**
 	 * Set (or re-set) contexts
 	 */
 	setContexts(initial) {
-		this.setContext(Push.contexts.uploadQueue, this.config.uploadQueue);
-		this.setContext(Push.contexts.initialised, true);
+		this.setContext(Push.contexts.hasUploadQueue, this.config.uploadQueue);
 
 		if (initial === true) {
-			this.setContext(Push.contexts.queueInProgress, false);
+			this.setContext(Push.contexts.initialised, true);
 		}
 	}
 
+	/**
+	 * Initialises the service class.
+	 */
 	initService() {
 		this.settings = new ServiceSettings();
 		this.service = new Service({
-			onDisconnect: () => {
-				this.stopCancellableQueues();
+			onDisconnect: (hadError) => {
+				this.stopCancellableQueues(!!hadError, !!hadError);
 			}
 		});
-	}
-
-	execUploadQueue() {
-		if (!this.config.uploadQueue) {
-			return channel.appendLocalisedInfo('upload_queue_disabled');
-		}
-
-		return this.execQueue(Push.queueDefs.upload);
 	}
 
 	listQueueItems(queueDef) {
 		if (this.queues[queueDef.id]) {
 			channel.appendLocalisedInfo();
 
-			this.queues[queueDef.id].getTasks().forEach((item) => {
+			this.queues[queueDef.id].tasks.forEach((item) => {
 				if (item.actionTaken) {
 					channel.appendLine(item.actionTaken);
 				}
@@ -132,16 +148,21 @@ class Push extends PushBase {
 
 	/**
 	 * @param {array} tasks - Tasks to execute. Must contain the properties detailed below.
-	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately.
+	 * @param {boolean} [runImmediately="false"] - Whether to run the tasks immediately (if the queue isn't already
+	 * running).
 	 * @param {object} [queueDef=Push.queueDefs.default] - Which queue to use.
 	 * @param {boolean} [showStatus=false] - Show the length of the queue in the status bar.
 	 * @description
 	 * Queues a task for a service method after doing required up-front work.
 	 *
 	 * ### Task properties:
-	 * - `method` (`string`): Method to run.
-	 * - `uriContext` (`uri`): URI context for the method.
-	 * - `args` (`array`): Array of arguments to send to the method.
+	 * Each task item may contain the following properties:
+	 * - `method` (`string`): Method name to invoke on the service instance.
+	 * - `actionTaken` (`string`): String defining the past tense of the action taken for reporting.
+	 * - `uriContext` (`uri`): URI context for the method, if applicable.
+	 * - `args` (`array`): Array of arguments to send to the method being invoked.
+	 * - `id` (`string`): A unique identifier for the task. Used for duplicate detection.
+	 * - `onTaskComplete` (`function`): A function to invoke on individual task completion.
 	 */
 	queue(
 		tasks = [],
@@ -156,35 +177,56 @@ class Push extends PushBase {
 		}
 
 		// Add initial init to a new queue
-		if (queue.tasks.length === 0) {
-			queue.addTask(() => {
+		if (queue.tasks.length === 0 && !queue.running) {
+			queue.addTask(new QueueTask(() => {
 				return this.service.activeService &&
 					this.service.activeService.init(queue.tasks.length);
-			});
+			}));
 		}
 
-		tasks.forEach(({ method, actionTaken, uriContext, args, id }) => {
+		tasks.forEach((task) => {
+			if (task instanceof QueueTask) {
+				// Add the task as-is
+				return queue.addTask(task);
+			}
+
 			// Add queue item with contextual config
-			queue.addTask(() => {
-				let config;
+			queue.addTask(
+				new QueueTask(
+					(() => {
+						let config;
 
-				if (uriContext) {
-					// Add service settings to the current configuration
-					config = this.configWithServiceSettings(uriContext);
-				} else {
-					throw new Error('No uriContext set from queue source.');
-				}
+						if (task.uriContext) {
+							// Add service settings to the current configuration
+							config = this.configWithServiceSettings(task.uriContext);
+						} else {
+							throw new Error('No uriContext set from queue source.');
+						}
 
-				if (config) {
-					// Execute the service method, returning any results and/or promises
-					return this.service.exec(method, config, args);
-				}
-			}, actionTaken, id);
+						if (config) {
+							// Execute the service method, returning any results and/or promises
+							return this.service.exec(task.method, config, task.args)
+								.then((result) => {
+									if (typeof task.onTaskComplete === 'function') {
+										task.onTaskComplete.call(this, result);
+									}
+								});
+						}
+					}),
+					task.id,
+					{
+						actionTaken: task.actionTaken,
+						uriContext: task.uriContext
+					}
+				)
+			);
 		});
 
 		if (runImmediately) {
 			return this.execQueue(queueDef);
 		}
+
+		this.refreshExplorerQueues();
 	}
 
 	/**
@@ -192,12 +234,12 @@ class Push extends PushBase {
 	 * @param {uri} uri - File Uri to queue
 	 */
 	queueForUpload(uri) {
-		let remoteUri;
+		let remotePath;
 
 		uri = this.paths.getFileSrc(uri);
 
 		if (this.service) {
-			remoteUri = this.service.exec(
+			remotePath = this.service.exec(
 				'convertUriToRemote',
 				this.configWithServiceSettings(uri),
 				[uri]
@@ -213,23 +255,80 @@ class Push extends PushBase {
 						method: 'put',
 						actionTaken: 'uploaded',
 						uriContext: uri,
-						args: [uri, remoteUri],
-						id: remoteUri + this.paths.getNormalPath(uri)
+						args: [uri, remotePath],
+						id: remotePath + this.paths.getNormalPath(uri)
 					}], false, Push.queueDefs.upload, {
 						showStatus: true,
 						statusToolTip: (num) => {
 							return i18n.t('num_to_upload', num);
 						},
-						statusCommand: 'push.uploadQueuedItems'
+						statusCommand: 'push.uploadQueuedItems',
+						emptyOnFail: false
 					});
 				});
 		}
 	}
 
+	execUploadQueue() {
+		let uploadQueue;
+
+		if (!this.config.uploadQueue) {
+			return channel.appendLocalisedInfo('upload_queue_disabled');
+		}
+
+		uploadQueue = this.getQueue(Push.queueDefs.upload);
+
+		this.queue(uploadQueue.tasks, true)
+			.then(() => {
+				uploadQueue.empty();
+			});
+
+		return uploadQueue
+	}
+
+	/**
+	 * Compares a local file with the remote equivalent using the service mapping rules.
+	 * @param {Uri} uri - Uri of the local file to compare.
+	 */
+	diffRemote(uri) {
+		let config, tmpFile, remotePath;
+
+		tmpFile = this.paths.getTmpFile();
+		config = this.configWithServiceSettings(uri);
+		remotePath = this.service.exec(
+			'convertUriToRemote',
+			config,
+			[uri]
+		);
+
+		// Use the queue to get a file then diff it
+		return this.queue([{
+			method: 'get',
+			actionTaken: 'downloaded',
+			uriContext: uri,
+			args: [
+				tmpFile,
+				remotePath,
+				'overwrite'
+			],
+			id: tmpFile + remotePath,
+			onTaskComplete: () => {
+				vscode.commands.executeCommand(
+					'vscode.diff',
+					tmpFile,
+					uri,
+					'Diff: ' + this.paths.getBaseName(uri)
+				);
+			}
+		}], true, Push.queueDefs.diff);
+	}
+
 	/**
 	 * Retrieve a queue instance by its definition.
 	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
-	 * @param {boolean} [showStatus=false] - Show the queue length in the status bar.
+	 * @param {object|boolean} [queueOptions] - Either set the queue options, or
+	 * set to `false` to ensure a queue is not created if it doesn't already
+	 * exit
 	 * @returns {object} A single instance of Queue.
 	 */
 	getQueue(queueDef, queueOptions) {
@@ -238,39 +337,70 @@ class Push extends PushBase {
 		}
 
 		if (!this.queues[queueDef.id]) {
-			this.queues[queueDef.id] = new Queue(queueOptions);
+			if (queueOptions === false) {
+				// No new queue wanted, just return null;
+				return null;
+			}
+
+			this.queues[queueDef.id] = new Queue(queueDef.id, queueOptions);
 		}
 
 		return this.queues[queueDef.id];
 	}
 
 	/**
-	 * Execute a queue, invoking its individual tasks in serial.
-	 * @param {object} queueDef - One of the {@link Push.queueDefs} keys.
+	 * Execute a queue (by running its #exec method).
+	 * @param {object} queueDef - One of the {@link Push.queueDefs} queue definitions.
 	 * @returns {promise} A promise, eventually resolving once the queue is complete.
 	 */
 	execQueue(queueDef) {
-		if (typeof queueDef !== 'object' || !queueDef.id) {
+		const queue = this.getQueue(queueDef);
+
+		if (!(queue instanceof Queue)) {
 			throw new Error('Invalid queue definition type.');
 		}
 
+		if (queue.running) {
+			return null;
+		}
+
 		channel.clear();
-		this.setContext(Push.contexts.queueInProgress, true);
 
 		// Fetch and execute queue
-		return this.getQueue(queueDef)
+		return queue
 			.exec(this.service.getStateProgress)
 			.then(() => {
-				// Set contextual state that the queue has completed
-				this.setContext(Push.contexts.queueInProgress, false);
+				this.refreshExplorerQueues();
 			})
 			.catch((error) => {
-				// Set contextual state that the queue has completed
-				this.setContext(Push.contexts.queueInProgress, false);
+				this.refreshExplorerQueues();
 				throw error;
 			});
 	}
 
+	/**
+	 * Refresh the Push explorer queue data.
+	 */
+	refreshExplorerQueues() {
+		this.explorer.refresh({
+			queues: this.queues
+		});
+	}
+
+	/**
+	 * Refresh the Push explorer watch list data.
+	 */
+	refreshExplorerWatchList(watchList) {
+		this.explorer.refresh({
+			watchList: watchList
+		});
+	}
+
+	/**
+	 * Sets the VS Code context for general Push states
+	 * @param {string} context - Context item name
+	 * @param {mixed} value - Context value
+	 */
 	setContext(context, value) {
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
@@ -279,12 +409,16 @@ class Push extends PushBase {
 	/**
 	 * Stop any current queue operations.
 	 */
-	stopCancellableQueues(force = false) {
-		let def;
+	stopCancellableQueues(force = false, silent = false) {
+		let def, queue;
 
 		for (def in Push.queueDefs) {
-			if (Push.queueDefs[def].cancellable) {
-				this.stopQueue(Push.queueDefs[def], force);
+			if (
+				(queue = this.getQueue(Push.queueDefs[def])) &&
+				Push.queueDefs[def].cancellable &&
+				queue.running
+			) {
+				this.stopQueue(Push.queueDefs[def], force, silent);
 			}
 		}
 	}
@@ -292,9 +426,12 @@ class Push extends PushBase {
 	/**
 	 * Stops a queue.
 	 * @param {object} queueDef - Queue definition
-	 * @param {boolean} force - `true` to force a service disconnect as well as stopping the queue
+	 * @param {boolean} force - Set `true` to force a service disconnect as well
+	 * as stopping the queue.
+	 * @param {boolean} silent - Set `true` to stop a channel notice when
+	 * stopping the queue.
 	 */
-	stopQueue(queueDef, force = false) {
+	stopQueue(queueDef, force = false, silent = false) {
 		// Get the queue by definition and run its #stop method.
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
@@ -305,25 +442,30 @@ class Push extends PushBase {
 
 				progress.report({ message: i18n.t('stopping') });
 
-				// Give X seconds to stop or force
-				timer = setTimeout(() => {
-					let message = i18n.t(
-						'queue_force_stopped',
-						Push.globals.FORCE_STOP_TIMEOUT,
-						queueDef.id
-					);
+				if (force) {
+					// Give X seconds to stop or force
+					timer = setTimeout(() => {
+						let message = i18n.t(
+							'queue_force_stopped',
+							queueDef.id,
+							Push.globals.FORCE_STOP_TIMEOUT
+						);
 
-					this.service.restartServiceInstance();
+						this.service.restartServiceInstance();
 
-					channel.appendError(message);
-					reject(message);
-				}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
+						!silent && channel.appendError(message);
+						reject(message);
+					}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
+				}
 
 				this.getQueue(queueDef)
 					.stop()
 					.then((result) => {
 						resolve(result);
-						channel.appendLocalisedInfo('queue_cancelled', queueDef.id);
+						!silent && channel.appendLocalisedInfo(
+							'queue_cancelled',
+							queueDef.id
+						);
 					})
 					.catch((error) => {
 						reject(error);
@@ -344,8 +486,9 @@ class Push extends PushBase {
 
 	/**
 	 * Transfers a single file.
-	 * @param {uri} uri - Uri of file to transfer
-	 * @param {string} method - Either 'get' or 'put;
+	 * @param {Uri} uri - Uri of file to transfer.
+	 * @param {string} method - Either 'get' or 'put'.
+	 * @returns {promise} - A promise, resolving when the file has transferred.
 	 */
 	transfer(uri, method) {
 		let ignoreGlobs = [], action, actionTaken;
@@ -371,10 +514,16 @@ class Push extends PushBase {
 
 		return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 			.then((filteredUri) => {
-				let config;
+				let config, remotePath;
 
 				if (filteredUri !== false) {
 					config = this.configWithServiceSettings(filteredUri);
+
+					remotePath = this.service.exec(
+						'convertUriToRemote',
+						config,
+						[filteredUri]
+					);
 
 					if (config) {
 						// Add to queue and return
@@ -384,12 +533,9 @@ class Push extends PushBase {
 							uriContext: filteredUri,
 							args: [
 								filteredUri,
-								this.service.exec(
-									'convertUriToRemote',
-									config,
-									[filteredUri]
-								)
-							]
+								remotePath
+							],
+							id: remotePath + this.paths.getNormalPath(filteredUri)
 						}], true);
 					}
 				} else {
@@ -403,6 +549,12 @@ class Push extends PushBase {
 			});
 	}
 
+	/**
+	 * Transfers a directory of files.
+	 * @param {Uri} uri - Uri of the directory to transfer.
+	 * @param {*} method - Either 'get' or 'put'.
+	 * @returns {promise} - A promise, resolving when the directory has transferred.
+	 */
 	transferDirectory(uri, method) {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;
 
@@ -436,7 +588,14 @@ class Push extends PushBase {
 			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
 				.then((files) => {
 					let tasks = files.map((uri) => {
+						let remotePath;
+
 						uri = vscode.Uri.file(uri);
+						remotePath = this.service.exec(
+							'convertUriToRemote',
+							config,
+							[uri]
+						);
 
 						return {
 							method,
@@ -444,12 +603,9 @@ class Push extends PushBase {
 							uriContext: uri,
 							args: [
 								uri,
-								this.service.exec(
-									'convertUriToRemote',
-									config,
-									[uri]
-								)
-							]
+								remotePath
+							],
+							id: remotePath + this.paths.getNormalPath(uri)
 						};
 					});
 
@@ -461,10 +617,13 @@ class Push extends PushBase {
 			return this.service.exec('listRecursiveFiles', config, [remoteUri, ignoreGlobs])
 				.then((files) => {
 					let tasks = files.map((file) => {
-						let uri = this.service.exec(
+						let uri;
+
+						file = file.pathName || file;
+						uri = this.service.exec(
 							'convertRemoteToUri',
 							config,
-							[file.pathName || file]
+							[file]
 						);
 
 						return {
@@ -473,8 +632,9 @@ class Push extends PushBase {
 							uriContext: uri,
 							args: [
 								uri,
-								file.pathName || file
-							]
+								file
+							],
+							id: file + this.paths.getNormalPath(uri)
 						};
 					});
 
@@ -483,6 +643,10 @@ class Push extends PushBase {
 		}
 	}
 
+	/**
+	 * Ensures that a Uri path only contains one service settings file (e.g. .push.settings.json).
+	 * @param {Uri} uri - Uri to test.
+	 */
 	ensureSingleService(uri) {
 		return new Promise((resolve, reject) => {
 			this.paths.getDirectoryContentsAsFiles(
@@ -508,6 +672,10 @@ Push.queueDefs = {
 		id: 'default',
 		cancellable: true
 	},
+	diff: {
+		id: 'diff',
+		cancellable: true
+	},
 	upload: {
 		id: 'upload',
 		cancellable: false
@@ -519,9 +687,8 @@ Push.globals = {
 };
 
 Push.contexts = {
-	uploadQueue: 'uploadQueue',
-	initialised: 'initialised',
-	queueInProgress: 'queueInProgress'
+	hasUploadQueue: 'hasUploadQueue',
+	initialised: 'initialised'
 };
 
 module.exports = Push;

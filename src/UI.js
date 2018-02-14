@@ -60,34 +60,7 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	diff(uri) {
-		let config, tmpFile;
-
-		uri = this.paths.getFileSrc(uri);
-		tmpFile = this.paths.getTmpFile();
-		config = this.configWithServiceSettings(uri);
-
-		this.service.exec(
-			'get',
-			config,
-			[
-				tmpFile,
-				this.service.exec(
-					'convertUriToRemote',
-					config,
-					[uri]
-				),
-				'overwrite'
-			]
-		).then(() => {
-			vscode.commands.executeCommand(
-				'vscode.diff',
-				tmpFile,
-				uri,
-				'Diff: ' + this.paths.getBaseName(uri)
-			);
-		}).catch((error) => {
-			channel.appendError(error);
-		});
+		this.diffRemote(this.paths.getFileSrc(uri));
 	}
 
 	/**
@@ -104,10 +77,14 @@ class UI extends Push {
 
 	/**
 	 * Removes an existing watch from a Uri.
-	 * @param {Uri} uri - Folder/File Uri to stop watching.
+	 * @param {Uri|TreeItem} uri - Folder/File Uri or TreeItem to stop watching.
 	 */
-	removeWatch(uri) {
-		this.watch.remove(this.paths.getFileSrc(uri));
+	removeWatch(context) {
+		if (context instanceof vscode.TreeItem) {
+			context = context.resourceUri;
+		}
+
+		this.watch.remove(this.paths.getFileSrc(context));
 	}
 
 	/**

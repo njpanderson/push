@@ -10,11 +10,11 @@ module.exports = {
 	'processing': 'Processing',
 	'processing_with_state': 'Processing ${1}',
 	'queue_empty': 'Queue is empty.',
+	'queue_running': 'Queue is running.',
 	'stopping_queue': 'Stopping queue...',
 	'queue_complete': 'Queue complete.',
 	'queue_items_failed': '${1} p{1:item:items} failed.',
 	'queue_items_actioned': '${1} p{1:item:items} ${2}.',
-	'overwrite': 'Overwrite',
 	'cancel': 'Cancel',
 	'enter_service_settings_filename': 'Enter a filename for the service settings file:',
 	'empty': 'Empty',
@@ -68,5 +68,7 @@ module.exports = {
 	'num_to_upload': '${1} p{1:item:items} to upload',
 	'upload_queue_disabled': 'Upload queue is disabled - check workspace settings.',
 	'items_queued_for_upload': 'Items queued for upload:',
-	'no_current_upload_queue': 'No current upload queue items'
+	'no_current_upload_queue': 'No current upload queue items',
+	'key_file_not_found': 'The private key file "${1}" could not be found. Does it exist in this location? Remember — shell path shortcuts like "~" cannot be used.',
+	'key_file_not_working': 'The private key file at "${1}" did not authenticate the user ${2}. Are you sure this is the correct key file and it has been given access?'
 };

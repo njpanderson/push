@@ -1,20 +1,21 @@
 const vscode = require('vscode');
-const crypto = require('crypto');
 
-const utils = require('./utils');
-const config = require('./config');
-const channel = require('./channel');
-const constants = require('./constants');
-const i18n = require('../lang/i18n');
+const QueueTask = require('./QueueTask');
+const utils = require('../utils');
+const config = require('../config');
+const channel = require('../channel');
+const constants = require('../constants');
+const i18n = require('../../lang/i18n');
 
 class Queue {
 	/**
 	 * Class constructor
 	 * @param {OutputChannel} channel - Channel for outputting information
 	 */
-	constructor(options) {
+	constructor(id, options) {
+		this.id = id;
 		this.running = false;
-		this.tasks = [];
+		this._tasks = [];
 		this.currentTask = null;
 		this.progressInterval = null;
 
@@ -34,6 +35,13 @@ class Queue {
 	}
 
 	/**
+	 * Get all current task (or an empty array)
+	 */
+	get tasks() {
+		return this._tasks;
+	}
+
+	/**
 	 * Set class-specific options.
 	 * @param {object} options
 	 */
@@ -42,48 +50,36 @@ class Queue {
 			showStatus: false,
 			statusIcon: 'repo-push',
 			statusToolTip: null,
-			statusCommand: null
+			statusCommand: null,
+			emptyOnFail: true
 		}, options);
 	}
 
 	/**
-	 * Adds a task to the queue
-	 * @param {function} fn - Function to add.
-	 * @param {string} [actionTaken] - Name of the function/operation performed in
-	 * past tense (i.e. "uploaded").
+	 * Adds a task to the end of the current queue.
+	 * @param {QueueTask} task - Task to be added.
 	 */
-	addTask(fn, actionTaken, id) {
-		let hash = crypto.createHash('sha256'),
-			task = { fn };
-
-		if (id) {
-			hash.update(id);
-			task.id = hash.digest('hex');
+	addTask(task) {
+		if (!(task instanceof QueueTask)) {
+			throw new TypeError('Queue task is not of type QueueTask');
 		}
 
-		if (id === undefined || !this.getTask(task.id)) {
+		if (!this.getTask(task.id)) {
 			// Only push the task if one doesn't already exist with this id
-			if (actionTaken) {
-				task.actionTaken = actionTaken;
-			}
-
-			this.tasks.push(task);
+			this._tasks.push(task);
 		}
 
 		this._updateStatus();
 	}
 
-	getTask(id) {
-		return this.tasks.find((item) => {
-			return ('id' in item && item.id === id);
-		})
+	addTasks(tasks) {
+		this._tasks = this._tasks.concat(tasks);
 	}
 
-	/**
-	 * Get all current task (or an empty array)
-	 */
-	getTasks() {
-		return this.tasks;
+	getTask(id) {
+		return this._tasks.find((task) => {
+			return (task.id !== undefined && task.id === id);
+		})
 	}
 
 	/**
@@ -91,9 +87,16 @@ class Queue {
 	 * @param {function} fnProgress - Function to call when requesting progress updates.
 	 */
 	exec(fnProgress) {
-		if (this.tasks && this.tasks.length) {
+		// Failsafe to prevent a queue running more than once at a time
+		if (this.running) {
+			return Promise.reject(i18n.t('queue_running'));
+		}
+
+		this.setContext(Queue.contexts.running, true);
+
+		if (this._tasks && this._tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
-			channel.appendLine(i18n.t('running_tasks_in_queue', (this.tasks.length - 1)));
+			channel.appendLine(i18n.t('running_tasks_in_queue', (this._tasks.length - 1)));
 
 			// Start progress interface
 			return vscode.window.withProgress({
@@ -155,12 +158,12 @@ class Queue {
 			};
 		}
 
-		if (this.tasks.length) {
+		if (this._tasks.length) {
 			// Further tasks to process
 			this.running = true;
 
-			// Shift a task off the tasks array
-			task = this.tasks.shift();
+			// Get the first task in the queue
+			task = this._tasks[0];
 
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()
@@ -169,17 +172,17 @@ class Queue {
 					if (result !== false) {
 						// Add to success list if the result from the function is anything
 						// other than `false`
-						if (task.actionTaken) {
-							if (!results.success[task.actionTaken]) {
-								results.success[task.actionTaken] = [];
+						if (task.data.actionTaken) {
+							if (!results.success[task.data.actionTaken]) {
+								results.success[task.data.actionTaken] = [];
 							}
 
-							results.success[task.actionTaken].push(result);
+							results.success[task.data.actionTaken].push(result);
 						}
 					}
 
 					// Loop
-					this.execQueueItems(fnCallback, results);
+					this.loop(fnCallback, results);
 				})
 				.catch((error) => {
 					// Function/Promise was rejected
@@ -188,8 +191,8 @@ class Queue {
 						channel.appendError(error);
 						channel.show();
 
-						// Empty tasks array
-						this.tasks = [];
+						// Stop queue
+						this.stop(true, this.options.emptyOnFail, results, fnCallback);
 
 						// Trigger callback
 						fnCallback(results);
@@ -197,21 +200,21 @@ class Queue {
 						throw error;
 					} else if (typeof error === 'string') {
 						// String based errors add to fail list, but don't stop
-						if (!results.fail[task.actionTaken]) {
-							results.fail[task.actionTaken] = [];
+						if (!results.fail[task.data.actionTaken]) {
+							results.fail[task.data.actionTaken] = [];
 						}
 
-						results.fail[task.actionTaken].push(error);
+						results.fail[task.data.actionTaken].push(error);
 
 						channel.appendError(error);
 
 						// Loop
-						this.execQueueItems(fnCallback, results);
+						this.loop(fnCallback, results);
 					}
 				});
 		} else {
-			// Task queue is empty - send the resuts to the callback and report internally
-			this.running = false;
+			// Complete queue
+			this.complete(results, fnCallback);
 
 			this.reportQueueResults(results);
 			fnCallback(results);
@@ -219,26 +222,68 @@ class Queue {
 	}
 
 	/**
+	 * Looper function for #execQueueItems
+	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
+	 * @param {object} results - Results object, as supplied to #execQueueItems
+	 */
+	loop(fnCallback, results) {
+		this._tasks.shift();
+		this.execQueueItems(fnCallback, results);
+	}
+
+	/**
 	 * Stops a queue by removing all items from it.
 	 * @returns {promise} - A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
-	stop() {
-		if (this.tasks.length && this.running && this.progressReject) {
-			channel.appendInfo(i18n.t('stopping_queue'));
+	stop(silent = false, clearQueue = true, results, fnCallback) {
+		if (this.running) {
+			if (!silent) {
+				// If this stop isn't an intentional use action, let's allow
+				// for silence here.
+				channel.appendInfo(i18n.t('stopping_queue'));
+			}
 
-			// Remove all pending tasks from this queue
-			this.tasks = [];
+			if (clearQueue) {
+				// Remove all pending tasks from this queue
+				this.empty();
+			}
+
+			this.complete(results, fnCallback);
 
 			if (this.progressInterval) {
+				// Stop the status progress monitor timer
 				clearInterval(this.progressInterval);
 			}
 
-			// Reject the globally assigned progress promise
-			this.progressReject();
+			if (this.progressReject) {
+				// Reject the globally assigned progress promise (if set)
+				this.progressReject();
+			}
 		}
 
 		return this.currentTask || Promise.resolve();
+	}
+
+	/**
+	 * Invoked on queue completion.
+	 * @param {mixed} results - Result data from the queue process
+	 * @param {function} fnCallback - Callback function to invoke
+	 */
+	complete(results, fnCallback) {
+		this.running = false;
+		this.setContext(Queue.contexts.running, false);
+
+		if (typeof fnCallback === 'function') {
+			fnCallback(results);
+		}
+	}
+
+	/**
+	 * Empties the current queue
+	 */
+	empty() {
+		this._tasks = [];
 	}
 
 	/**
@@ -283,10 +328,12 @@ class Queue {
 	}
 
 	/**
-	 * Update the general watcher status.
+	 * Update the general queue status.
 	 */
 	_updateStatus() {
-		let tasks = this.tasks.filter((task) => task.id);
+		let tasks = this._tasks.filter((task) => task.id);
+
+		this.setContext(Queue.contexts.itemCount, tasks.length);
 
 		if (tasks.length && this.options.showStatus) {
 			this.status.text = `$(${this.options.statusIcon}) ${tasks.length}`;
@@ -300,6 +347,22 @@ class Queue {
 			this.status.hide();
 		}
 	}
+
+	/**
+	 * Sets the VS Code context for this queue
+	 * @param {string} context - Context item name
+	 * @param {mixed} value - Context value
+	 */
+	setContext(context, value) {
+		console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
+		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
+		return this;
+	}
 };
+
+Queue.contexts = {
+	itemCount: 'itemCount',
+	running: 'running'
+}
 
 module.exports = Queue;

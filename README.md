@@ -1,6 +1,6 @@
 # Push
 
-**Note: This extension is under heavy development and should be considered pre-beta. If you would like to test it, please contact me.**
+**Warning: This extension is currently in preview. If you would like to test it, and experience bugs or issues, please see "Reporting Bugs" at the bottom.**
 
 Push is a file transfer extension. It is inspired in part by Sublime's fantastic SFTP plugin as well as Coda's workflow features, and provides you with a tool to upload and download files within a workspace.
 
@@ -17,7 +17,7 @@ It currently provides:
 
 Push supports many options and configuration modes. The most common of which is a single SFTP setup for an active workspace. The following steps will help you get set up in no time:
 
- 1. Install push, ~~either from the VS Code extension marketplace or~~ by downloading the [latest vsix file](http://neilinscotland.net/push/push-latest.vsix).
+ 1. Install Push from the [VS Code extension marketplace](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push).
  2. In the command palette, choose **Create/Edit Push configuration** and then confirm the location, then choose the **SFTP** template.
  3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, `password` (if not using keys), and a `root` path.
  4. You should then be able to upload files within the workspace by using the explorer menu, title bars, or command palette.
@@ -30,11 +30,12 @@ This extension contributes the following settings:
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `locale` | `en-gb` | Language file to use. Currently, only English (British) is supported.
+| `locale` | `en-gb` | Language to use. See "Push in your language".
 | `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
 | `debugMode` | `false` | Enable debug mode for more logging. Useful if reporting errors. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
-| `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last push. |
+| `privateSSHKeyPassphrase` | (Empty) | If you're using a private key with a passphrase, enter it here. |
+| `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last upload. |
 | `ignoreGlobs` | `**/.DS_Store`,<br>`**/Thumbs.db`,<br>`**/desktop.ini`,<br>`**/.git/\*`,<br>`**/.svn/*` | A list of file globs to ignore when uploading. |
 | `queueCompleteMessageType` | `status` | Choose how to be notified on queue completion. Either `status`, or `message` for a permanent reminder. |
 | `statusMessageColor` | `notification.`<br>`infoBackground` | Choose the colour of the queue completion status message. |
@@ -75,7 +76,7 @@ The same two methods can be used to perform downloads, as well as most of the ot
 
 Another great feature of Push is that it will keep a list of all files you have edited within VS Code and let you upload them with a single shortcut. This defaults to `cmd-alt-p` (or `ctrl-alt-p` on Windows).
 
-Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/repo-push.svg?raw=true&sanitize=true) icon with the number of queued items will appear in the status bar.
+Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/queue.png) icon with the number of queued items will appear in the status bar.
 
 Use the above shortcut, or select **Upload queued items** in the command palette to upload all of the files in a single operation.
 
@@ -89,7 +90,7 @@ Selecting this option will create a watcher for the file, or in the case of a fo
 
 #### Listing watched files
 
-If you loose track of which files and folders are being watched, either click on the ![Upload queue](https://raw.github.com/njpanderson/push/master/img/radio-tower.svg?raw=true&sanitize=true) icon in the status bar, or choose **List active watchers** from the command palette. A list of watchers similar to the below will appear:
+If you loose track of which files and folders are being watched, either click on the ![Watching](https://raw.github.com/njpanderson/push/master/img/watching.png) icon in the status bar, or choose **List active watchers** from the command palette. A list of watchers similar to the below will appear:
 
 ![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
 
@@ -159,7 +160,8 @@ The SFTP service will upload files to remote SSH/SFTP servers.
 | `host` | | Hostname or IP of the remote host. |
 | `username` | | Username of the authenticated user. |
 | `password` | | Password for the authenticated user. Leave blank if using keys. |
-| `privateKey` | | Private key path, if using keys. Defaults to the global `privateKey` setting. |
+| `privateKey` | | Private key path, if using keys. Defaults to the global `privateSSHKey` setting. |
+| `keyPassphrase` | | Private key passphrase, if needed. Defaults to the global `privateSSHKeyPassphrase` setting. |
 | `root` | `/` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
 | `keepaliveInterval` | `3000` | How often, in milliseconds, to send keep-alive packets to the server. Set `0` to disable. |
 | `fileMode` | | If required, a [mode](https://en.wikipedia.org/wiki/File_system_permissions#Numeric_notation) can be applied to files when they are uploaded. Numeric modes are accepted. E.g: `"700"` to give all access to the owner only. An array of modes is also supported. (See below.) |
@@ -184,11 +186,11 @@ The `fileMode` setting of the SFTP service can also be expressed as an array of 
 
 The above example will perform the following:
 
- - Filenames ending in **.txt** will be given the mode `600`
- - Filenames ending in **.jpg** will be given the mode `700`
+ - Files with names ending in **.txt** will be given the mode `600`
+ - Files with names ending in **.jpg** will be given the mode `700`
  - **All directories** will be given the mode `655`
 
-For those in the know, the underlying glob matching is performed by [micromatch](https://www.npmjs.com/package/micromatch#matching-features), and any glob pattern it supports can be used here.
+For those interested, the underlying glob matching is performed by [micromatch](https://www.npmjs.com/package/micromatch#matching-features), and any glob pattern it supports can be used here.
 
 ### File
 
@@ -209,16 +211,35 @@ The following options are available to all services:
 | `collisionDownloadAction` | (Prompt) | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
 | `timeZoneOffset` | `0` | The offset, in hours, the time is set to on the origin relative to the local device. I.e. if the origin is GMT+1 and the device is GMT-1, the offset would be `2` |
 
-## Known Issues
+## Known issues
 
  - SFTP may have trouble connecting to SSH servers with interactive authentication. This is possibly an issue with the underlying libraries and I am looking to solve this in the future.
- - Any issues not listed here? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
+ - Some localised strings may not translate until VS Code is reloaded.
+
+## Reporting bugs
+
+Found a bug? Great! Let me know about it in the [Github issue tracker](https://github.com/njpanderson/push/issues) and I'll try to get back to you within a few days. It's a personal project of mine so I can't always reply quickly, but I'll do my best.
+
+### Help! Push deleted all my files, wiped my server and/or made my wife leave me!
+
+First of all, that's terrible and of course I wouldn't wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which potentially cause data loss.
 
 ## Roadmap
 
+ - Better display for the watch/upload queue.
  - Adding Amazon S3 support.
  - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
 
-## Localising push
+## Push in your language
 
-If you are keen on getting Push into your language, and understand JavaScript - get in touch if you're interesting in helping to localise Push. Just start an issue with your details and we can work something out.
+Currently, Push supports the following languages which can be selected within the configuration:
+
+| Language | Code | Quality | Contributor |
+| --- | --- | --- | --- |
+| 🇬🇧 English (British) | `en_gb` | High | (Built in) |
+| 🇯🇵 Japanese | `ja` | Poor | (Built in) |
+| 🇮🇹 Italian | `it` | Low-Medum | (Built in) |
+
+If you'd like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
+
+Get in touch via the issues if you're interesting in helping to localise Push.

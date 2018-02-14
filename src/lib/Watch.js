@@ -1,11 +1,10 @@
 const vscode = require('vscode');
 
+const WatchListItem = require('./WatchListItem');
 const Paths = require('./Paths');
 const channel = require('./channel');
 const constants = require('./constants');
 const i18n = require('../lang/i18n');
-
-const paths = new Paths();
 
 class Watch {
 	/**
@@ -14,6 +13,12 @@ class Watch {
 	 */
 	constructor() {
 		this.watchList = [];
+		this.paths = new Paths();
+
+		/**
+		 * Invoked when a watch list updates
+		 */
+		this.onWatchUpdate = null;
 
 		this.status = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.Left,
@@ -39,7 +44,7 @@ class Watch {
 			this.watchList[item].initWatcher();
 		}
 
-		channel.appendLocalisedInfo('added_watch_for', paths.getNormalPath(uri));
+		channel.appendLocalisedInfo('added_watch_for', this.paths.getNormalPath(uri));
 		this._updateStatus();
 	}
 
@@ -53,9 +58,9 @@ class Watch {
 		if ((item = this.find(uri)) !== -1) {
 			this.watchList[item].removeWatcher();
 			this.watchList.splice(item, 1);
+			channel.appendLocalisedInfo('removed_watch_for', this.paths.getNormalPath(uri));
 		}
 
-		channel.appendLocalisedInfo('removed_watch_for', paths.getNormalPath(uri));
 		this._updateStatus();
 	}
 
@@ -64,7 +69,7 @@ class Watch {
 	 * @param {Uri} uri - Uri to find a watch item with.
 	 */
 	find(uri) {
-		let path = paths.getNormalPath(uri);
+		let path = this.paths.getNormalPath(uri);
 		return this.watchList.findIndex((item) => item.path === path);
 	}
 
@@ -156,8 +161,17 @@ class Watch {
 					active.length < this.watchList.length
 				)
 			);
+
+		if (typeof this.onWatchUpdate === 'function') {
+			this.onWatchUpdate(this.watchList);
+		}
 	}
 
+	/**
+	 * Sets the VS Code context for this extension
+	 * @param {string} context - Context item name
+	 * @param {mixed} value - Context value
+	 */
 	_setContext(context, value) {
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
@@ -168,54 +182,6 @@ Watch.contexts = {
 	hasRunningWatchers: 'hasRunningWatchers',
 	hasStoppedWatchers: 'hasStoppedWatchers',
 	hasWatchers: 'hasWatchers',
-}
-
-const WatchListItem = function (uri, callback) {
-	this.path = paths.getNormalPath(uri);
-	this.glob = this._createWatchGlob(uri);
-	this.data = {
-		triggers: 0
-	};
-	this.callback = callback;
-
-	this.initWatcher();
-}
-
-WatchListItem.prototype.initWatcher = function () {
-	this.watcher = vscode.workspace.createFileSystemWatcher(
-		this.glob,
-		false,
-		false,
-		true
-	);
-
-	this.watcher.onDidChange(this._watcherChangeApplied.bind(this));
-	this.watcher.onDidCreate(this._watcherChangeApplied.bind(this));
-}
-
-/**
- * Handle watch change/create events.
- * @param {Uri} uri - Uri context.
- */
-WatchListItem.prototype._watcherChangeApplied = function(uri) {
-	this.data.triggers += 1;
-	this.callback(uri);
-}
-
-WatchListItem.prototype.removeWatcher = function() {
-	if (this.watcher) {
-		this.watcher.dispose();
-		this.watcher = null;
-	}
-}
-
-WatchListItem.prototype._createWatchGlob = function(uri) {
-	if (paths.isDirectory(uri)) {
-		return paths.stripTrailingSlash(paths.getNormalPath(uri)) +
-			'/**/*';
-	}
-
-	return paths.getNormalPath(uri);
 }
 
 module.exports = Watch;

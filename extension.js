@@ -50,6 +50,8 @@ exports.activate = (context) => {
 			vscode.commands.registerCommand(sub, ui[subscriptions[sub]], ui)
 		);
 	}
+
+	vscode.window.registerTreeDataProvider('push.pushExplorer', ui.explorer);
 };
 
 // this method is called when your extension is deactivated

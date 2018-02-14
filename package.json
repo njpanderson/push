@@ -2,12 +2,14 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.1.0",
-  "publisher": "njpanderson",
+  "version": "0.1.1",
+  "preview": true,
+  "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.14.0"
   },
   "license": "SEE LICENSE IN <LICENSE>",
+  "icon": "img/icon.png",
   "keywords": ["sftp", "transfer", "upload", "sync", "push"],
   "repository": {
     "type": "git",
@@ -21,6 +23,14 @@
   ],
   "main": "./extension",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "push.pushExplorer",
+          "name": "Push"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "Push",
@@ -44,6 +54,11 @@
           "type": "string",
           "default": "",
           "description": "Defines the default SSH key file for SFTP."
+        },
+        "njpPush.privateSSHKeyPassphrase": {
+          "type": "string",
+          "default": "",
+          "description": "Defines the default SSH key passphrase, if needed."
         },
         "njpPush.uploadQueue": {
           "type": "boolean",
@@ -112,7 +127,11 @@
       {
         "command": "push.uploadQueuedItems",
         "title": "Upload queued items",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/repo-push.svg",
+          "light": "resources/light/repo-push.svg"
+        }
       },
       {
         "command": "push.cancelQueues",
@@ -147,12 +166,20 @@
       {
         "command": "push.startWatch",
         "title": "Start all Push watch lists",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/radio-tower.svg",
+          "light": "resources/light/radio-tower.svg"
+        }
       },
       {
         "command": "push.stopWatch",
         "title": "Stop all Push watch lists",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/x.svg",
+          "light": "resources/light/x.svg"
+        }
       },
       {
         "command": "push.listWatchers",
@@ -296,11 +323,11 @@
         },
         {
           "command": "push.cancelQueues",
-          "when": "push:initialised && push:queueInProgress"
+          "when": "push:initialised && push:queue-default-running"
         },
         {
           "command": "push.stopQueues",
-          "when": "push:initialised && push:queueInProgress"
+          "when": "push:initialised && push:queue-default-running"
         },
         {
           "command": "push.stopWatch",
@@ -316,7 +343,34 @@
         },
         {
           "command": "push.uploadQueuedItems",
-          "when": "push:uploadQueue"
+          "when": "push:hasUploadQueue"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "push.stopWatch",
+          "when": "view == push.pushExplorer && push:initialised && push:hasRunningWatchers",
+          "group": "navigation@1"
+        },
+        {
+          "command": "push.startWatch",
+          "when": "view == push.pushExplorer && push:initialised && push:hasStoppedWatchers",
+          "group": "navigation@2"
+        },
+        {
+          "command": "push.uploadQueuedItems",
+          "when": "view == push.pushExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "push.removeWatchFile",
+          "when": "viewItem == watch:file"
+        },
+        {
+          "command": "push.removeWatchFolder",
+          "when": "viewItem == watch:folder"
         }
       ]
     },

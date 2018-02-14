@@ -2,7 +2,6 @@ const vscode = require('vscode');
 
 const Paths = require('./Paths');
 const channel = require('./channel');
-const utils = require('./utils');
 const config = require('./config');
 const i18n = require('../lang/i18n');
 
@@ -23,10 +22,6 @@ class PushBase {
 	 */
 	setConfig() {
 		this.config = config.get();
-
-		if (this.setContexts) {
-			this.setContexts();
-		}
 	}
 
 	/**

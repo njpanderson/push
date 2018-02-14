@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 const path = require('path');
+const tmp = require('tmp');
 
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
@@ -181,8 +182,10 @@ class ServiceBase {
 	 * @param {string} root - Root path, for validation
 	 * @param {function} fnDir - Callback function. Invoked for each new directory
 	 * required during creation.
+	 * @params {string} [dirSeparator='/'] - Directory separator character, for
+	 * splitting directories.
 	 */
-	mkDirRecursive(dir, root, fnDir) {
+	mkDirRecursive(dir, root, fnDir, dirSeparator = '/') {
 		let baseDir, recursiveDir, dirList;
 
 		if (dir === root) {
@@ -190,18 +193,19 @@ class ServiceBase {
 			return Promise.resolve();
 		}
 
-		if (dir.startsWith(root)) {
-			baseDir = utils.trimSeparators(dir.replace(root, ''));
-			recursiveDir = baseDir.split('/');
+		if (dir.startsWith(root) || dir.includes(tmp.tmpdir)) {
+			// Dir starts with the root path, or is part of the temporary file path
+			baseDir = utils.trimSeparators(dir.replace(root, ''), dirSeparator);
+			recursiveDir = baseDir.split(dirSeparator);
 			dirList = [];
 
 			// First, create a directory list for the Promise loop to iterate over
 			recursiveDir.reduce((acc, current) => {
-				let pathname = (acc === '' ? current : (acc + '/' + current));
+				let pathname = (acc === '' ? current : (acc + dirSeparator + current));
 
 				if (pathname !== '') {
 					dirList.push(
-						utils.addTrailingSeperator(root) + pathname
+						utils.addTrailingSeperator(root, dirSeparator) + pathname
 					);
 				}
 
@@ -383,7 +387,7 @@ class ServiceBase {
 		// );
 
 		if (typeof this.options.onDisconnect === 'function') {
-			this.options.onDisconnect(this);
+			this.options.onDisconnect(hadError);
 		}
 	}
 
@@ -412,5 +416,7 @@ ServiceBase.defaults = {
 	collisionUploadAction: null,
 	collisionDownloadAction: null
 };
+
+ServiceBase.pathSep = Paths.sep;
 
 module.exports = ServiceBase;

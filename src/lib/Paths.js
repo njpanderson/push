@@ -45,6 +45,19 @@ class Paths {
 		return uri.fsPath || uri.path;
 	}
 
+	getPathWithoutWorkspace(uri, workspace, requiredScheme) {
+		let pathName = this.getNormalPath(uri, requiredScheme);
+
+		if (workspace) {
+			return pathName.replace(
+				workspace.rootPath,
+				''
+			)
+		}
+
+		return pathName;
+	}
+
 	getPathFromStreamOrUri(src) {
 		if (src instanceof vscode.Uri) {
 			return this.getNormalPath(src);
@@ -329,11 +342,14 @@ class Paths {
 	 * @return {string} Filename created.
 	 */
 	getTmpFile() {
-		let tmpobj = tmp.fileSync();
+		let tmpobj = tmp.fileSync({
+			prefix: Paths.tmpFilePrefix
+		});
 		return vscode.Uri.file(tmpobj.name);
 	}
 }
 
 Paths.sep = path.sep;
+Paths.tmpFilePrefix = 'vscode-push-tmp-';
 
 module.exports = Paths;
