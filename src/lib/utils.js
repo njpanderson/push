@@ -180,19 +180,22 @@ utils.collisionOpts = {
 };
 
 utils.collisionOptsAll = {
-	skip: i18n.o({
+	skip: Object.assign(i18n.o({
 		label: 'skip_all',
-		detail: 'skip_uploading_all_existing',
+		detail: 'skip_uploading_all_existing'
+	}), {
 		baseOption: utils.collisionOpts.skip
 	}),
-	overwrite: i18n.o({
+	overwrite: Object.assign(i18n.o({
 		label: 'overwrite_all',
-		detail: 'replace_all_existing',
+		detail: 'replace_all_existing'
+	}), {
 		baseOption: utils.collisionOpts.overwrite
 	}),
-	rename: i18n.o({
+	rename: Object.assign(i18n.o({
 		label: 'rename_all',
-		detail: 'keep_all_existing_by_renaming_uploaded',
+		detail: 'keep_all_existing_by_renaming_uploaded'
+	}), {
 		baseOption: utils.collisionOpts.rename
 	})
 };
