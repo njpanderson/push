@@ -228,6 +228,7 @@ First of all, that's terrible and of course I wouldn't wish this on anyone. Seco
 
  - Better display for the watch/upload queue.
  - Adding Amazon S3 support.
+ - Support for uploading all VCS altered files.
  - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
 
 ## Push in your language
