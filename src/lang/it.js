@@ -68,5 +68,7 @@ module.exports = {
 	'num_to_upload': '${1} p{1:oggetto:elementi} da caricare',
 	'upload_queue_disabled': 'La coda di caricamento è disabilitata - controlla le impostazioni dell’area di lavoro.',
 	'items_queued_for_upload': 'Elementi in coda per il caricamento:',
-	'no_current_upload_queue': 'Nessun elemento di coda di caricamento corrente'
+	'no_current_upload_queue': 'Nessun elemento di coda di caricamento corrente',
+	'key_file_not_found': 'Non è stato possibile trovare il file di chiave privata "${1}". Esiste in questa posizione? Ricorda: le scorciatoie del percorso della shell come "~" non possono essere utilizzate.',
+	'key_file_not_working': 'Il file della chiave privata in "${1}" non ha autenticato l’utente ${2}. Sei sicuro che questo sia il file chiave corretto e gli è stato dato l'accesso?'
 };
