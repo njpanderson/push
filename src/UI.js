@@ -31,6 +31,10 @@ class UI extends Push {
 		super.removeUploadQueuedItem(Push.queueDefs.upload, uri);
 	}
 
+	queueGitChangedFiles() {
+		super.queueGitChangedFiles();
+	}
+
 	/**
 	 * Uploads a single file or directory by its Uri.
 	 * @param {Uri} uri

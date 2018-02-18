@@ -364,6 +364,10 @@
         {
           "command": "push.removeQueuedItem",
           "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
+        },
+        {
+          "command": "push.queueGitChangedFiles",
+          "when": "push:hasUploadQueue"
         }
       ],
       "view/title": [

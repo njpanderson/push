@@ -70,5 +70,6 @@ module.exports = {
 	'items_queued_for_upload': 'Items queued for upload:',
 	'no_current_upload_queue': 'No current upload queue items',
 	'key_file_not_found': 'The private key file "${1}" could not be found. Does it exist in this location? Remember — shell path shortcuts like "~" cannot be used.',
-	'key_file_not_working': 'The private key file at "${1}" did not authenticate the user ${2}. Are you sure this is the correct key file and it has been given access?'
+	'key_file_not_working': 'The private key file at "${1}" did not authenticate the user ${2}. Are you sure this is the correct key file and it has been given access?',
+	'not_a_git_repo': 'The current working directory "${1}" does not contain a Git repository.'
 };

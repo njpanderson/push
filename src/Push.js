@@ -8,6 +8,7 @@ const Paths = require('./lib/Paths');
 const Queue = require('./lib/queue/Queue');
 const QueueTask = require('./lib/queue/QueueTask');
 const Watch = require('./lib/Watch');
+const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const i18n = require('./lang/i18n');
 
@@ -24,6 +25,7 @@ class Push extends PushBase {
 
 		this.paths = new Paths();
 		this.explorer = new Explorer(this.config);
+		this.scm = new SCM();
 
 		this.watch = new Watch();
 		this.watch.onWatchUpdate = this.refreshExplorerWatchList;
@@ -111,6 +113,24 @@ class Push extends PushBase {
 			queue.removeTaskByUri(uri);
 			this.refreshExplorerQueues();
 		}
+	}
+
+	/**
+	 * Adds the files in the current Git working copy to the upload queue.
+	 */
+	queueGitChangedFiles() {
+		this.scm.exec(
+			SCM.providers.git,
+			this.paths.getCurrentWorkspaceRootPath(
+				this.paths.getFileSrc(),
+				true
+			),
+			'listWorkingFiles'
+		).then((files) => {
+			files.forEach((file) => {
+				file.uri && this.queueForUpload(file.uri);
+			})
+		});
 	}
 
 	/**

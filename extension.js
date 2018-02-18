@@ -32,6 +32,7 @@ exports.activate = (context) => {
 		'push.uploadQueuedItems': 'execUploadQueue',
 		'push.removeQueuedItem': 'removeUploadQueuedItem',
 		'push.clearUploadQueue': 'clearUploadQueue',
+		'push.queueGitChangedFiles': 'queueGitChangedFiles',
 		'push.cancelQueues': 'cancelQueues',
 		'push.stopQueues': 'stopQueues',
 		'push.addWatchFile': 'addWatch',
