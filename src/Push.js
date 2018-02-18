@@ -118,9 +118,9 @@ class Push extends PushBase {
 
 	/**
 	 * Adds the files in the current Git working copy to the upload queue.
-	 * @param {boolean} exec - `true` to immediately upload, `false` to queue.
+	 * @param {boolean} [exec=`false`] - `true` to immediately upload, `false` to queue.
 	 */
-	queueGitChangedFiles(exec = true) {
+	queueGitChangedFiles(exec = false) {
 		this.scm.exec(
 			SCM.providers.git,
 			this.paths.getCurrentWorkspaceRootPath(
