@@ -143,6 +143,11 @@ class Push extends PushBase {
 			textEditor = vscode.window.activeTextEditor;
 		}
 
+		if (!textEditor || !textEditor.document) {
+			// Bail if there's still no editor, or no document
+			return;
+		}
+
 		console.log('active editor: ' + this.paths.getNormalPath(textEditor.document.uri));
 		if (
 			uploadQueue &&
