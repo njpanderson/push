@@ -64,11 +64,11 @@ class Explorer {
 						{
 							icon: (
 								watch.watcher ?
-								(isFolder ? 'kebab-horizontal' : 'dot') : 'empty'
+									(isFolder ? 'kebab-horizontal' : 'dot') : 'empty'
 							),
 							contextValue: (
 								isFolder ?
-								'watch:folder' : 'watch:file'
+									'watch:folder' : 'watch:file'
 							),
 							resourceUri: watch.uri
 						}
@@ -92,7 +92,9 @@ class Explorer {
 							),
 							vscode.TreeItemCollapsibleState.None,
 							{
-								icon: 'file'
+								icon: 'file',
+								resourceUri: task.data.uriContext,
+								contextValue: 'uploadQueue:file'
 							}
 						);
 					}

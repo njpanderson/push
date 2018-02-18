@@ -11,7 +11,9 @@ class QueueTask {
 	constructor(fn, id, data) {
 		this._id = { id };
 
-		this._data = data || {};
+		this._data = data || {
+			uriContext: null
+		};
 		this._fn = fn;
 	}
 

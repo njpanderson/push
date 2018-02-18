@@ -19,6 +19,18 @@ class UI extends Push {
 		this.listQueueItems(Push.queueDefs.upload);
 	}
 
+	removeUploadQueuedItem(context) {
+		let uri;
+
+		if (context instanceof vscode.TreeItem) {
+			uri = context.resourceUri;
+		} else {
+			uri = this.paths.getFileSrc(context);
+		}
+
+		super.removeUploadQueuedItem(Push.queueDefs.upload, uri);
+	}
+
 	/**
 	 * Uploads a single file or directory by its Uri.
 	 * @param {Uri} uri

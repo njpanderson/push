@@ -72,8 +72,62 @@ class Queue {
 		this._updateStatus();
 	}
 
+	/**
+	 * Add an array of existing QueueTask instances.
+	 * @param {QueueTask[]} tasks - The tasks to add.
+	 */
 	addTasks(tasks) {
 		this._tasks = this._tasks.concat(tasks);
+	}
+
+	/**
+	 * Find a task by its Uri. Tasks must have set data.uriContext to be found.
+	 * @param {Uri} uri - The Uri to search with.
+	 */
+	getTaskByUri(uri) {
+		return this._tasks.find((task) => {
+			return task.data.uriContext && task.data.uriContext.path === uri.path;
+		});
+	}
+
+	/**
+	 * Optimised version of getTaskByUri, intended to only confirm if a task exists.
+	 * @param {Uri} uri - The Uri to search with.
+	 */
+	hasTaskByUri(uri) {
+		return ((
+			this._tasks.findIndex((task) => {
+				return task.data.uriContext && task.data.uriContext.path === uri.path;
+			})
+		) != -1);
+	}
+
+	/**
+	 * Remove a task by its ID
+	 * @param {string} id - The task ID property
+	 */
+	removeTask(id) {
+		let index = this._tasks.findIndex((task) => task.id === id);
+
+		if (index !== -1) {
+			this._tasks.splice(index, 1);
+			this._updateStatus();
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Removes a task by its Uri. Tasks must have set data.uriContext to be found.
+	 * @param {Uri} uri
+	 */
+	removeTaskByUri(uri) {
+		let task;
+
+		if ((task = this.getTaskByUri(uri))) {
+			this.removeTask(task.id);
+		}
 	}
 
 	getTask(id) {

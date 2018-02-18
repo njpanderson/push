@@ -17,6 +17,7 @@ class Push extends PushBase {
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
+		this.setEditorState = this.setEditorState.bind(this);
 		this.refreshExplorerWatchList = this.refreshExplorerWatchList.bind(this);
 
 		this.initService();
@@ -31,10 +32,12 @@ class Push extends PushBase {
 
 		// Set initial contexts
 		this.setContexts(true);
+		this.setEditorState(vscode.window.activeTextEditor);
 
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
 		vscode.workspace.onDidChangeConfiguration(this.setContexts);
+		vscode.window.onDidChangeActiveTextEditor(this.setEditorState);
 	}
 
 	/**
@@ -76,17 +79,37 @@ class Push extends PushBase {
 		});
 	}
 
+	/**
+	 * Lists all current queue items.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 */
 	listQueueItems(queueDef) {
-		if (this.queues[queueDef.id]) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
 			channel.appendLocalisedInfo();
 
-			this.queues[queueDef.id].tasks.forEach((item) => {
+			queue.tasks.forEach((item) => {
 				if (item.actionTaken) {
 					channel.appendLine(item.actionTaken);
 				}
 			});
 		} else {
 			channel.appendLocalisedInfo('no_current_upload_queue');
+		}
+	}
+
+	/**
+	 * Removes a single item from a queue by its Uri.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 * @param {*} uri - Uri of the item to remove.
+	 */
+	removeUploadQueuedItem(queueDef, uri) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			queue.removeTaskByUri(uri);
+			this.refreshExplorerQueues();
 		}
 	}
 
@@ -107,7 +130,30 @@ class Push extends PushBase {
 
 		if (this.config.uploadQueue && settings) {
 			// File being changed is a within a service context - queue for uploading
-			this.queueForUpload(textDocument.uri);
+			this.queueForUpload(textDocument.uri)
+				.then(() => this.setEditorState());
+		}
+	}
+
+	setEditorState(textEditor) {
+		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
+
+		if (!textEditor) {
+			// Ensure textEditor defaults
+			textEditor = vscode.window.activeTextEditor;
+		}
+
+		console.log('active editor: ' + this.paths.getNormalPath(textEditor.document.uri));
+		if (
+			uploadQueue &&
+			(uploadQueue.tasks.length > 0 && uploadQueue.tasks.length < 100)
+		) {
+			// Make sure tasks exist and hard limit of 100
+			console.log('task', uploadQueue.hasTaskByUri(textEditor.document.uri));
+			this.setContext(
+				Push.contexts.activeEditorInUploadQueue,
+				uploadQueue.hasTaskByUri(textEditor.document.uri)
+			);
 		}
 	}
 
@@ -402,6 +448,7 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
+		console.log(`Setting push context: push:${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
@@ -688,7 +735,8 @@ Push.globals = {
 
 Push.contexts = {
 	hasUploadQueue: 'hasUploadQueue',
-	initialised: 'initialised'
+	initialised: 'initialised',
+	activeEditorInUploadQueue: 'activeEditorInUploadQueue'
 };
 
 module.exports = Push;

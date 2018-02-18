@@ -134,6 +134,11 @@
         }
       },
       {
+        "command": "push.removeQueuedItem",
+        "title": "Remove the current file from the queue",
+        "category": "Push"
+      },
+      {
         "command": "push.cancelQueues",
         "title": "Cancel active queue",
         "category": "Push"
@@ -344,6 +349,10 @@
         {
           "command": "push.uploadQueuedItems",
           "when": "push:hasUploadQueue"
+        },
+        {
+          "command": "push.removeQueuedItem",
+          "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
         }
       ],
       "view/title": [
@@ -371,6 +380,10 @@
         {
           "command": "push.removeWatchFolder",
           "when": "viewItem == watch:folder"
+        },
+        {
+          "command": "push.removeQueuedItem",
+          "when": "viewItem == uploadQueue:file"
         }
       ]
     },
