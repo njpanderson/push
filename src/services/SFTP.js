@@ -132,7 +132,7 @@ class ServiceSFTP extends ServiceBase {
 							channel.appendLocalisedInfo(
 								'key_file_not_working',
 								client.options.privateKeyFile,
-								client.options.username,
+								client.options.username
 							);
 						}
 
