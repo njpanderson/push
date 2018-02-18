@@ -55,6 +55,7 @@ class Push extends PushBase {
 
 		if (this.explorer) {
 			this.explorer.setConfig(this.config);
+			this.explorer.refresh();
 		}
 	}
 
@@ -117,19 +118,24 @@ class Push extends PushBase {
 
 	/**
 	 * Adds the files in the current Git working copy to the upload queue.
+	 * @param {boolean} exec - `true` to immediately upload, `false` to queue.
 	 */
-	queueGitChangedFiles() {
+	queueGitChangedFiles(exec = true) {
 		this.scm.exec(
 			SCM.providers.git,
 			this.paths.getCurrentWorkspaceRootPath(
 				this.paths.getFileSrc(),
 				true
 			),
-			'listWorkingFiles'
+			'listWorkingUris'
 		).then((files) => {
-			files.forEach((file) => {
-				file.uri && this.queueForUpload(file.uri);
-			})
+			if (exec) {
+				// Immediately execute uploads
+				this.transfer(files, 'put');
+			} else {
+				// Queue uploads
+				this.queueForUpload(files);
+			}
 		});
 	}
 
@@ -301,43 +307,51 @@ class Push extends PushBase {
 	}
 
 	/**
-	 * Queues a single file to be uploaded within the deferred queue. Will honour ignore list.
-	 * @param {uri} uri - File Uri to queue
+	 * @description
+	 * Queues a single file or array of files to be uploaded within the deferred queue.
+	 * Will honour the active ignore list.
+	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
-	queueForUpload(uri) {
-		let remotePath;
-
-		uri = this.paths.getFileSrc(uri);
-
-		if (this.service) {
-			remotePath = this.service.exec(
-				'convertUriToRemote',
-				this.configWithServiceSettings(uri),
-				[uri]
-			);
-
-			return this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
-				.then((filteredUri) => {
-					if (!filteredUri) {
-						return;
-					}
-
-					this.queue([{
-						method: 'put',
-						actionTaken: 'uploaded',
-						uriContext: uri,
-						args: [uri, remotePath],
-						id: remotePath + this.paths.getNormalPath(uri)
-					}], false, Push.queueDefs.upload, {
-						showStatus: true,
-						statusToolTip: (num) => {
-							return i18n.t('num_to_upload', num);
-						},
-						statusCommand: 'push.uploadQueuedItems',
-						emptyOnFail: false
-					});
-				});
+	queueForUpload(uris) {
+		if (!Array.isArray(uris)) {
+			uris = [uris];
 		}
+
+		uris.forEach((uri) => {
+			let remotePath;
+
+			uri = this.paths.getFileSrc(uri);
+
+			if (this.service) {
+				remotePath = this.service.exec(
+					'convertUriToRemote',
+					this.configWithServiceSettings(uri),
+					[uri]
+				);
+
+				this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+					.then((filteredUri) => {
+						if (!filteredUri) {
+							return;
+						}
+
+						this.queue([{
+							method: 'put',
+							actionTaken: 'uploaded',
+							uriContext: uri,
+							args: [uri, remotePath],
+							id: remotePath + this.paths.getNormalPath(uri)
+						}], false, Push.queueDefs.upload, {
+								showStatus: true,
+								statusToolTip: (num) => {
+									return i18n.t('num_to_upload', num);
+								},
+								statusCommand: 'push.uploadQueuedItems',
+								emptyOnFail: false
+							});
+					});
+			}
+		});
 	}
 
 	execUploadQueue() {
@@ -435,7 +449,7 @@ class Push extends PushBase {
 			return null;
 		}
 
-		channel.clear();
+		// channel.clear();
 
 		// Fetch and execute queue
 		return queue
@@ -480,6 +494,8 @@ class Push extends PushBase {
 
 	/**
 	 * Stop any current queue operations.
+	 * @param {boolean} force - Set `true` to force any current operations to stop.
+	 * @param {boolean} silent - Set `true` to create no notices when stopping the queue.
 	 */
 	stopCancellableQueues(force = false, silent = false) {
 		let def, queue;
@@ -517,6 +533,7 @@ class Push extends PushBase {
 				if (force) {
 					// Give X seconds to stop or force
 					timer = setTimeout(() => {
+						// Force stop the queue
 						let message = i18n.t(
 							'queue_force_stopped',
 							queueDef.id,
@@ -557,68 +574,86 @@ class Push extends PushBase {
 	}
 
 	/**
-	 * Transfers a single file.
-	 * @param {Uri} uri - Uri of file to transfer.
+	 * Transfers a single file or array of single files.
+	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to transfer.
 	 * @param {string} method - Either 'get' or 'put'.
 	 * @returns {promise} - A promise, resolving when the file has transferred.
 	 */
-	transfer(uri, method) {
+	transfer(uris, method) {
 		let ignoreGlobs = [], action, actionTaken;
 
-		if (this.paths.isDirectory(uri)) {
-			throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
-		}
-
 		this.settings.clear();
+
+		if (!Array.isArray(uris)) {
+			uris = [uris];
+		}
 
 		if (method === 'put') {
 			action = 'upload';
 			actionTaken = 'uploaded';
-		} else {
-			action = 'download';
-			actionTaken = 'downloaded';
-		}
 
-		if (method === 'put') {
 			// Filter Uri by the ignore globs when uploading
 			ignoreGlobs = this.config.ignoreGlobs;
+		} else if (method === 'get') {
+			action = 'download';
+			actionTaken = 'downloaded';
+		} else {
+			throw new Error(`Unkown method "${method}"`);
 		}
 
-		return this.paths.filterUriByGlobs(uri, ignoreGlobs)
-			.then((filteredUri) => {
-				let config, remotePath;
+		uris.forEach((uri, index) => {
+			// Check the source file isn't a directory
+			if (this.paths.isDirectory(uri)) {
+				throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
+			}
 
-				if (filteredUri !== false) {
-					config = this.configWithServiceSettings(filteredUri);
+			// Check that the source file exists
+			if (method === 'put' && !this.paths.fileExists(uri)) {
+				channel.appendLocalisedError(
+					'file_not_found',
+					this.paths.getNormalPath(uri)
+				);
 
-					remotePath = this.service.exec(
-						'convertUriToRemote',
-						config,
-						[filteredUri]
-					);
+				return;
+			}
 
-					if (config) {
-						// Add to queue and return
-						return this.queue([{
-							method,
-							actionTaken,
-							uriContext: filteredUri,
-							args: [
-								filteredUri,
-								remotePath
-							],
-							id: remotePath + this.paths.getNormalPath(filteredUri)
-						}], true);
+			// Filter and add to the queue
+			this.paths.filterUriByGlobs(uri, ignoreGlobs)
+				.then((filteredUri) => {
+					let config, remotePath;
+
+					if (filteredUri !== false) {
+						config = this.configWithServiceSettings(filteredUri);
+
+						remotePath = this.service.exec(
+							'convertUriToRemote',
+							config,
+							[filteredUri]
+						);
+
+						if (config) {
+							// Add to queue and return (also start on the last item added)
+							return this.queue([{
+								method,
+								actionTaken,
+								uriContext: filteredUri,
+								args: [
+									filteredUri,
+									remotePath
+								],
+								id: remotePath + this.paths.getNormalPath(filteredUri)
+							}], (index === uris.length - 1));
+						}
+					} else {
+						// Only one file is being transfered so warn the user it ain't happening
+						channel.appendLocalisedError(
+							'cannot_action_ignored_file',
+							action,
+							this.paths.getBaseName(uri)
+						);
 					}
-				} else {
-					// Only one file is being transfered so warn the user it ain't happening
-					channel.appendLocalisedError(
-						'cannot_action_ignored_file',
-						action,
-						this.paths.getBaseName(uri)
-					);
-				}
-			});
+				});
+		});
 	}
 
 	/**

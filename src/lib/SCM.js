@@ -80,7 +80,7 @@ class SCM {
 	/**
 	 * Lists all working files in an array of Uris
 	 */
-	_listWorkingFiles(provider, dir) {
+	_listWorkingUris(provider, dir) {
 		return new Promise((resolve, reject) => {
 			let files;
 
@@ -92,7 +92,7 @@ class SCM {
 							return reject(error);
 						}
 
-						files = this._filesFromGitStatus(dir, status);
+						files = this._urisFromGitStatus(dir, status);
 						resolve(files);
 					})
 					break;
@@ -103,11 +103,34 @@ class SCM {
 		});
 	}
 
-	_filesFromGitStatus(dir, status) {
-		return status.files.map((file) => {
-			file.uri = vscode.Uri.parse(this._paths.addTrailingSlash(dir) + file.path);
-			return file;
-		})
+	_urisFromGitStatus(dir, status) {
+		// TODO: strip out files that have been deleted
+		let files = [];
+
+		status.files.forEach((file) => {
+			if (file.working_dir === 'D') {
+				// Skip deletions
+				return false;
+			}
+
+			file.uri = vscode.Uri.parse(
+				this._paths.addTrailingSlash(dir) + this._cleanGitPath(file.path)
+			);
+
+			files.push(file.uri);
+		});
+
+		return files;
+	}
+
+	_cleanGitPath(path) {
+		// Remove outer quotes in files with escapeable chars
+		path = path.replace(/^"(.*)"$/, '$1');
+
+		// Remove escape characters
+		path = path.replace(/\\(?=["'\s])/g, '');
+
+		return path;
 	}
 
 	/**

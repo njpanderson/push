@@ -150,6 +150,11 @@
         "category": "Push"
       },
       {
+        "command": "push.uploadGitChangedFiles",
+        "title": "Upload all Git working files",
+        "category": "Push"
+      },
+      {
         "command": "push.cancelQueues",
         "title": "Cancel active queue",
         "category": "Push"

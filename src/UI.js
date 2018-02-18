@@ -35,6 +35,10 @@ class UI extends Push {
 		super.queueGitChangedFiles();
 	}
 
+	uploadGitChangedFiles() {
+		super.queueGitChangedFiles(true);
+	}
+
 	/**
 	 * Uploads a single file or directory by its Uri.
 	 * @param {Uri} uri
