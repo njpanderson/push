@@ -146,7 +146,7 @@ class Queue {
 			return Promise.reject(i18n.t('queue_running'));
 		}
 
-		this.setContext(Queue.contexts.running, true);
+		this._setContext(Queue.contexts.running, true);
 
 		if (this._tasks && this._tasks.length) {
 			// Always report one less item (as there's an #init task added by default)
@@ -326,7 +326,7 @@ class Queue {
 	 */
 	complete(results, fnCallback) {
 		this.running = false;
-		this.setContext(Queue.contexts.running, false);
+		this._setContext(Queue.contexts.running, false);
 
 		if (typeof fnCallback === 'function') {
 			fnCallback(results);
@@ -338,6 +338,7 @@ class Queue {
 	 */
 	empty() {
 		this._tasks = [];
+		this._updateStatus();
 	}
 
 	/**
@@ -387,7 +388,7 @@ class Queue {
 	_updateStatus() {
 		let tasks = this._tasks.filter((task) => task.id);
 
-		this.setContext(Queue.contexts.itemCount, tasks.length);
+		this._setContext(Queue.contexts.itemCount, tasks.length);
 
 		if (tasks.length && this.options.showStatus) {
 			this.status.text = `$(${this.options.statusIcon}) ${tasks.length}`;
@@ -407,7 +408,7 @@ class Queue {
 	 * @param {string} context - Context item name
 	 * @param {mixed} value - Context value
 	 */
-	setContext(context, value) {
+	_setContext(context, value) {
 		console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
 		return this;
