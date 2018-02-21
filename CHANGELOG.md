@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.1.3
+ - Add option to remove items from the upload queue.
+ - Fix upload queue not showing empty in status bar when uploading.
+ - Fix for logic when no editors are open.
+
 ## 0.1.2
  - Fix issue with some collision actions skipping regardless of choice.
 
