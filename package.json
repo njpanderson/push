@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "preview": true,
   "publisher": "njp-anderson",
   "engines": {
@@ -132,6 +132,11 @@
           "dark": "resources/dark/repo-push.svg",
           "light": "resources/light/repo-push.svg"
         }
+      },
+      {
+        "command": "push.removeQueuedItem",
+        "title": "Remove the current file from the queue",
+        "category": "Push"
       },
       {
         "command": "push.cancelQueues",
@@ -344,6 +349,10 @@
         {
           "command": "push.uploadQueuedItems",
           "when": "push:hasUploadQueue"
+        },
+        {
+          "command": "push.removeQueuedItem",
+          "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
         }
       ],
       "view/title": [
@@ -371,6 +380,10 @@
         {
           "command": "push.removeWatchFolder",
           "when": "viewItem == watch:folder"
+        },
+        {
+          "command": "push.removeQueuedItem",
+          "when": "viewItem == uploadQueue:file"
         }
       ]
     },

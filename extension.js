@@ -30,6 +30,7 @@ exports.activate = (context) => {
 		'push.downloadFolder': 'download',
 		'push.diff': 'diff',
 		'push.uploadQueuedItems': 'execUploadQueue',
+		'push.removeQueuedItem': 'removeUploadQueuedItem',
 		'push.clearUploadQueue': 'clearUploadQueue',
 		'push.cancelQueues': 'cancelQueues',
 		'push.stopQueues': 'stopQueues',
