@@ -10,6 +10,7 @@ const QueueTask = require('./lib/queue/QueueTask');
 const Watch = require('./lib/Watch');
 const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
+const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
 
 class Push extends PushBase {
@@ -299,11 +300,11 @@ class Push extends PushBase {
 			);
 		});
 
+		this.refreshExplorerQueues();
+
 		if (runImmediately) {
 			return this.execQueue(queueDef);
 		}
-
-		this.refreshExplorerQueues();
 	}
 
 	/**
@@ -355,7 +356,7 @@ class Push extends PushBase {
 	}
 
 	execUploadQueue() {
-		let uploadQueue;
+		let uploadQueue, queue;
 
 		if (!this.config.uploadQueue) {
 			return channel.appendLocalisedInfo('upload_queue_disabled');
@@ -363,10 +364,17 @@ class Push extends PushBase {
 
 		uploadQueue = this.getQueue(Push.queueDefs.upload);
 
-		this.queue(uploadQueue.tasks, true)
-			.then(() => {
-				uploadQueue.empty();
-			});
+		if (uploadQueue.tasks.length) {
+			queue = this.queue(uploadQueue.tasks, true)
+
+			if (queue instanceof Promise) {
+				queue.then(() => {
+					uploadQueue.empty();
+				});
+			}
+		} else {
+			utils.showWarning(i18n.t('queue_empty'));
+		}
 
 		return uploadQueue
 	}
