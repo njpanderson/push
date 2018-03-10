@@ -1,7 +1,6 @@
 const vscode = require('vscode');
 
 const config = require('./config');
-const tools = require('./tools');
 const i18n = require('../lang/i18n');
 
 const utils = {
