@@ -55,7 +55,8 @@ module.exports = {
 	'directory_out_of_root_no_create': 'Directory is outside of root and cannot be created.',
 	'directory_not_created_remote_mismatch': 'Directory "${1}" could not be created (a file with the same name exists on the remote!)',
 	'file_class_description': 'Local/network file transfers',
-	'remote_file_not_found': 'Remote file "${1}" does not exist.',
+	'file_not_found': 'The file "${1}" could not be found.',
+	'remote_file_not_found': 'Remote file "${1}" could not be found.',
 	'sftp_class_description': 'SFTP/SSH File transfers',
 	'sftp_could_not_connect_server': 'Could not connect to server host ${1}:${2}',
 	'sftp_client_connected': 'SFTP client connected to host ${1}:${2}',
@@ -70,5 +71,6 @@ module.exports = {
 	'items_queued_for_upload': 'Items queued for upload:',
 	'no_current_upload_queue': 'No current upload queue items',
 	'key_file_not_found': 'The private key file "${1}" could not be found. Does it exist in this location? Remember — shell path shortcuts like "~" cannot be used.',
-	'key_file_not_working': 'The private key file at "${1}" did not authenticate the user ${2}. Are you sure this is the correct key file and it has been given access?'
+	'key_file_not_working': 'The private key file at "${1}" did not authenticate the user ${2}. Are you sure this is the correct key file and it has been given access?',
+	'not_a_git_repo': 'The current working directory "${1}" does not contain a Git repository.'
 };
