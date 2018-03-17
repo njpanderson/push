@@ -6,6 +6,8 @@ All notable changes to Push will be documented in this file.
  - Better handling of SFTP / Disconnect errors.
  - More robust workspace support.
  - Better handling of empty upload queues.
+ - General fixes/updates.
+ - NPM package updates.
 
 ## 0.1.3
  - Add option to remove items from the upload queue.
