@@ -32,18 +32,27 @@ class Explorer {
 	 * @param {object} element
 	 */
 	getChildren(element) {
+		let top;
+
 		if (typeof element === 'undefined') {
 			// Return top level items
-			return Promise.resolve([
+			top = [
 				new Item('Watching', vscode.TreeItemCollapsibleState.Expanded, {
 					icon: 'radio-tower',
 					method: 'Watchers'
-				}),
-				new Item('Upload queue', vscode.TreeItemCollapsibleState.Expanded, {
-					icon: 'repo-push',
-					method: 'UploadQueue'
 				})
-			]);
+			];
+
+			if (this.config.uploadQueue) {
+				top.push(
+					new Item('Upload queue', vscode.TreeItemCollapsibleState.Expanded, {
+						icon: 'repo-push',
+						method: 'UploadQueue'
+					})
+				);
+			}
+
+			return Promise.resolve(top);
 		} else {
 			return this['get' + element.method].apply(this, [element]);
 		}

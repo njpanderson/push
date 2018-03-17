@@ -33,6 +33,22 @@ class Paths {
 		return [];
 	}
 
+	/**
+	 * Finds the current workspace path, based on the Uri of a passed item.
+	 * @param {Uri} uri - Uri of the contextual item
+	 * @param {*} normalise - `true` to normalise (i.e. stringify) the return Uri.
+	 * @returns {mixed} Either a Uri or a string path of the workspace root.
+	 */
+	getCurrentWorkspaceRootPath(uri, normalise = false) {
+		let workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+
+		return (
+			normalise ?
+			this.getNormalPath(workspaceFolder.uri) :
+			workspaceFolder.uri
+		);
+	}
+
 	getNormalPath(uri, requiredScheme) {
 		if (typeof uri === 'string') {
 			return uri;

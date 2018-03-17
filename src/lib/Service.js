@@ -5,7 +5,6 @@ const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
-const utils = require('./utils');
 const config = require('./config');
 const channel = require('./channel');
 const constants = require('./constants');

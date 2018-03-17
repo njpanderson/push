@@ -1,8 +1,6 @@
 const vscode = require('vscode');
 
 const Push = require('./Push');
-const channel = require('./lib/channel');
-const i18n = require('./lang/i18n');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -29,6 +27,14 @@ class UI extends Push {
 		}
 
 		super.removeUploadQueuedItem(Push.queueDefs.upload, uri);
+	}
+
+	queueGitChangedFiles() {
+		super.queueGitChangedFiles();
+	}
+
+	uploadGitChangedFiles() {
+		super.queueGitChangedFiles(true);
 	}
 
 	/**

@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.2
+ - Add git support. Will upload files in the working copy.
+ - Better handling of SFTP / Disconnect errors.
+ - More robust workspace support.
+ - Better handling of empty upload queues.
+ - General fixes/updates.
+ - NPM package updates.
+
 ## 0.1.3
  - Add option to remove items from the upload queue.
  - Fix upload queue not showing empty in status bar when uploading.

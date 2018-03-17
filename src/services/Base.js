@@ -379,7 +379,9 @@ class ServiceBase {
 	 * the user which error occured.
 	 */
 	onDisconnect(hadError) {
-		this.setProgress(false);
+		if (hadError) {
+			this.setProgress(false);
+		}
 
 		// Alert user via channel (disabled in lieu of service's own message)
 		// channel['append' + (hadError ? 'Error' : 'Info')](
