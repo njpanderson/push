@@ -1,5 +1,6 @@
 const vscode = require("vscode");
 const SFTPClient = require('ssh2-sftp-client');
+const ssh = require('ssh2').Client;
 const fs = require('fs');
 const path = require('path');
 const homedir = require('os').homedir;
@@ -82,7 +83,11 @@ class ServiceSFTP extends ServiceBase {
 				if (!client.lastUsed) {
 					// New client - connect first
 					console.log('Connecting to a new server instance...');
-					return this.openConnection(client);
+					if (client.gateway) {
+						return this.openGatewayConnection(client);
+					} else {
+						return this.openConnection(client);
+					}
 				} else {
 					// Existing client - just return it
 					return Promise.resolve(client.sftp);
@@ -107,55 +112,131 @@ class ServiceSFTP extends ServiceBase {
 
 	/**
 	 * Attempts to open a connection to the configured SFTP server.
-	 * @param {Object} client - SFTP client returned from {@link this.getClient}
+	 * @param {object} client - SFTP client spec returned from {@link this.getClient}.
+	 * @param {object} options - SFTP Option overrides.
+	 * @return {promise} - Resolving to a connected SFTP instance.
 	 */
-	openConnection(client) {
+	openConnection(client, options = {}) {
+		return client.sftp.connect(Object.assign({}, client.options, options))
+			.then(() => {
+				this.onConnect();
+
+				channel.appendLocalisedInfo(
+					'sftp_client_connected',
+					client.options.host,
+					client.options.port
+				);
+
+				return client;
+			})
+			.then((client) => this.checkServiceRoot(client))
+			.catch((error) => this.handleSFTPError(error, client));
+	}
+
+	/**
+	 * Open a connection to the SFTP server via the defined gateway server.
+	 * @param {object} client - SFTP client spec.
+	 * @returns {Promise} - Resolving to a connected SFTP instance.
+	 */
+	openGatewayConnection(client) {
 		return new Promise((resolve, reject) => {
-			client.sftp.connect(client.options)
-				.then(() => {
-					this.onConnect();
+			// Set up client gateway and connect to it
+			client.gateway
+				.on('ready', () => {
+					console.log('Gateway connection ready');
+					if (client.options.privateKeyFile) {
+						// Get the private key file contents from the gateway, then connect
+						this.readWithSSH(client.gateway, client.options.privateKeyFile)
+							.then((contents) => {
+								client.options.privateKey = contents;
 
-					channel.appendLocalisedInfo(
-						'sftp_client_connected',
-						client.options.host,
-						client.options.port
-					);
-
-					return client;
-				})
-				.then((client) => this.checkServiceRoot(client, resolve))
-				.catch((error) => {
-					if (error.level === 'client-authentication') {
-						// Put a note in the log to remind users that a password can be set
-						if (client.options.privateKeyFile !== '') {
-							// If there was a keyfile yet we're at this point, it might have broken
-							channel.appendLocalisedInfo(
-								'key_file_not_working',
-								client.options.privateKeyFile,
-								client.options.username
-							);
-						}
-
-						this.channel.appendLocalisedInfo('requesting_password');
-
-						// Offer to use a password
-						this.requestAuthentication()
-							.then((result) => {
-								if (result) {
-									// Temporarily set the password in the service config
-									this.config.service.password = result;
-									resolve(this.openConnection(client, client.options));
-								} else {
-									reject(error);
-								}
+								this.connectGatewaySFTP(client)
+									.then(resolve, reject);
+							})
+							.catch((error) => {
+								reject(i18n.t(
+									'could_not_load_gateway_key',
+									client.options.privateKeyFile,
+									error.message
+								));
 							});
 					} else {
-						// This likely ain't happening - let's just ditch the client and reject
-						this.destroyClient(client);
-
-						reject(error);
+						// Just connect
+						this.connectGatewaySFTP(client)
+							.then(resolve, reject);
 					}
-				});
+				})
+				.on('error', (error) => {
+					this.channel.appendLocalisedError('error_from_gateway', error);
+					reject('Gateway SSH error: ' + error.message);
+				})
+				.connect(client.gatewayOptions);
+		});
+	}
+
+	/**
+	 * Connect to an SFTP server via SSH gateway, resolving the connected SFTP instance.
+	 * @param {Object} client - SFTP client spec.
+	 * @returns {Promise} - Resolving to a connected SFTP instance.
+	 */
+	connectGatewaySFTP(client) {
+		return new Promise((resolve, reject) => {
+			// Connect to the SFTP server (from the gateway)
+			client.gateway.forwardOut(
+				'127.0.0.1',
+				client.gatewayOptions.port,
+				client.options.host,
+				client.options.port,
+				(error, stream) => {
+					if (error) {
+						client.gateway.end();
+						return reject(error);
+					}
+
+					this.openConnection(client, {
+						host: null,
+						port: null,
+						sock: stream
+					})
+						.then(resolve)
+						.catch(reject);
+				}
+			);
+		});
+	}
+
+	handleSFTPError(error, client) {
+		return new Promise((resolve, reject) => {
+			if (error.level === 'client-authentication') {
+				// Put a note in the log to remind users that a password can be set
+				if (client.options.privateKeyFile !== '') {
+					// If there was a keyfile yet we're at this point, it might have broken
+					channel.appendLocalisedInfo(
+						'key_file_not_working',
+						client.options.privateKeyFile,
+						client.options.username
+					);
+				}
+
+				this.channel.appendLocalisedInfo('requesting_password');
+
+				// Offer to use a password
+				this.requestAuthentication()
+					.then((result) => {
+						if (result) {
+							// Temporarily set the password in the service config
+							this.config.service.password = result;
+							resolve(this.openConnection(client, client.options));
+						} else {
+							reject(error);
+						}
+					});
+			} else {
+				// This likely ain't happening - let's just ditch the client and reject
+				this.destroyClient(client);
+
+				reject(error);
+			}
 		});
 	}
 
@@ -164,15 +245,15 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {SFTP} client - SFTP client object.
 	 * @param {function} resolve - Promise resolver function.
 	 */
-	checkServiceRoot(client, resolve) {
+	checkServiceRoot(client) {
 		return client.sftp.list(this.config.service.root)
 			.then(() => {
-				// Finally, resolve with the sftp object
-				resolve(client.sftp);
+				// Return the sftp object
+				return client.sftp;
 			})
 			.catch(() => {
 				throw new Error(
-					i18n('sftp_missing_root', this.config.settingsFilename)
+					i18n.t('sftp_missing_root', this.config.settingsFilename)
 				);
 			});
 	}
@@ -217,6 +298,11 @@ class ServiceSFTP extends ServiceBase {
 			client.sftp.end();
 			client.sftp = null;
 		}
+
+		if (client.gateway) {
+			client.gateway.end();
+			client.gateway = null;
+		}
 	}
 
 	/**
@@ -259,8 +345,20 @@ class ServiceSFTP extends ServiceBase {
 						this.clients[hash] = {
 							lastUsed: 0,
 							sftp: new SFTPClient(),
-							options: this.getClientOptions(this.config.service)
+							options: this.getClientOptions(
+								this.config.service,
+								!(this.config.service.sshGateway)
+							)
 						};
+
+						if (this.config.service.sshGateway) {
+							// Client is going to connect via a gateway - add its instance here
+							this.clients[hash].gatewayOptions = this.getClientOptions(
+								this.config.service.sshGateway
+							);
+
+							this.clients[hash].gateway = new ssh();
+						}
 
 						this.clients[hash].sftp.client
 							// .on('keyboard-interactive', (name, instructions, prompts, finish) => {
@@ -281,6 +379,11 @@ class ServiceSFTP extends ServiceBase {
 									hadError = false;
 								}
 
+								// Close SSH gateway connection, if exists
+								if (this.clients[hash].gateway) {
+									this.clients[hash].gateway.end();
+								}
+
 								// Fire onDisconnect event method
 								this.onDisconnect(hadError, hash);
 							})
@@ -295,20 +398,30 @@ class ServiceSFTP extends ServiceBase {
 
 	/**
 	 * Create an object of SFTP client options, given the service settings.
-	 * @param {object} service
+	 * @param {object} service - Service settings Object.
+	 * @param {boolean} validateKey - Whether or not to validate the key file location.
 	 */
-	getClientOptions(service) {
-		let sshKey = this._getPrivateKey(),
+	getClientOptions(service, validateKey = true) {
+		let sshKey,
 			options = {
 				host: service.host,
 				port: service.port,
 				username: service.username,
-				privateKey: sshKey && sshKey.contents,
-				privateKeyFile: sshKey && sshKey.file,
 				passphrase: service.keyPassphrase || this.config.privateSSHKeyPassphrase,
 				keepaliveInterval: service.keepaliveInterval,
 				tryKeyboard: true
 			};
+
+		if (validateKey) {
+			// Validate key file and convert options
+			sshKey = this._getPrivateKey(service);
+
+			options.privateKey = (sshKey && sshKey.contents);
+			options.privateKeyFile = (sshKey && sshKey.file);
+		} else {
+			// Just set the privateKeyFile property
+			options.privateKeyFile = service.privateKey;
+		}
 
 		// Add a password, if set
 		if (service.password) {
@@ -551,6 +664,58 @@ class ServiceSFTP extends ServiceBase {
 				this.setProgress(false);
 				throw(error);
 			});
+	}
+
+	/**
+	 * Reads a file and returns its contents.
+	 * @param {SSH2Client} ssh - A connected instance of SSH2Client.
+	 * @returns {Promise} resolving to the file's contents.
+	 */
+	readWithSSH(ssh, fileName) {
+		return new Promise((resolve, reject) => {
+			// Get sftp submodule
+			ssh.sftp((err, sftp) => {
+				if (err) {
+					return reject(err);
+				}
+
+				// Open the file for reading
+				sftp.open(fileName, 'r', (err, fd) => {
+					if (err) {
+						return reject(err);
+					}
+
+					// Use the file descriptor to stat the file
+					sftp.fstat(fd, (err, stat) => {
+						let offset = 0,
+							length = stat.size,
+							totalBytesRead = 0,
+							bytesRead = 0,
+							contents = '',
+							buffer = new Buffer(length);
+
+						// Read the file, then resolve its contents
+						sftp.read(
+							fd,
+							buffer,
+							offset,
+							length,
+							bytesRead,
+							(error, bytesRead, buffer/*, position*/) => {
+								totalBytesRead += bytesRead;
+
+								contents += buffer.toString('utf8');
+
+								// The whole file has been read - resolve
+								if (totalBytesRead === length) {
+									resolve(contents);
+								}
+							}
+						);
+					});
+				});
+			});
+		});
 	}
 
 	setRemotePathMode(remote, mode) {
@@ -837,11 +1002,12 @@ class ServiceSFTP extends ServiceBase {
 	 * folder if no path is specified.
 	 * @param {string} file
 	 */
-	_getPrivateKey() {
+	_getPrivateKey(service) {
 		let keyFile, homeDir, defaultKeyFiles, a;
 
 		keyFile = String(
-			this.config.service.privateKey ||
+			// TODO: get the right private key for gateway SFTP
+			(service && service.privateKey) ||
 			this.config.privateSSHKey ||
 			''
 		).trim();
@@ -868,7 +1034,7 @@ class ServiceSFTP extends ServiceBase {
 		for (a = 0; a < defaultKeyFiles.length; a += 1) {
 			if (fs.existsSync(defaultKeyFiles[a])) {
 				// Save privateKey location for session...
-				this.config.service.privateKey = defaultKeyFiles[a];
+				service.privateKey = defaultKeyFiles[a];
 
 				// ... Then return
 				return {
@@ -954,7 +1120,8 @@ ServiceSFTP.defaults = {
 	root: '/',
 	keepaliveInterval: 3000,
 	debug: false,
-	fileMode: ''
+	fileMode: '',
+	sshGateway: null
 };
 
 ServiceSFTP.encodingByExtension = {
