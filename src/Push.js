@@ -175,7 +175,6 @@ class Push extends PushBase {
 			return;
 		}
 
-		console.log('active editor: ' + this.paths.getNormalPath(textEditor.document.uri));
 		if (
 			uploadQueue &&
 			(uploadQueue.tasks.length > 0 && uploadQueue.tasks.length < 100)
