@@ -160,12 +160,13 @@ The SFTP service will upload files to remote SSH/SFTP servers.
 | `host` | | Hostname or IP of the remote host. |
 | `username` | | Username of the authenticated user. |
 | `password` | | Password for the authenticated user. Leave blank if using keys. |
-| `privateKey` | | Private key path, if using keys. Defaults to the global `privateSSHKey` setting. |
+| `privateKey` | | Private key path, if using keys. Defaults to the global `privateSSHKey` setting (If using `sshGateway`, see notes below). |
 | `keyPassphrase` | | Private key passphrase, if needed. Defaults to the global `privateSSHKeyPassphrase` setting. |
 | `root` | `/` | The root path to upload to. All files within the workspace at the same level or lower than the location of the server settings file will upload into this path. |
 | `keepaliveInterval` | `3000` | How often, in milliseconds, to send keep-alive packets to the server. Set `0` to disable. |
 | `fileMode` | | If required, a [mode](https://en.wikipedia.org/wiki/File_system_permissions#Numeric_notation) can be applied to files when they are uploaded. Numeric modes are accepted. E.g: `"700"` to give all access to the owner only. An array of modes is also supported. (See below.) |
-| `debug` | `false` | In debug mode, extra information is sent from the underlying SSH client to the console.
+| `sshGateway` | | If you can't connect directly to an SSH server, and must instead connect via an intermediary server — commonly known as a Gateway host — you can enter its details in here. The properties available are detailed below. |
+| `debug` | `false` | In debug mode, extra information is sent from the underlying SSH client to the console. |
 
 #### `fileMode` as an array
 
@@ -191,6 +192,50 @@ The above example will perform the following:
  - **All directories** will be given the mode `655`
 
 For those interested, the underlying glob matching is performed by [micromatch](https://www.npmjs.com/package/micromatch#matching-features), and any glob pattern it supports can be used here.
+
+#### Using an SSH gateway
+
+If you are in an environment in which you must connect to the SFTP server through another gateway or host server, you can use the `sshGateway` option to define this requirement.
+
+The following settings are available:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `host` | | Hostname or IP of the gateway. |
+| `username` | | Username of the authenticated user. |
+| `password` | | Password for the authenticated user. Leave blank if using keys. |
+| `privateKey` | | Private key path, if using keys. Defaults to the global `privateSSHKey` setting. |
+| `keyPassphrase` | | Private key passphrase, if needed. Defaults to the global `privateSSHKeyPassphrase` setting. |
+| `keepaliveInterval` | `3000` | How often, in milliseconds, to send keep-alive packets to the server. Set `0` to disable. |
+| `debug` | `false` | In debug mode, extra information is sent from the underlying SSH client to the console. |
+
+The settings within `sshGateway` work in a similar way to the general SFTP settings.
+
+#### Settnig the `privateKey` while using `sshGateway`
+
+The `privateKey` setting for the parent SFTP object is assumed to be a file **on the gateway itself**. That is, when connecting to the gateway using the `sshGateway` settings, a connection is then made to the server using the parent SFTP settings. For instance:
+
+```
+	"SFTP": {
+		"host": "sftphost.com",
+		"port": 22,
+		"username": "sftpuser",
+		"password": "",
+		"privateKey": "/home/gatewayuser/.ssh/id_rsa",
+		"root": "/home/someuser",
+		"sshGateway": {
+			"host": "gatewayhost.local",
+			"username": "gatewayuser",
+		}
+	}
+```
+
+In the above example:
+
+1. A connection will be made to `gatewayhost.local` with the user `gatewayuser` and any default key defined in the Push settings, sourced from your local environment.
+2. The key on `gatewayhost.local` will be found in the path `/home/gatewayuser/.ssh/id_rsa` and stored.
+3. A connection will be made *from* `gatewayhost.local` *to* `sftphost.com` using the key found on the gateway host.
+4. The connection will then be piped back to your local environment.
 
 ### File
 
