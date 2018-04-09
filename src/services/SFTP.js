@@ -64,7 +64,7 @@ class ServiceSFTP extends ServiceBase {
 		if (newSettings.sshGateway) {
 			newSettings.sshGateway = Object.assign(
 				{},
-				this.serviceDefaults,
+				ServiceSFTP.gatewayDefaults,
 				newSettings.sshGateway
 			)
 		}
@@ -1153,6 +1153,17 @@ ServiceSFTP.defaults = {
 	debug: false,
 	fileMode: '',
 	sshGateway: null
+};
+
+ServiceSFTP.gatewayDefaults = {
+	host: '',
+	port: 22,
+	username: '',
+	password: '',
+	privateKey: '',
+	keyPassphrase: '',
+	keepaliveInterval: 3000,
+	debug: false
 };
 
 ServiceSFTP.encodingByExtension = {
