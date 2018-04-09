@@ -60,6 +60,7 @@ module.exports = {
 	'sftp_class_description': 'SFTP/SSH File transfers',
 	'sftp_could_not_connect_server': 'Could not connect to server host ${1}:${2}',
 	'sftp_client_connected': 'SFTP client connected to host ${1}:${2}',
+	'sftp_client_connected_gateway': 'SFTP client connected to host ${1}:${2} via gateway ${3}:${4}',
 	'sftp_missing_root': 'SFTP could not find or access the root path.Please check the "${1}" settings file.',
 	'sftp_disconnected': 'SFTP client disconnected from host ${1}:${2}',
 	'sftp_enter_ssh_pass': 'Enter SSH password (will not be saved)',

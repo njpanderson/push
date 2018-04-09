@@ -52,6 +52,27 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	/**
+	 * @description
+	 * Merges the service specific default settings with supplied object.
+	 * SFTP variant that also detects and merges SSH gateway settings.
+	 * @param {object} settings
+	 */
+	mergeWithDefaults(settings) {
+		let newSettings = Object.assign({}, this.serviceDefaults, settings);
+
+		// If there is a gateway defined, merge that
+		if (newSettings.sshGateway) {
+			newSettings.sshGateway = Object.assign(
+				{},
+				this.serviceDefaults,
+				newSettings.sshGateway
+			)
+		}
+
+		return newSettings;
+	}
+
+	/**
 	 * Runs initialisation code (before each queue begins)
 	 */
 	init(queueLength) {
@@ -121,11 +142,21 @@ class ServiceSFTP extends ServiceBase {
 			.then(() => {
 				this.onConnect();
 
-				channel.appendLocalisedInfo(
-					'sftp_client_connected',
-					client.options.host,
-					client.options.port
-				);
+				if (client.gateway) {
+					channel.appendLocalisedInfo(
+						'sftp_client_connected_gateway',
+						client.options.host,
+						client.options.port,
+						client.gatewayOptions.host,
+						client.gatewayOptions.port
+					);
+				} else {
+					channel.appendLocalisedInfo(
+						'sftp_client_connected',
+						client.options.host,
+						client.options.port
+					);
+				}
 
 				return client;
 			})
