@@ -1,6 +1,9 @@
 const vscode = require('vscode');
+const tmp = require('tmp');
+const fs = require('fs');
 
 const config = require('./config');
+const constants = require('./constants');
 const i18n = require('../lang/i18n');
 
 const utils = {
@@ -168,6 +171,78 @@ const utils = {
 		}
 
 		return pathname;
+	},
+
+	/**
+	 * Writes to a file from stream data.
+	 * @param {stream} read - Readable Stream stream object.
+	 * @param {string} filename - Absolute filename to write to.
+	 * @param {boolean} useTmpFile - Whether to use a temporary file or write
+	 * directly to the target file.
+	 * @returns {promise} Resolving on success, rejecting on failure
+	 */
+	writeFileFromStream(read, filename, useTmpFile = true) {
+		return new Promise((resolve, reject) => {
+			let tmpFilename, streamError, write;
+
+			if (useTmpFile) {
+				tmpFilename = this.getTmpFile(false);
+				write = fs.createWriteStream(tmpFilename);
+			} else {
+				write = fs.createWriteStream(filename);
+			}
+
+			function cleanUpAndReject(error) {
+				streamError = error;
+
+				read.destroy();
+				write.end();
+
+				reject(error && error.message);
+			}
+
+			// Set up write stream
+			write.on('error', cleanUpAndReject);
+
+			write.on('finish', () => {
+				// Writing has finished (and thusly so has reading)
+				let tmpRead;
+
+				if (streamError) {
+					return;
+				}
+
+				if (!useTmpFile) {
+					return resolve();
+				}
+
+				tmpRead = fs.createReadStream(tmpFilename);
+
+				// Copy file from temporary file to the required location
+				this.writeFileFromStream(tmpRead, filename, false)
+					.then(resolve, reject);
+			});
+
+			read.on('error', cleanUpAndReject);
+			read.pipe(write);
+		});
+	},
+
+	/**
+	 * Create a temporary file and return its filename.
+	 * @param {boolean} [getUri=true] - Whether to return a URI or a string.
+	 * @return {string} Filename created.
+	 */
+	getTmpFile(getUri = true) {
+		let tmpobj = tmp.fileSync({
+			prefix: constants.TMP_FILE_PREFIX
+		});
+
+		if (getUri) {
+			return vscode.Uri.file(tmpobj.name);
+		}
+
+		return tmpobj.name;
 	}
 };
 

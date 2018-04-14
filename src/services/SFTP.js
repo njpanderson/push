@@ -619,23 +619,8 @@ class ServiceSFTP extends ServiceBase {
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
-							let write = fs.createWriteStream(local);
-
-							function cleanUp(error) {
-								stream.destroy();
-								write.end();
-								reject(error.message);
-							}
-
-							// Set up write stream
-							write.on('error', cleanUp);
-							write.on('finish', resolve);
-
-							stream.on('error', cleanUp);
-							stream.pipe(write);
-						})
-						.catch((error) => {
-							throw(new Error(`${remote}: ${error.message}`));
+							utils.writeFileFromStream(stream, local)
+								.then(resolve, reject)
 						});
 				});
 			});

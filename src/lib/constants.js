@@ -18,5 +18,7 @@ module.exports = {
         UPLOAD_QUEUE: 1,
         WATCH: 2,
         UPLOAD_STATUS: 3
-    }
+    },
+
+    TMP_FILE_PREFIX: 'vscode-push-tmp-'
 };

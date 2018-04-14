@@ -385,7 +385,7 @@ class Push extends PushBase {
 	diffRemote(uri) {
 		let config, tmpFile, remotePath;
 
-		tmpFile = this.paths.getTmpFile();
+		tmpFile = utils.getTmpFile();
 		config = this.configWithServiceSettings(uri);
 		remotePath = this.service.exec(
 			'convertUriToRemote',
