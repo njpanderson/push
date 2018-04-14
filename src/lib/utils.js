@@ -7,15 +7,15 @@ const utils = {
 	_timeouts: {},
 	_sb: null,
 
-	showMessage: function(message) {
+	showMessage(message) {
 		utils.displayErrorOrString('showInformationMessage', message, [...arguments].slice(1));
 	},
 
-	showError: function(message) {
+	showError(message) {
 		utils.displayErrorOrString('showErrorMessage', message, [...arguments].slice(1));
 	},
 
-	showWarning: function(message) {
+	showWarning(message) {
 		utils.displayErrorOrString('showWarningMessage', message, [...arguments].slice(1));
 	},
 
@@ -27,7 +27,7 @@ const utils = {
 	 * @param {string} [color='green'] - Colour of the message.
 	 * @returns vscode.StatusBarItem
 	 */
-	showStatusMessage: function (message, removeAfter = 0, color = null) {
+	showStatusMessage(message, removeAfter = 0, color = null) {
 		this.hideStatusMessage();
 
 		if (!color) {
@@ -59,7 +59,7 @@ const utils = {
 	/**
 	 * Hides any currently active status message.
 	 */
-	hideStatusMessage: function() {
+	hideStatusMessage() {
 		if (this._sb) {
 			this._sb.hide();
 		}
@@ -150,7 +150,7 @@ const utils = {
 	 * Adds an OS-specific trailing separator to a path (unless the path
 	 * consists solely of a separator).
 	 */
-	addTrailingSeperator: function (pathname, separator = '/') {
+	addTrailingSeperator(pathname, separator = '/') {
 		if (!pathname.endsWith(separator)) {
 			return pathname + separator;
 		}
@@ -162,7 +162,7 @@ const utils = {
 	 * Adds an OS-specific leading separator to a path (unless the path
 	 * consists solely of a separator).
 	 */
-	addLeadingSeperator: function (pathname, separator = '/') {
+	addLeadingSeperator(pathname, separator = '/') {
 		if (!pathname.startsWith(separator)) {
 			return pathname + pathname;
 		}
