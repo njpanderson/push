@@ -393,12 +393,16 @@ class ServiceSFTP extends ServiceBase {
 				this.mkDir
 			);
 		})
-		.then(() => this.getFileStats(remote, local))
-		.then((stats) => super.checkCollision(
-			stats.local,
-			stats.remote,
-			collisionAction
-		))
+		.then(() => {
+			return this.getFileStats(remote, local);
+		})
+		.then((stats) => {
+			return super.checkCollision(
+				stats.local,
+				stats.remote,
+				collisionAction
+			);
+		})
 		.then((result) => {
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
@@ -479,7 +483,9 @@ class ServiceSFTP extends ServiceBase {
 				// List the source directory in order to cache the file data
 				return this.list(remoteDir)
 					.catch((error) => {
-						throw(error.message);
+						throw new Error(
+							i18n.t('cannot_list_directory', remoteDir, error.message)
+						);
 					});
 			})
 			.then(() => this.getFileStats(remote, local))
@@ -619,8 +625,11 @@ class ServiceSFTP extends ServiceBase {
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
-							utils.writeFileFromStream(stream, local)
+							utils.writeFileFromStream(stream, local, remote)
 								.then(resolve, reject)
+						})
+						.catch((error) => {
+							throw new Error(`${remote}: ${error && error.message}`);
 						});
 				});
 			});
@@ -815,6 +824,11 @@ class ServiceSFTP extends ServiceBase {
 				);
 
 				return result;
+			})
+			.catch((error) => {
+				throw new Error(
+					i18n.t('cannot_list_directory', remoteDir, error.message)
+				);
 			})
 	}
 

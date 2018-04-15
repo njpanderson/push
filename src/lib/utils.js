@@ -181,28 +181,34 @@ const utils = {
 	 * directly to the target file.
 	 * @returns {promise} Resolving on success, rejecting on failure
 	 */
-	writeFileFromStream(read, filename, useTmpFile = true) {
+	writeFileFromStream(read, writeFilename, readFilename = '', useTmpFile = true) {
 		return new Promise((resolve, reject) => {
-			let tmpFilename, streamError, write;
+			let writeFile = writeFilename,
+				streamError, write;
 
 			if (useTmpFile) {
-				tmpFilename = this.getTmpFile(false);
-				write = fs.createWriteStream(tmpFilename);
-			} else {
-				write = fs.createWriteStream(filename);
+				writeFile = this.getTmpFile(false);
 			}
 
-			function cleanUpAndReject(error) {
+			write = fs.createWriteStream(writeFile);
+
+			function cleanUp(error) {
 				streamError = error;
 
 				read.destroy();
 				write.end();
-
-				reject(error && error.message);
 			}
 
 			// Set up write stream
-			write.on('error', cleanUpAndReject);
+			write.on('error', (error) => {
+				cleanUp(error);
+
+				reject(i18n.t(
+					'stream_write',
+					writeFile,
+					(error && error.message)
+				));
+			});
 
 			write.on('finish', () => {
 				// Writing has finished (and thusly so has reading)
@@ -216,14 +222,25 @@ const utils = {
 					return resolve();
 				}
 
-				tmpRead = fs.createReadStream(tmpFilename);
+				tmpRead = fs.createReadStream(writeFile);
 
 				// Copy file from temporary file to the required location
-				this.writeFileFromStream(tmpRead, filename, false)
+				this.writeFileFromStream(tmpRead, writeFilename, readFilename, false)
 					.then(resolve, reject);
 			});
 
-			read.on('error', cleanUpAndReject);
+			// Set up read stream
+			read.on('error', (error) => {
+				cleanUp(error);
+
+				reject(i18n.t(
+					'stream_read',
+					(readFilename != '') ? readFilename : null,
+					(error && error.message)
+				));
+			});
+
+			// Begin the stream transfer
 			read.pipe(write);
 		});
 	},
