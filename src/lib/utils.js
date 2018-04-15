@@ -1,21 +1,24 @@
 const vscode = require('vscode');
+const tmp = require('tmp');
+const fs = require('fs');
 
 const config = require('./config');
+const constants = require('./constants');
 const i18n = require('../lang/i18n');
 
 const utils = {
 	_timeouts: {},
 	_sb: null,
 
-	showMessage: function(message) {
+	showMessage(message) {
 		utils.displayErrorOrString('showInformationMessage', message, [...arguments].slice(1));
 	},
 
-	showError: function(message) {
+	showError(message) {
 		utils.displayErrorOrString('showErrorMessage', message, [...arguments].slice(1));
 	},
 
-	showWarning: function(message) {
+	showWarning(message) {
 		utils.displayErrorOrString('showWarningMessage', message, [...arguments].slice(1));
 	},
 
@@ -27,7 +30,7 @@ const utils = {
 	 * @param {string} [color='green'] - Colour of the message.
 	 * @returns vscode.StatusBarItem
 	 */
-	showStatusMessage: function (message, removeAfter = 0, color = null) {
+	showStatusMessage(message, removeAfter = 0, color = null) {
 		this.hideStatusMessage();
 
 		if (!color) {
@@ -59,7 +62,7 @@ const utils = {
 	/**
 	 * Hides any currently active status message.
 	 */
-	hideStatusMessage: function() {
+	hideStatusMessage() {
 		if (this._sb) {
 			this._sb.hide();
 		}
@@ -150,7 +153,7 @@ const utils = {
 	 * Adds an OS-specific trailing separator to a path (unless the path
 	 * consists solely of a separator).
 	 */
-	addTrailingSeperator: function (pathname, separator = '/') {
+	addTrailingSeperator(pathname, separator = '/') {
 		if (!pathname.endsWith(separator)) {
 			return pathname + separator;
 		}
@@ -162,12 +165,84 @@ const utils = {
 	 * Adds an OS-specific leading separator to a path (unless the path
 	 * consists solely of a separator).
 	 */
-	addLeadingSeperator: function (pathname, separator = '/') {
+	addLeadingSeperator(pathname, separator = '/') {
 		if (!pathname.startsWith(separator)) {
 			return pathname + pathname;
 		}
 
 		return pathname;
+	},
+
+	/**
+	 * Writes to a file from stream data.
+	 * @param {stream} read - Readable Stream stream object.
+	 * @param {string} filename - Absolute filename to write to.
+	 * @param {boolean} useTmpFile - Whether to use a temporary file or write
+	 * directly to the target file.
+	 * @returns {promise} Resolving on success, rejecting on failure
+	 */
+	writeFileFromStream(read, filename, useTmpFile = true) {
+		return new Promise((resolve, reject) => {
+			let tmpFilename, streamError, write;
+
+			if (useTmpFile) {
+				tmpFilename = this.getTmpFile(false);
+				write = fs.createWriteStream(tmpFilename);
+			} else {
+				write = fs.createWriteStream(filename);
+			}
+
+			function cleanUpAndReject(error) {
+				streamError = error;
+
+				read.destroy();
+				write.end();
+
+				reject(error && error.message);
+			}
+
+			// Set up write stream
+			write.on('error', cleanUpAndReject);
+
+			write.on('finish', () => {
+				// Writing has finished (and thusly so has reading)
+				let tmpRead;
+
+				if (streamError) {
+					return;
+				}
+
+				if (!useTmpFile) {
+					return resolve();
+				}
+
+				tmpRead = fs.createReadStream(tmpFilename);
+
+				// Copy file from temporary file to the required location
+				this.writeFileFromStream(tmpRead, filename, false)
+					.then(resolve, reject);
+			});
+
+			read.on('error', cleanUpAndReject);
+			read.pipe(write);
+		});
+	},
+
+	/**
+	 * Create a temporary file and return its filename.
+	 * @param {boolean} [getUri=true] - Whether to return a URI or a string.
+	 * @return {string} Filename created.
+	 */
+	getTmpFile(getUri = true) {
+		let tmpobj = tmp.fileSync({
+			prefix: constants.TMP_FILE_PREFIX
+		});
+
+		if (getUri) {
+			return vscode.Uri.file(tmpobj.name);
+		}
+
+		return tmpobj.name;
 	}
 };
 

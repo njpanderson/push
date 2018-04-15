@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.2.1
+ - Improve handling of stream writing on SFTP downloads.
+
 ## 0.2
  - Add git support. Will upload files in the working copy.
  - Better handling of SFTP / Disconnect errors.

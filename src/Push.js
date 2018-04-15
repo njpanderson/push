@@ -175,7 +175,6 @@ class Push extends PushBase {
 			return;
 		}
 
-		console.log('active editor: ' + this.paths.getNormalPath(textEditor.document.uri));
 		if (
 			uploadQueue &&
 			(uploadQueue.tasks.length > 0 && uploadQueue.tasks.length < 100)
@@ -386,7 +385,7 @@ class Push extends PushBase {
 	diffRemote(uri) {
 		let config, tmpFile, remotePath;
 
-		tmpFile = this.paths.getTmpFile();
+		tmpFile = utils.getTmpFile();
 		config = this.configWithServiceSettings(uri);
 		remotePath = this.service.exec(
 			'convertUriToRemote',
