@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.2.2
+ - Further improvements to error handling. (Including directory listing).
+
 ## 0.2.1
  - Improve handling of stream writing on SFTP downloads.
 
