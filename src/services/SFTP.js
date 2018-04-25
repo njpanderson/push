@@ -103,7 +103,6 @@ class ServiceSFTP extends ServiceBase {
 			.then((client) => {
 				if (!client.lastUsed) {
 					// New client - connect first
-					console.log('Connecting to a new server instance...');
 					if (client.gateway) {
 						return this.openGatewayConnection(client);
 					} else {
