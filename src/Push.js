@@ -320,6 +320,12 @@ class Push extends PushBase {
 		});
 	}
 
+	/**
+	 * @description
+	 * Copies the "upload" queue over to the default queue and runs the default queue.
+	 * The upload queue is then emptied once the default queue has completed without
+	 * errors.
+	 */
 	execUploadQueue() {
 		let uploadQueue, queue;
 
