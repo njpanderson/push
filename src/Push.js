@@ -84,40 +84,6 @@ class Push extends PushBase {
 	}
 
 	/**
-	 * Lists all current queue items.
-	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 */
-	listQueueItems(queueDef) {
-		let queue = this.getQueue(queueDef, false);
-
-		if (queue) {
-			channel.appendLocalisedInfo();
-
-			queue.tasks.forEach((item) => {
-				if (item.actionTaken) {
-					channel.appendLine(item.actionTaken);
-				}
-			});
-		} else {
-			channel.appendLocalisedInfo('no_current_upload_queue');
-		}
-	}
-
-	/**
-	 * Removes a single item from a queue by its Uri.
-	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 * @param {*} uri - Uri of the item to remove.
-	 */
-	removeUploadQueuedItem(queueDef, uri) {
-		let queue = this.getQueue(queueDef, false);
-
-		if (queue) {
-			queue.removeTaskByUri(uri);
-			this.refreshExplorerQueues();
-		}
-	}
-
-	/**
 	 * Adds the files in the current Git working copy to the upload queue.
 	 * @param {boolean} [exec=`false`] - `true` to immediately upload, `false` to queue.
 	 */
@@ -468,6 +434,49 @@ class Push extends PushBase {
 				this.refreshExplorerQueues();
 				throw error;
 			});
+	}
+
+	/**
+	 * Lists all current queue items.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 */
+	listQueueItems(queueDef) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			channel.appendLocalisedInfo();
+
+			queue.tasks.forEach((item) => {
+				if (item.actionTaken) {
+					channel.appendLine(item.actionTaken);
+				}
+			});
+		} else {
+			channel.appendLocalisedInfo('no_current_upload_queue');
+		}
+	}
+
+	/**
+	 * Removes a single item from a queue by its Uri.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 * @param {*} uri - Uri of the item to remove.
+	 */
+	removeQueuedItem(queueDef, uri) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			queue.removeTaskByUri(uri);
+			this.refreshExplorerQueues();
+		}
+	}
+
+	clearQueue(queueDef) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			queue.empty();
+			this.refreshExplorerQueues();
+		}
 	}
 
 	/**

@@ -7,7 +7,7 @@ const Push = require('./Push');
  */
 class UI extends Push {
 	clearUploadQueue() {
-		// TODO: Write
+		super.clearQueue(Push.queueDefs.upload);
 	}
 
 	/**
@@ -26,7 +26,7 @@ class UI extends Push {
 			uri = this.paths.getFileSrc(context);
 		}
 
-		super.removeUploadQueuedItem(Push.queueDefs.upload, uri);
+		super.removeQueuedItem(Push.queueDefs.upload, uri);
 	}
 
 	queueGitChangedFiles() {
