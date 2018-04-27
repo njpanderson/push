@@ -277,9 +277,7 @@ class Queue {
 		} else {
 			// Complete queue
 			this.complete(results, fnCallback);
-
 			this.reportQueueResults(results);
-			fnCallback(results);
 		}
 	}
 
