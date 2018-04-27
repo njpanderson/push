@@ -142,6 +142,8 @@ class Queue {
 	 * @returns {promise} Resolving when the queue is complete.
 	 */
 	exec(fnProgress) {
+		let lastState;
+
 		// Failsafe to prevent a queue running more than once at a time
 		if (this.running) {
 			return Promise.reject(i18n.t('queue_running'));
@@ -159,6 +161,8 @@ class Queue {
 				title: 'Push'
 			}, (progress) => {
 				return new Promise((resolve, reject) => {
+					let state;
+
 					// Globally assign the rejection function for rejection outside
 					// of the promise
 					this.progressReject = reject;
@@ -167,19 +171,22 @@ class Queue {
 
 					// Create an interval to monitor the fnProgress function return value
 					this.progressInterval = setInterval(() => {
-						let state;
-
 						if (typeof fnProgress === 'function') {
 							state = fnProgress();
 						}
 
-						if (typeof state === 'string') {
-							// Value is defined - write to progress
-							progress.report({ message: i18n.t('processing_with_state', state) });
-						} else {
-							// No value - just use a generic progressing notice
-							progress.report({ message: i18n.t('processing') });
+						if (state !== lastState) {
+							// Update progress
+							if (typeof state === 'string') {
+								// Value is defined - write to progress
+								progress.report({ message: i18n.t('processing_with_state', state) });
+							} else {
+								// No value - just use a generic progressing notice
+								progress.report({ message: i18n.t('processing') });
+							}
 						}
+
+						lastState = state;
 					}, 10);
 
 					// Execute all queue items in serial
