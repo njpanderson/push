@@ -244,7 +244,7 @@ class Queue {
 					}
 
 					// Loop
-					this.loop(fnCallback, results);
+					this._loop(fnCallback, results);
 				})
 				.catch((error) => {
 					// Function/Promise was rejected
@@ -271,7 +271,7 @@ class Queue {
 						channel.appendError(error);
 
 						// Loop
-						this.loop(fnCallback, results);
+						this._loop(fnCallback, results);
 					}
 				});
 		} else {
@@ -286,7 +286,7 @@ class Queue {
 	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
 	 * @param {object} results - Results object, as supplied to #execQueueItems
 	 */
-	loop(fnCallback, results) {
+	_loop(fnCallback, results) {
 		this._tasks.shift();
 		this.execQueueItems(fnCallback, results);
 	}
