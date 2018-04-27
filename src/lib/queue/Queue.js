@@ -137,8 +137,9 @@ class Queue {
 	}
 
 	/**
-	 * Invokes all stored functions within the queue, returning a promise
+	 * Starts queue execution, returning a promise.
 	 * @param {function} fnProgress - Function to call when requesting progress updates.
+	 * @returns {promise} Resolving when the queue is complete.
 	 */
 	exec(fnProgress) {
 		// Failsafe to prevent a queue running more than once at a time
