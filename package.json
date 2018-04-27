@@ -447,16 +447,16 @@
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
-    "@types/node": "^6.0.102",
+    "@types/node": "^6.0.106",
     "eslint": "^3.19.0",
     "mocha": "^2.3.3",
-    "typescript": "^2.7.2",
-    "vscode": "^1.1.13"
+    "typescript": "^2.8.3",
+    "vscode": "^1.1.14"
   },
   "dependencies": {
     "glob": "^7.1.2",
     "jsonc-parser": "^1.0.3",
-    "micromatch": "^3.1.9",
+    "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^1.1.0",
