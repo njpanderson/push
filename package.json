@@ -2,14 +2,14 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "preview": true,
   "publisher": "njp-anderson",
   "engines": {
-    "vscode": "^1.14.0"
+    "vscode": "^1.22.0"
   },
   "license": "SEE LICENSE IN <LICENSE>",
-  "icon": "img/icon.png",
+  "icon": "https://raw.githubusercontent.com/njpanderson/push/master/img/icon.png",
   "keywords": [
     "sftp",
     "transfer",
