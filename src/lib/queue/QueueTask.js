@@ -39,7 +39,7 @@ class QueueTask {
 
 	_generateId(id) {
 		let hash;
-		console.log('generateId', id);
+
 		if (typeof id === 'undefined' || !id) {
 			return null;
 		}

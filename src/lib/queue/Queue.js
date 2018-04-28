@@ -30,8 +30,8 @@ class Queue {
 			this.status.command = this.options.statusCommand;
 		}
 
-		// Global progress callbacks for external use
-		this.progressReject = null;
+		// Global progress callbacks for use outside of promises
+		this.execProgressReject = null;
 	}
 
 	/**
@@ -165,7 +165,7 @@ class Queue {
 
 					// Globally assign the rejection function for rejection outside
 					// of the promise
-					this.progressReject = reject;
+					this.execProgressReject = reject;
 
 					progress.report({ message: i18n.t('processing') });
 
@@ -230,6 +230,8 @@ class Queue {
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()
 				.then((result) => {
+					this.currentTask = null;
+
 					// Function/Promise was resolved
 					if (result !== false) {
 						// Add to success list if the result from the function is anything
@@ -248,16 +250,18 @@ class Queue {
 				})
 				.catch((error) => {
 					// Function/Promise was rejected
+					this.currentTask = null;
+
 					if (error instanceof Error) {
 						// Thrown Errors will stop the queue as well as alerting the user
 						channel.appendError(error);
 						channel.show();
 
 						// Stop queue
-						this.stop(true, this.options.emptyOnFail, results, fnCallback);
-
-						// Trigger callback
-						fnCallback(results);
+						this.stop(true, this.options.emptyOnFail)
+							.then(() => {
+								this.complete(results, fnCallback);
+							});
 
 						throw error;
 					} else if (typeof error === 'string') {
@@ -296,7 +300,7 @@ class Queue {
 	 * @returns {promise} - A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
-	stop(silent = false, clearQueue = true, results, fnCallback) {
+	stop(silent = false, clearQueue = true) {
 		if (this.running) {
 			if (!silent) {
 				// If this stop isn't an intentional use action, let's allow
@@ -309,16 +313,14 @@ class Queue {
 				this.empty();
 			}
 
-			this.complete(results, fnCallback);
-
 			if (this.progressInterval) {
 				// Stop the status progress monitor timer
 				clearInterval(this.progressInterval);
 			}
 
-			if (this.progressReject) {
+			if (this.execProgressReject) {
 				// Reject the globally assigned progress promise (if set)
-				this.progressReject();
+				this.execProgressReject();
 			}
 		}
 
@@ -326,7 +328,7 @@ class Queue {
 	}
 
 	/**
-	 * Invoked on queue completion.
+	 * Invoked on queue completion (regardless of success).
 	 * @param {mixed} results - Result data from the queue process
 	 * @param {function} fnCallback - Callback function to invoke
 	 */
@@ -415,7 +417,7 @@ class Queue {
 	 * @param {mixed} value - Context value
 	 */
 	_setContext(context, value) {
-		console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
+		// console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
 		return this;
 	}

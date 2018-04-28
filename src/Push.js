@@ -48,7 +48,6 @@ class Push extends PushBase {
 	 */
 	setConfig() {
 		super.setConfig();
-		console.log('local setconfig');
 
 		if (this.setContexts) {
 			this.setContexts();
@@ -146,7 +145,6 @@ class Push extends PushBase {
 			(uploadQueue.tasks.length > 0 && uploadQueue.tasks.length < 100)
 		) {
 			// Make sure tasks exist and hard limit of 100
-			console.log('task', uploadQueue.hasTaskByUri(textEditor.document.uri));
 			this.setContext(
 				Push.contexts.activeEditorInUploadQueue,
 				uploadQueue.hasTaskByUri(textEditor.document.uri)
@@ -509,7 +507,7 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
-		console.log(`Setting push context: push:${context} to "${value}"`);
+		// console.log(`Setting push context: push:${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
@@ -571,24 +569,27 @@ class Push extends PushBase {
 
 				this.getQueue(queueDef)
 					.stop()
-					.then((result) => {
-						resolve(result);
-						!silent && channel.appendLocalisedInfo(
-							'queue_cancelled',
-							queueDef.id
-						);
-					})
-					.catch((error) => {
-						reject(error);
-					});
+						.then((result) => {
+							resolve(result);
+
+							!silent && channel.appendLocalisedInfo(
+								'queue_cancelled',
+								queueDef.id
+							);
+						})
+						.catch((error) => {
+							reject(error);
+						});
 
 				if (force) {
 					// Ensure the service stops in addition to the queue emptying
 					this.service.stop()
 						.then(() => {
 							clearTimeout(timer);
+							resolve();
 						}, () => {
 							clearTimeout(timer);
+							reject();
 						});
 				}
 			});

@@ -410,7 +410,7 @@ class ServiceSFTP extends ServiceBase {
 								}
 
 								// Close SSH gateway connection, if exists
-								if (this.clients[hash].gateway) {
+								if (this.clients[hash] && this.clients[hash].gateway) {
 									this.clients[hash].gateway.end();
 								}
 
