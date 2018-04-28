@@ -10,16 +10,38 @@ const utils = {
 	_timeouts: {},
 	_sb: null,
 
+	/**
+	 * Show an informational message using the VS Code interface
+	 * @param {string} message - Message to display.
+	 */
 	showMessage(message) {
-		utils.displayErrorOrString('showInformationMessage', message, [...arguments].slice(1));
+		utils.displayErrorOrString('showInformationMessage', message);
 	},
 
+	/**
+	 * @description
+	 * Show a localised informational message using the VS Code interface.
+	 * Recieves the same arguments as i18n#t
+	 * @see i18n#t
+	 */
+	showLocalisedMessage() {
+		utils.showMessage(i18n.t.apply(i18n, [...arguments]));
+	},
+
+	/**
+	 * Show an error message using the VS Code interface
+	 * @param {string} message - Message to display.
+	 */
 	showError(message) {
-		utils.displayErrorOrString('showErrorMessage', message, [...arguments].slice(1));
+		utils.displayErrorOrString('showErrorMessage', message);
 	},
 
+	/**
+	 * Show a warning message using the VS Code interface
+	 * @param {string} message - Message to display.
+	 */
 	showWarning(message) {
-		utils.displayErrorOrString('showWarningMessage', message, [...arguments].slice(1));
+		utils.displayErrorOrString('showWarningMessage', message);
 	},
 
 	/**
@@ -68,28 +90,21 @@ const utils = {
 		}
 	},
 
-	displayErrorOrString(method, data, replacementVars = []) {
+	/**
+	 * Display an Error object or string using the VS code interface.
+	 * @param {string} method - Method to use (one of `showXXXMessage` methods).
+	 * @param {error|string} data - Data to display.
+	 */
+	displayErrorOrString(method, data) {
 		if (data instanceof Error) {
 			vscode.window[method](
-				`Push: ${utils.parseTemplate(data.message, replacementVars)}`
+				`Push: ${data.message}`
 			);
 		} else {
 			vscode.window[method](
-				`Push: ${utils.parseTemplate(data, replacementVars)}`
+				`Push: ${data}`
 			);
 		}
-	},
-
-	parseTemplate(data, replacementVars = []) {
-		if (replacementVars.length === 0) {
-			return data;
-		}
-
-		replacementVars.forEach((item, index) => {
-			data = data.replace('$' + (index + 1), item);
-		});
-
-		return data;
 	},
 
 	showFileCollisionPicker(name, callback, queueLength = 0) {
