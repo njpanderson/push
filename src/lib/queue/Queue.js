@@ -19,6 +19,13 @@ class Queue {
 		this.currentTask = null;
 		this.progressInterval = null;
 
+		/**
+		 * A variable intended to update with the number of tasks within the queue,
+		 * which is specifically unmutated during queue execution. Can be used to
+		 * track queue progress.
+		 */
+		this.addedTaskLength = 0;
+
 		this.setOptions(options);
 
 		this.status = vscode.window.createStatusBarItem(
@@ -67,6 +74,7 @@ class Queue {
 		if (!this.getTask(task.id)) {
 			// Only push the task if one doesn't already exist with this id
 			this._tasks.push(task);
+			this._taskLength = this._tasks.length;
 		}
 
 		this._updateStatus();
@@ -77,7 +85,12 @@ class Queue {
 	 * @param {QueueTask[]} tasks - The tasks to add.
 	 */
 	addTasks(tasks) {
+		if (tasks.length === 0) {
+			return;
+		}
+
 		this._tasks = this._tasks.concat(tasks);
+		this._updateStatus();
 	}
 
 	/**
@@ -161,7 +174,7 @@ class Queue {
 				title: 'Push'
 			}, (progress) => {
 				return new Promise((resolve, reject) => {
-					let state;
+					let state, currentState, currentTaskNum;
 
 					// Globally assign the rejection function for rejection outside
 					// of the promise
@@ -172,17 +185,33 @@ class Queue {
 					// Create an interval to monitor the fnProgress function return value
 					this.progressInterval = setInterval(() => {
 						if (typeof fnProgress === 'function') {
-							state = fnProgress();
+							currentState = fnProgress();
 						}
+
+						currentTaskNum = ((this.addedTaskLength - this._tasks.length) + 1);
+						state = `${currentState}${currentTaskNum}${this.addedTaskLength}`;
 
 						if (state !== lastState) {
 							// Update progress
-							if (typeof state === 'string') {
+							if (typeof currentState === 'string') {
 								// Value is defined - write to progress
-								progress.report({ message: i18n.t('processing_with_state', state) });
+								progress.report({
+									message: i18n.t(
+										'processing_with_state',
+										currentState,
+										currentTaskNum,
+										this.addedTaskLength
+									)
+								});
 							} else {
 								// No value - just use a generic progressing notice
-								progress.report({ message: i18n.t('processing') });
+								progress.report({
+									message: i18n.t(
+										'processing',
+										currentTaskNum,
+										this.addedTaskLength
+									)
+								});
 							}
 						}
 
@@ -193,7 +222,7 @@ class Queue {
 					this.execQueueItems(
 						(results) => {
 							clearInterval(this.progressInterval);
-							this._updateStatus();
+							this._updateStatus(false);
 							resolve(results);
 						}
 					);
@@ -392,8 +421,10 @@ class Queue {
 
 	/**
 	 * Update the general queue status.
+	 * @param {boolean} [updateAddedTasks=true] - Update the 'added tasks' variable.
+	 * Not necessary (or wise) to update while the queue is running.
 	 */
-	_updateStatus() {
+	_updateStatus(updateAddedTasks = true) {
 		let tasks = this._tasks.filter((task) => task.id);
 
 		this._setContext(Queue.contexts.itemCount, tasks.length);
@@ -408,6 +439,10 @@ class Queue {
 			this.status.show();
 		} else {
 			this.status.hide();
+		}
+
+		if (updateAddedTasks) {
+			this.addedTaskLength = tasks.length;
 		}
 	}
 
