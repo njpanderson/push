@@ -376,6 +376,10 @@
           "when": "push:hasUploadQueue"
         },
         {
+          "command": "push.clearUploadQueue",
+          "when": "push:hasUploadQueue"
+        },
+        {
           "command": "push.removeQueuedItem",
           "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
         },
