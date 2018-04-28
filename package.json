@@ -9,7 +9,7 @@
     "vscode": "^1.22.0"
   },
   "license": "SEE LICENSE IN <LICENSE>",
-  "icon": "https://raw.githubusercontent.com/njpanderson/push/master/img/icon.png",
+  "icon": "img/icon.png",
   "keywords": [
     "sftp",
     "transfer",
