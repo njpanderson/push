@@ -10,16 +10,38 @@ const utils = {
 	_timeouts: {},
 	_sb: null,
 
+	/**
+	 * Show an informational message using the VS Code interface
+	 * @param {string} message - Message to display.
+	 */
 	showMessage(message) {
-		utils.displayErrorOrString('showInformationMessage', message, [...arguments].slice(1));
+		utils.displayErrorOrString('showInformationMessage', message);
 	},
 
+	/**
+	 * @description
+	 * Show a localised informational message using the VS Code interface.
+	 * Recieves the same arguments as i18n#t
+	 * @see i18n#t
+	 */
+	showLocalisedMessage() {
+		utils.showMessage(i18n.t.apply(i18n, [...arguments]));
+	},
+
+	/**
+	 * Show an error message using the VS Code interface
+	 * @param {string} message - Message to display.
+	 */
 	showError(message) {
-		utils.displayErrorOrString('showErrorMessage', message, [...arguments].slice(1));
+		utils.displayErrorOrString('showErrorMessage', message);
 	},
 
+	/**
+	 * Show a warning message using the VS Code interface
+	 * @param {string} message - Message to display.
+	 */
 	showWarning(message) {
-		utils.displayErrorOrString('showWarningMessage', message, [...arguments].slice(1));
+		utils.displayErrorOrString('showWarningMessage', message);
 	},
 
 	/**
@@ -68,28 +90,21 @@ const utils = {
 		}
 	},
 
-	displayErrorOrString(method, data, replacementVars = []) {
+	/**
+	 * Display an Error object or string using the VS code interface.
+	 * @param {string} method - Method to use (one of `showXXXMessage` methods).
+	 * @param {error|string} data - Data to display.
+	 */
+	displayErrorOrString(method, data) {
 		if (data instanceof Error) {
 			vscode.window[method](
-				`Push: ${utils.parseTemplate(data.message, replacementVars)}`
+				`Push: ${data.message}`
 			);
 		} else {
 			vscode.window[method](
-				`Push: ${utils.parseTemplate(data, replacementVars)}`
+				`Push: ${data}`
 			);
 		}
-	},
-
-	parseTemplate(data, replacementVars = []) {
-		if (replacementVars.length === 0) {
-			return data;
-		}
-
-		replacementVars.forEach((item, index) => {
-			data = data.replace('$' + (index + 1), item);
-		});
-
-		return data;
 	},
 
 	showFileCollisionPicker(name, callback, queueLength = 0) {
@@ -181,28 +196,34 @@ const utils = {
 	 * directly to the target file.
 	 * @returns {promise} Resolving on success, rejecting on failure
 	 */
-	writeFileFromStream(read, filename, useTmpFile = true) {
+	writeFileFromStream(read, writeFilename, readFilename = '', useTmpFile = true) {
 		return new Promise((resolve, reject) => {
-			let tmpFilename, streamError, write;
+			let writeFile = writeFilename,
+				streamError, write;
 
 			if (useTmpFile) {
-				tmpFilename = this.getTmpFile(false);
-				write = fs.createWriteStream(tmpFilename);
-			} else {
-				write = fs.createWriteStream(filename);
+				writeFile = this.getTmpFile(false);
 			}
 
-			function cleanUpAndReject(error) {
+			write = fs.createWriteStream(writeFile);
+
+			function cleanUp(error) {
 				streamError = error;
 
 				read.destroy();
 				write.end();
-
-				reject(error && error.message);
 			}
 
 			// Set up write stream
-			write.on('error', cleanUpAndReject);
+			write.on('error', (error) => {
+				cleanUp(error);
+
+				reject(i18n.t(
+					'stream_write',
+					writeFile,
+					(error && error.message)
+				));
+			});
 
 			write.on('finish', () => {
 				// Writing has finished (and thusly so has reading)
@@ -216,14 +237,25 @@ const utils = {
 					return resolve();
 				}
 
-				tmpRead = fs.createReadStream(tmpFilename);
+				tmpRead = fs.createReadStream(writeFile);
 
 				// Copy file from temporary file to the required location
-				this.writeFileFromStream(tmpRead, filename, false)
+				this.writeFileFromStream(tmpRead, writeFilename, readFilename, false)
 					.then(resolve, reject);
 			});
 
-			read.on('error', cleanUpAndReject);
+			// Set up read stream
+			read.on('error', (error) => {
+				cleanUp(error);
+
+				reject(i18n.t(
+					'stream_read',
+					(readFilename != '') ? readFilename : null,
+					(error && error.message)
+				));
+			});
+
+			// Begin the stream transfer
 			read.pipe(write);
 		});
 	},

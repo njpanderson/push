@@ -19,6 +19,13 @@ class Queue {
 		this.currentTask = null;
 		this.progressInterval = null;
 
+		/**
+		 * A variable intended to update with the number of tasks within the queue,
+		 * which is specifically unmutated during queue execution. Can be used to
+		 * track queue progress.
+		 */
+		this.addedTaskLength = 0;
+
 		this.setOptions(options);
 
 		this.status = vscode.window.createStatusBarItem(
@@ -30,8 +37,8 @@ class Queue {
 			this.status.command = this.options.statusCommand;
 		}
 
-		// Global progress callbacks for external use
-		this.progressReject = null;
+		// Global progress callbacks for use outside of promises
+		this.execProgressReject = null;
 	}
 
 	/**
@@ -67,6 +74,7 @@ class Queue {
 		if (!this.getTask(task.id)) {
 			// Only push the task if one doesn't already exist with this id
 			this._tasks.push(task);
+			this._taskLength = this._tasks.length;
 		}
 
 		this._updateStatus();
@@ -77,7 +85,12 @@ class Queue {
 	 * @param {QueueTask[]} tasks - The tasks to add.
 	 */
 	addTasks(tasks) {
+		if (tasks.length === 0) {
+			return;
+		}
+
 		this._tasks = this._tasks.concat(tasks);
+		this._updateStatus();
 	}
 
 	/**
@@ -137,10 +150,13 @@ class Queue {
 	}
 
 	/**
-	 * Invokes all stored functions within the queue, returning a promise
+	 * Starts queue execution, returning a promise.
 	 * @param {function} fnProgress - Function to call when requesting progress updates.
+	 * @returns {promise} Resolving when the queue is complete.
 	 */
 	exec(fnProgress) {
+		let lastState;
+
 		// Failsafe to prevent a queue running more than once at a time
 		if (this.running) {
 			return Promise.reject(i18n.t('queue_running'));
@@ -158,34 +174,55 @@ class Queue {
 				title: 'Push'
 			}, (progress) => {
 				return new Promise((resolve, reject) => {
+					let state, currentState, currentTaskNum;
+
 					// Globally assign the rejection function for rejection outside
 					// of the promise
-					this.progressReject = reject;
+					this.execProgressReject = reject;
 
 					progress.report({ message: i18n.t('processing') });
 
 					// Create an interval to monitor the fnProgress function return value
 					this.progressInterval = setInterval(() => {
-						let state;
-
 						if (typeof fnProgress === 'function') {
-							state = fnProgress();
+							currentState = fnProgress();
 						}
 
-						if (typeof state === 'string') {
-							// Value is defined - write to progress
-							progress.report({ message: i18n.t('processing_with_state', state) });
-						} else {
-							// No value - just use a generic progressing notice
-							progress.report({ message: i18n.t('processing') });
+						currentTaskNum = ((this.addedTaskLength - this._tasks.length) + 1);
+						state = `${currentState}${currentTaskNum}${this.addedTaskLength}`;
+
+						if (state !== lastState) {
+							// Update progress
+							if (typeof currentState === 'string') {
+								// Value is defined - write to progress
+								progress.report({
+									message: i18n.t(
+										'processing_with_state',
+										currentState,
+										currentTaskNum,
+										this.addedTaskLength
+									)
+								});
+							} else {
+								// No value - just use a generic progressing notice
+								progress.report({
+									message: i18n.t(
+										'processing',
+										currentTaskNum,
+										this.addedTaskLength
+									)
+								});
+							}
 						}
+
+						lastState = state;
 					}, 10);
 
 					// Execute all queue items in serial
 					this.execQueueItems(
 						(results) => {
 							clearInterval(this.progressInterval);
-							this._updateStatus();
+							this._updateStatus(false);
 							resolve(results);
 						}
 					);
@@ -222,6 +259,8 @@ class Queue {
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()
 				.then((result) => {
+					this.currentTask = null;
+
 					// Function/Promise was resolved
 					if (result !== false) {
 						// Add to success list if the result from the function is anything
@@ -236,20 +275,22 @@ class Queue {
 					}
 
 					// Loop
-					this.loop(fnCallback, results);
+					this._loop(fnCallback, results);
 				})
 				.catch((error) => {
 					// Function/Promise was rejected
+					this.currentTask = null;
+
 					if (error instanceof Error) {
 						// Thrown Errors will stop the queue as well as alerting the user
 						channel.appendError(error);
 						channel.show();
 
 						// Stop queue
-						this.stop(true, this.options.emptyOnFail, results, fnCallback);
-
-						// Trigger callback
-						fnCallback(results);
+						this.stop(true, this.options.emptyOnFail)
+							.then(() => {
+								this.complete(results, fnCallback);
+							});
 
 						throw error;
 					} else if (typeof error === 'string') {
@@ -263,15 +304,13 @@ class Queue {
 						channel.appendError(error);
 
 						// Loop
-						this.loop(fnCallback, results);
+						this._loop(fnCallback, results);
 					}
 				});
 		} else {
 			// Complete queue
 			this.complete(results, fnCallback);
-
 			this.reportQueueResults(results);
-			fnCallback(results);
 		}
 	}
 
@@ -280,7 +319,7 @@ class Queue {
 	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
 	 * @param {object} results - Results object, as supplied to #execQueueItems
 	 */
-	loop(fnCallback, results) {
+	_loop(fnCallback, results) {
 		this._tasks.shift();
 		this.execQueueItems(fnCallback, results);
 	}
@@ -290,7 +329,7 @@ class Queue {
 	 * @returns {promise} - A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
-	stop(silent = false, clearQueue = true, results, fnCallback) {
+	stop(silent = false, clearQueue = true) {
 		if (this.running) {
 			if (!silent) {
 				// If this stop isn't an intentional use action, let's allow
@@ -303,16 +342,14 @@ class Queue {
 				this.empty();
 			}
 
-			this.complete(results, fnCallback);
-
 			if (this.progressInterval) {
 				// Stop the status progress monitor timer
 				clearInterval(this.progressInterval);
 			}
 
-			if (this.progressReject) {
+			if (this.execProgressReject) {
 				// Reject the globally assigned progress promise (if set)
-				this.progressReject();
+				this.execProgressReject();
 			}
 		}
 
@@ -320,7 +357,7 @@ class Queue {
 	}
 
 	/**
-	 * Invoked on queue completion.
+	 * Invoked on queue completion (regardless of success).
 	 * @param {mixed} results - Result data from the queue process
 	 * @param {function} fnCallback - Callback function to invoke
 	 */
@@ -337,8 +374,13 @@ class Queue {
 	 * Empties the current queue
 	 */
 	empty() {
-		this._tasks = [];
-		this._updateStatus();
+		if (this._tasks.length) {
+			this._tasks = [];
+			this._updateStatus();
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -384,8 +426,10 @@ class Queue {
 
 	/**
 	 * Update the general queue status.
+	 * @param {boolean} [updateAddedTasks=true] - Update the 'added tasks' variable.
+	 * Not necessary (or wise) to update while the queue is running.
 	 */
-	_updateStatus() {
+	_updateStatus(updateAddedTasks = true) {
 		let tasks = this._tasks.filter((task) => task.id);
 
 		this._setContext(Queue.contexts.itemCount, tasks.length);
@@ -401,6 +445,10 @@ class Queue {
 		} else {
 			this.status.hide();
 		}
+
+		if (updateAddedTasks) {
+			this.addedTaskLength = tasks.length;
+		}
 	}
 
 	/**
@@ -409,7 +457,7 @@ class Queue {
 	 * @param {mixed} value - Context value
 	 */
 	_setContext(context, value) {
-		console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
+		// console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
 		return this;
 	}

@@ -37,10 +37,6 @@ class Channel {
 
 		this.channel.show();
 
-		if (arguments.length > 1) {
-			message = utils.parseTemplate(message, [...arguments].slice(1));
-		}
-
 		return this.channel.appendLine(`⚠️ ${message}`);
 	}
 
@@ -76,10 +72,6 @@ class Channel {
 	 * @param {string} string - Information string to show.
 	 */
 	appendInfo(string) {
-		if (arguments.length > 1) {
-			string = utils.parseTemplate(string, [...arguments].slice(1));
-		}
-
 		return this.channel.appendLine(`ℹ️ ${string}`);
 	}
 

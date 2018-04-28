@@ -48,7 +48,6 @@ class Push extends PushBase {
 	 */
 	setConfig() {
 		super.setConfig();
-		console.log('local setconfig');
 
 		if (this.setContexts) {
 			this.setContexts();
@@ -81,40 +80,6 @@ class Push extends PushBase {
 				this.stopCancellableQueues(!!hadError, !!hadError);
 			}
 		});
-	}
-
-	/**
-	 * Lists all current queue items.
-	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 */
-	listQueueItems(queueDef) {
-		let queue = this.getQueue(queueDef, false);
-
-		if (queue) {
-			channel.appendLocalisedInfo();
-
-			queue.tasks.forEach((item) => {
-				if (item.actionTaken) {
-					channel.appendLine(item.actionTaken);
-				}
-			});
-		} else {
-			channel.appendLocalisedInfo('no_current_upload_queue');
-		}
-	}
-
-	/**
-	 * Removes a single item from a queue by its Uri.
-	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 * @param {*} uri - Uri of the item to remove.
-	 */
-	removeUploadQueuedItem(queueDef, uri) {
-		let queue = this.getQueue(queueDef, false);
-
-		if (queue) {
-			queue.removeTaskByUri(uri);
-			this.refreshExplorerQueues();
-		}
 	}
 
 	/**
@@ -180,7 +145,6 @@ class Push extends PushBase {
 			(uploadQueue.tasks.length > 0 && uploadQueue.tasks.length < 100)
 		) {
 			// Make sure tasks exist and hard limit of 100
-			console.log('task', uploadQueue.hasTaskByUri(textEditor.document.uri));
 			this.setContext(
 				Push.contexts.activeEditorInUploadQueue,
 				uploadQueue.hasTaskByUri(textEditor.document.uri)
@@ -354,6 +318,12 @@ class Push extends PushBase {
 		});
 	}
 
+	/**
+	 * @description
+	 * Copies the "upload" queue over to the default queue and runs the default queue.
+	 * The upload queue is then emptied once the default queue has completed without
+	 * errors.
+	 */
 	execUploadQueue() {
 		let uploadQueue, queue;
 
@@ -471,6 +441,51 @@ class Push extends PushBase {
 	}
 
 	/**
+	 * Lists all current queue items.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 */
+	listQueueItems(queueDef) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			channel.appendLocalisedInfo();
+
+			queue.tasks.forEach((item) => {
+				if (item.actionTaken) {
+					channel.appendLine(item.actionTaken);
+				}
+			});
+		} else {
+			channel.appendLocalisedInfo('no_current_upload_queue');
+		}
+	}
+
+	/**
+	 * Removes a single item from a queue by its Uri.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 * @param {*} uri - Uri of the item to remove.
+	 */
+	removeQueuedItem(queueDef, uri) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			queue.removeTaskByUri(uri);
+			this.refreshExplorerQueues();
+		}
+	}
+
+	clearQueue(queueDef) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue && queue.empty()) {
+			this.refreshExplorerQueues();
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Refresh the Push explorer queue data.
 	 */
 	refreshExplorerQueues() {
@@ -494,7 +509,7 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
-		console.log(`Setting push context: push:${context} to "${value}"`);
+		// console.log(`Setting push context: push:${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
@@ -556,24 +571,27 @@ class Push extends PushBase {
 
 				this.getQueue(queueDef)
 					.stop()
-					.then((result) => {
-						resolve(result);
-						!silent && channel.appendLocalisedInfo(
-							'queue_cancelled',
-							queueDef.id
-						);
-					})
-					.catch((error) => {
-						reject(error);
-					});
+						.then((result) => {
+							resolve(result);
+
+							!silent && channel.appendLocalisedInfo(
+								'queue_cancelled',
+								queueDef.id
+							);
+						})
+						.catch((error) => {
+							reject(error);
+						});
 
 				if (force) {
 					// Ensure the service stops in addition to the queue emptying
 					this.service.stop()
 						.then(() => {
 							clearTimeout(timer);
+							resolve();
 						}, () => {
 							clearTimeout(timer);
+							reject();
 						});
 				}
 			});

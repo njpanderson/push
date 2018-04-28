@@ -2,14 +2,14 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "preview": true,
   "publisher": "njp-anderson",
   "engines": {
-    "vscode": "^1.14.0"
+    "vscode": "^1.22.0"
   },
   "license": "SEE LICENSE IN <LICENSE>",
-  "icon": "img/icon.png",
+  "icon": "https://raw.githubusercontent.com/njpanderson/push/master/img/icon.png",
   "keywords": [
     "sftp",
     "transfer",
@@ -141,8 +141,17 @@
       },
       {
         "command": "push.removeQueuedItem",
-        "title": "Remove the current file from the queue",
+        "title": "Remove the current file from the upload queue",
         "category": "Push"
+      },
+      {
+        "command": "push.clearUploadQueue",
+        "title": "Remove all files from the upload queue",
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/trashcan.svg",
+          "light": "resources/light/trashcan.svg"
+        }
       },
       {
         "command": "push.queueGitChangedFiles",
@@ -367,6 +376,10 @@
           "when": "push:hasUploadQueue"
         },
         {
+          "command": "push.clearUploadQueue",
+          "when": "push:hasUploadQueue"
+        },
+        {
           "command": "push.removeQueuedItem",
           "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
         },
@@ -390,6 +403,11 @@
           "command": "push.uploadQueuedItems",
           "when": "view == push.pushExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
           "group": "navigation@3"
+        },
+        {
+          "command": "push.clearUploadQueue",
+          "when": "view == push.pushExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -433,16 +451,16 @@
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
-    "@types/node": "^6.0.102",
+    "@types/node": "^6.0.106",
     "eslint": "^3.19.0",
     "mocha": "^2.3.3",
-    "typescript": "^2.7.2",
-    "vscode": "^1.1.13"
+    "typescript": "^2.8.3",
+    "vscode": "^1.1.14"
   },
   "dependencies": {
     "glob": "^7.1.2",
     "jsonc-parser": "^1.0.3",
-    "micromatch": "^3.1.9",
+    "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^1.1.0",
