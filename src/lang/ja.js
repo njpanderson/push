@@ -5,6 +5,7 @@ module.exports = {
 	'comm_settings_imported': '${1}からインポートされた設定\n',
 	'no_locale': 'ロケール "${1}"は存在しません。 .jsファイルが作成されていますか？',
 	'upload_queue_disabled': 'アップロードキューが無効です - ワークスペースの設定を確認してください。',
+	'upload_queue_cleared': 'アップロードキューがクリアされました',
 	'select_workspace_root': 'ワークスペースのルートディレクトリを選択します。',
 	'running_tasks_in_queue': 'キューで${1}つのタスクを実行中...',
 	'processing': '処理(${1}/${2})',

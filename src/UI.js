@@ -1,13 +1,16 @@
 const vscode = require('vscode');
 
 const Push = require('./Push');
+const utils = require('./lib/utils');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
  */
 class UI extends Push {
 	clearUploadQueue() {
-		super.clearQueue(Push.queueDefs.upload);
+		if (super.clearQueue(Push.queueDefs.upload)) {
+			utils.showLocalisedMessage('upload_queue_cleared');
+		}
 	}
 
 	/**

@@ -374,8 +374,13 @@ class Queue {
 	 * Empties the current queue
 	 */
 	empty() {
-		this._tasks = [];
-		this._updateStatus();
+		if (this._tasks.length) {
+			this._tasks = [];
+			this._updateStatus();
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

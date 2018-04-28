@@ -477,10 +477,12 @@ class Push extends PushBase {
 	clearQueue(queueDef) {
 		let queue = this.getQueue(queueDef, false);
 
-		if (queue) {
-			queue.empty();
+		if (queue && queue.empty()) {
 			this.refreshExplorerQueues();
+			return true;
 		}
+
+		return false;
 	}
 
 	/**

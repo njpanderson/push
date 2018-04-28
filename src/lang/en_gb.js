@@ -5,6 +5,7 @@ module.exports = {
 	'comm_settings_imported': 'Settings imported from ${1}\n',
 	'no_locale': 'Locale "${1}" does not exist. Has a .js file been created for it?',
 	'upload_queue_disabled': 'Upload queue is disabled - check workspace settings.',
+	'upload_queue_cleared': 'Upload queue cleared',
 	'select_workspace_root': 'Select a workspace root path:',
 	'running_tasks_in_queue': 'Running ${1} p{1:task:tasks} in queue...',
 	'processing': 'Processing (${1}/${2})',
