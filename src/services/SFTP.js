@@ -473,7 +473,7 @@ class ServiceSFTP extends ServiceBase {
 	 * @param {string} hash
 	 */
 	removeClient(hash) {
-		if (this.clients[hash]) {
+		if (this.clients[hash] && this.clients[hash].sftp) {
 			channel.appendLocalisedInfo(
 				'sftp_disconnected',
 				this.clients[hash].options.host,
