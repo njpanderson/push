@@ -1,17 +1,16 @@
 # Push
 
-**Warning: This extension is currently in preview. If you would like to test it, and experience bugs or issues, please see "Reporting Bugs" at the bottom.**
-
 Push is a file transfer extension. It is inspired in part by Sublime's fantastic SFTP plugin as well as Coda's workflow features, and provides you with a tool to upload and download files within a workspace.
 
 ## Features
 
 It currently provides:
 
- - Transfer of individual files
- - Transfer of folders
- - Queueing (and transfer after save bulk)
- - Watching of files within the project
+ - Transfer of individual files.
+ - Transfer of folders.
+ - Queueing (and transfer after save bulk).
+ - Watching of files within the project.
+ - SFTP gateway support - connect via an SSH gateway/bastion to your SFTP server.
 
 ## ⚡️ Quick setup
 
@@ -88,13 +87,13 @@ A third method of uploading files is to use the watch tool. This can be accessed
 
 Selecting this option will create a watcher for the file, or in the case of a folder, all of the files within it. Whenever any one of them is altered or created by either VS Code or another app, Push will attempt to upload them.
 
-#### Listing watched files
+#### Listing watched files and the upload queue
 
-If you loose track of which files and folders are being watched, either click on the ![Watching](https://raw.github.com/njpanderson/push/master/img/watching.png) icon in the status bar, or choose **List active watchers** from the command palette. A list of watchers similar to the below will appear:
+If you loose track of which files and folders are being watched, either click on the ![Watching](https://raw.github.com/njpanderson/push/master/img/watching.png) icon in the status bar, or use the explorer window to check the currently watched files as well as the current upload queue.
 
-![Watch file list output](https://raw.github.com/njpanderson/push/master/img/output-watched-paths.png)
+![Watch file list output](https://raw.github.com/njpanderson/push/master/img/explorer-window.png)
 
-You can use this list as a reference when removing previously added watchers.
+You can also remove items from the watch list or the upload queue from within this window, or clear the upload queue entirely.
 
 ## Service settings files
 
@@ -267,13 +266,7 @@ Found a bug? Great! Let me know about it in the [Github issue tracker](https://g
 
 ### Help! Push deleted all my files, wiped my server and/or made my wife leave me!
 
-First of all, that's terrible and of course I wouldn't wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which potentially cause data loss.
-
-## Roadmap
-
- - Better display for the watch/upload queue.
- - Adding Amazon S3 support.
- - Got a feature request? [Let me know in the issues](https://github.com/njpanderson/push/issues)!
+First of all, that's terrible and of course I wouldn't wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which could potentially cause data loss.
 
 ## Push in your language
 
