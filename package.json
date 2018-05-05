@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "preview": true,
   "publisher": "njp-anderson",
   "engines": {
