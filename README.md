@@ -17,8 +17,8 @@ It currently provides:
 Push supports many options and configuration modes. The most common of which is a single SFTP setup for an active workspace. The following steps will help you get set up in no time:
 
  1. Install Push from the [VS Code extension marketplace](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push).
- 2. In the command palette, choose **Create/Edit Push configuration** and then confirm the location, then choose the **SFTP** template.
- 3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, `password` (if not using keys), and a `root` path.
+ 2. In the command palette, choose **Create/Edit Push configuration** and confirm the location (usually your workspace root), then choose the **SFTP** template.
+ 3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, a `password` if not using keys, and the `root` path which will contain the workspace files, starting at the root defined by the location of the `push.settings.json` file.
  4. You should then be able to upload files within the workspace by using the explorer menu, title bars, or command palette.
 
 For more complete setup and configuration details, feel free to read on.
@@ -38,28 +38,28 @@ This extension contributes the following settings:
 | `ignoreGlobs` | `**/.DS_Store`,<br>`**/Thumbs.db`,<br>`**/desktop.ini`,<br>`**/.git/\*`,<br>`**/.svn/*` | A list of file globs to ignore when uploading. |
 | `queueCompleteMessageType` | `status` | Choose how to be notified on queue completion. Either `status`, or `message` for a permanent reminder. |
 | `statusMessageColor` | `notification.`<br>`infoBackground` | Choose the colour of the queue completion status message. |
+| `queueWatchedFiles` | `false` | When set to `true`, Push will queue watched files with changes detected instead of immediately uploading them. |
 
 ## Using Push
 Push has three main modes of operation: 1) As a standard, on-demand uploader, 2) as a queue-based uploader on save, or 3) as a file watching uploader. All three can be combined or ignored as your preferences dictate.
 
 ### How does Push upload?
-
 When Push uploads a file within the workspace, it does a few things to make sure the file gets into the right place on your remote location - regardless of which service is used:
 
- 1. Find the nearest `.push.settings.json` (or equivalent) to the file. Push will look upwards along the ancestor tree of the file to find this.
+ 1. Find the nearest `.push.settings.json` (or equivalent) to the file being uploaded. Push will look upwards along the ancestor tree of the file to find this.
  2. Connect to the service required and find the root path as defined.
  3. Use the root path as a basis for uploading the file at its own path, relative to the workspace.
- 4. Upload the file.
+ 4. Upload the file, optionally presenting overwrite options to the user.
 
 #### Root path resolving
+Root path resolving can be a tricky concept if you've not used it before. Simply put, it is a method by which Push figures out where the files should go, relative to where they are in your project.
 
-If, for instance, an SFTP connection has been defined in the settings file for your workspace, and it has a `root` of `/home/myaccount/public`, all files in your workspace will be uploaded to there as a base path.
+If, for instance, an SFTP connection has been defined in the settings file for your workspace, and it has a `root` of `/home/myaccount/public`, files will be uploaded there as a base path.
 
-For instance, if your workspace root was `/Users/myusername/Projects/myproject/` and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
+If your workspace root was `/Users/myusername/Projects/myproject/`, the `push.settings.json` file was in the root of this workspace, and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
 
 ### On demand uploading
-
-There are a few methods you can use to upload on-demand. Two of which are the command palette, and the context menu in the file explorer, seen below:
+There are a few methods you can use to upload on demand. Two of which are the command palette, and the context menu in the file explorer, seen below:
 
 **Command palette:**
 
@@ -73,19 +73,20 @@ The same two methods can be used to perform downloads, as well as most of the ot
 
 ### Queued uploading
 
-Another great feature of Push is that it will keep a list of all files you have edited within VS Code and let you upload them with a single shortcut. This defaults to `cmd-alt-p` (or `ctrl-alt-p` on Windows).
+Another great feature of Push is that it will keep a list of all files you have edited or are being watched within VS Code and let you upload them with a single shortcut. This defaults to `cmd-alt-p` (or `ctrl-alt-p` on Windows).
 
 Whenever a file is saved, and the queue is enabled, a ![Upload queue](https://raw.github.com/njpanderson/push/master/img/queue.png) icon with the number of queued items will appear in the status bar.
 
-Use the above shortcut, or select **Upload queued items** in the command palette to upload all of the files in a single operation.
+Use the above shortcut, or select **Upload queued items** in the command palette to upload all of the files within the queue in a single operation.
 
 ### File watching
-
 A third method of uploading files is to use the watch tool. This can be accessed from the explorer context menu:
 
 <img src="https://raw.github.com/njpanderson/push/master/img/context-watch.png" width="269" alt="Explorer context menu with watch selected"/>
 
 Selecting this option will create a watcher for the file, or in the case of a folder, all of the files within it. Whenever any one of them is altered or created by either VS Code or another app, Push will attempt to upload them.
+
+If `queueWatchedFiles` is set to `true`, then Push will instead queue the file for upload alongside any other items within the queue.
 
 #### Listing watched files and the upload queue
 
