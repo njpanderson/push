@@ -2,7 +2,6 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
-const tmp = require('tmp');
 const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
