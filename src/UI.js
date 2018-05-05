@@ -92,7 +92,11 @@ class UI extends Push {
 	 */
 	addWatch(uri) {
 		this.watch.add(this.paths.getFileSrc(uri), (uri) => {
-			this.upload(uri);
+			if (this.config.queueWatchedFiles) {
+				this.queueForUpload(uri);
+			} else {
+				this.upload(uri);
+			}
 		});
 	}
 

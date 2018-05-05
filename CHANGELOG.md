@@ -1,12 +1,17 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.0
+ - Updat/simplify wording within some context menus.
+ - Add option to queue watched files instead of upload them.
+ - Documentation updates.
+
 ## 0.3.0
  - Add gateway SSH abilities. See README for more information.
  - Fix queue stopping notification issues.
  - Add function to clear upload queue.
  - Improve status progress labelling.
- - General fixes and improvements
+ - General fixes and improvements.
 
 ## 0.2.2
  - Further improvements to error handling. (Including directory listing).
