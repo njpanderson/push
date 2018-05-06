@@ -285,6 +285,10 @@ class Paths {
 		return '';
 	}
 
+	isValidScheme(uri) {
+		return (uri.scheme === 'file');
+	}
+
 	getBaseName(uri) {
 		return path.basename(this.getNormalPath(uri));
 	}

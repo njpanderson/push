@@ -112,6 +112,10 @@ class Push extends PushBase {
 	didSaveTextDocument(textDocument) {
 		let settings;
 
+		if (!textDocument.uri || this.paths.isValidScheme(textDocument.uri)) {
+			return;
+		}
+
 		this.settings.clear();
 
 		settings = this.settings.getServerJSON(
@@ -627,6 +631,11 @@ class Push extends PushBase {
 		}
 
 		uris.forEach((uri, index) => {
+			// Check the source file is a usable scheme
+			if (!this.paths.isValidScheme(uri)) {
+				return;
+			}
+
 			// Check the source file isn't a directory
 			if (this.paths.isDirectory(uri)) {
 				throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
@@ -689,6 +698,11 @@ class Push extends PushBase {
 	 */
 	transferDirectory(uri, method) {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;
+
+		// Check the source directory is a usable scheme
+		if (!this.paths.isValidScheme(uri)) {
+			return;
+		}
 
 		if (!this.paths.isDirectory(uri)) {
 			throw new Error(
@@ -796,6 +810,19 @@ class Push extends PushBase {
 					}
 				});
 		});
+	}
+
+	/**
+	 * Checks if a Uri passed is usable by Push. Produces an error if not.
+	 * @param {Uri} uri - Uri to test.
+	 */
+	checkValidUriScheme(uri) {
+		if (this.paths.isValidScheme(uri)) {
+			return true;
+		}
+
+		utils.showError(i18n.t('invalid_uri_scheme', uri.scheme));
+		return false;
 	}
 }
 
