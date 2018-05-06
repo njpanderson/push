@@ -2,9 +2,10 @@
 All notable changes to Push will be documented in this file.
 
 ## 0.4.0
- - Updat/simplify wording within some context menus.
+ - Update/simplify wording within some context menus.
  - Add option to queue watched files instead of upload them.
  - Documentation updates.
+ - Add warning when using non-file schemes locally.
 
 ## 0.3.0
  - Add gateway SSH abilities. See README for more information.
