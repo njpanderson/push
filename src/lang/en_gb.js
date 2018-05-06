@@ -79,5 +79,6 @@ module.exports = {
 	'stream_write': 'Stream IO write error for file "${1}". Error: ${2}',
 	'cannot_list_directory': 'Directory "${1}" cannot be listed: ${2}',
 	'could_not_load_gateway_key': 'Could not load a private key file on the gateway at "${1}". Server error was: ${2}`',
-	'error_from_gateway': 'Error occured on SSH gateway: "${1}"'
+	'error_from_gateway': 'Error occured on SSH gateway: "${1}"',
+	'invalid_uri_scheme': 'Sorry, the filesystem scheme "${1}" is not supported. Push cannot work on files of this type.'
 };

@@ -45,6 +45,10 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	upload(uri) {
+		if (!this.checkValidUriScheme(uri)) {
+			return false;
+		}
+
 		uri = this.paths.getFileSrc(uri);
 
 		if (this.paths.isDirectory(uri)) {
@@ -62,6 +66,10 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	download(uri) {
+		if (!this.checkValidUriScheme(uri)) {
+			return false;
+		}
+
 		uri = this.paths.getFileSrc(uri);
 
 		if (this.paths.isDirectory(uri)) {
@@ -81,7 +89,9 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	diff(uri) {
-		this.diffRemote(this.paths.getFileSrc(uri));
+		if (this.checkValidUriScheme(uri)) {
+			this.diffRemote(this.paths.getFileSrc(uri));
+		}
 	}
 
 	/**
@@ -91,8 +101,16 @@ class UI extends Push {
 	 * @param {Uri} uri - Folder/File Uri to watch.
 	 */
 	addWatch(uri) {
+		if (!this.checkValidUriScheme(uri)) {
+			return false;
+		}
+
 		this.watch.add(this.paths.getFileSrc(uri), (uri) => {
-			this.upload(uri);
+			if (this.config.queueWatchedFiles) {
+				this.queueForUpload(uri);
+			} else {
+				this.upload(uri);
+			}
 		});
 	}
 
@@ -148,14 +166,18 @@ class UI extends Push {
 	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
-		this.service.editServiceConfig(uri);
+		if (this.checkValidUriScheme(uri)) {
+			this.service.editServiceConfig(uri);
+		}
 	}
 
 	/**
 	 * @see Service#importConfig
 	 */
 	importConfig(uri) {
-		this.service.importConfig(uri);
+		if (this.checkValidUriScheme(uri)) {
+			this.service.importConfig(uri);
+		}
 	}
 }
 
