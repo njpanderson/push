@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.1
+ - Fix issue with scheme detection and insantiating commands from the command pallet.
+
 ## 0.4.0
  - Update/simplify wording within some context menus.
  - Add option to queue watched files instead of upload them.
