@@ -84,13 +84,14 @@ class Push extends PushBase {
 
 	/**
 	 * Adds the files in the current Git working copy to the upload queue.
+	 * @param {Uri} uri - Contextual Uri.
 	 * @param {boolean} [exec=`false`] - `true` to immediately upload, `false` to queue.
 	 */
-	queueGitChangedFiles(exec = false) {
+	queueGitChangedFiles(uri, exec = false) {
 		this.scm.exec(
 			SCM.providers.git,
 			this.paths.getCurrentWorkspaceRootPath(
-				this.paths.getFileSrc(),
+				uri,
 				true
 			),
 			'listWorkingUris'
@@ -813,12 +814,17 @@ class Push extends PushBase {
 	}
 
 	/**
-	 * Checks if a Uri passed is usable by Push. Produces an error if not.
+	 * @description
+	 * Checks if a Uri passed is usable by Push and returns it. If no Uri is passed,
+	 * Push will attempt to detect one from the current context.
+	 * Will produce an error message if the Uri is not valid.
 	 * @param {Uri} uri - Uri to test.
 	 */
-	checkValidUriScheme(uri) {
+	getValidUri(uri) {
+		uri = this.paths.getFileSrc(uri);
+
 		if (this.paths.isValidScheme(uri)) {
-			return true;
+			return uri;
 		}
 
 		utils.showError(i18n.t('invalid_uri_scheme', uri.scheme));

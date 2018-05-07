@@ -285,10 +285,18 @@ class Paths {
 		return '';
 	}
 
+	/**
+	 * Check that a Uri scheme is valid (i.e. Push can work with it)
+	 * @param {Uri} uri - Uri to check.
+	 */
 	isValidScheme(uri) {
-		return (uri.scheme === 'file');
+		return (uri.scheme === 'file' || uri.scheme === '' || !uri.scheme);
 	}
 
+	/**
+	 * Process a Uri and retrieve the basename component.
+	 * @param {Uri} uri - Uri to process.
+	 */
 	getBaseName(uri) {
 		return path.basename(this.getNormalPath(uri));
 	}

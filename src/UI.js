@@ -33,11 +33,19 @@ class UI extends Push {
 	}
 
 	queueGitChangedFiles() {
-		super.queueGitChangedFiles();
+		let uri;
+
+		if ((uri = this.getValidUri(uri))) {
+			super.queueGitChangedFiles(uri);
+		}
 	}
 
 	uploadGitChangedFiles() {
-		super.queueGitChangedFiles(true);
+		let uri;
+
+		if ((uri = this.getValidUri(uri))) {
+			super.queueGitChangedFiles(uri, true);
+		}
 	}
 
 	/**
@@ -45,11 +53,9 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	upload(uri) {
-		if (!this.checkValidUriScheme(uri)) {
+		if (!(uri = this.getValidUri(uri))) {
 			return false;
 		}
-
-		uri = this.paths.getFileSrc(uri);
 
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
@@ -66,11 +72,9 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	download(uri) {
-		if (!this.checkValidUriScheme(uri)) {
+		if (!(uri = this.getValidUri(uri))) {
 			return false;
 		}
-
-		uri = this.paths.getFileSrc(uri);
 
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
@@ -89,8 +93,8 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	diff(uri) {
-		if (this.checkValidUriScheme(uri)) {
-			this.diffRemote(this.paths.getFileSrc(uri));
+		if ((uri = this.getValidUri(uri))) {
+			this.diffRemote(uri);
 		}
 	}
 
@@ -101,11 +105,11 @@ class UI extends Push {
 	 * @param {Uri} uri - Folder/File Uri to watch.
 	 */
 	addWatch(uri) {
-		if (!this.checkValidUriScheme(uri)) {
+		if (!(uri = this.getValidUri(uri))) {
 			return false;
 		}
 
-		this.watch.add(this.paths.getFileSrc(uri), (uri) => {
+		this.watch.add(uri, (uri) => {
 			if (this.config.queueWatchedFiles) {
 				this.queueForUpload(uri);
 			} else {
@@ -119,11 +123,15 @@ class UI extends Push {
 	 * @param {Uri|TreeItem} uri - Folder/File Uri or TreeItem to stop watching.
 	 */
 	removeWatch(context) {
+		let uri;
+
 		if (context instanceof vscode.TreeItem) {
 			context = context.resourceUri;
 		}
 
-		this.watch.remove(this.paths.getFileSrc(context));
+		if ((uri = this.paths.getFileSrc(context))) {
+			this.watch.remove(uri);
+		}
 	}
 
 	/**
@@ -166,7 +174,7 @@ class UI extends Push {
 	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
-		if (this.checkValidUriScheme(uri)) {
+		if (this.getValidUri(uri)) {
 			this.service.editServiceConfig(uri);
 		}
 	}
@@ -175,7 +183,7 @@ class UI extends Push {
 	 * @see Service#importConfig
 	 */
 	importConfig(uri) {
-		if (this.checkValidUriScheme(uri)) {
+		if (this.getValidUri(uri)) {
 			this.service.importConfig(uri);
 		}
 	}
