@@ -113,7 +113,8 @@ class Push extends PushBase {
 	didSaveTextDocument(textDocument) {
 		let settings;
 
-		if (!textDocument.uri || this.paths.isValidScheme(textDocument.uri)) {
+		if (!textDocument.uri || !this.paths.isValidScheme(textDocument.uri)) {
+			// Empty or invalid URI
 			return;
 		}
 
