@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.2
+ - Fix issue with saved files not entering queue.
+
 ## 0.4.1
  - Fix issue with scheme detection and insantiating commands from the command pallet.
 
