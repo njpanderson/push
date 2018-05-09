@@ -11,23 +11,25 @@ const assert = require('assert');
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 const useMockery = require('../helpers/mockery');
+const counter = require('../helpers/counter');
+const fixtures = require('../fixtures/general');
 
 // Defines a Mocha test suite to group tests of similar kind together
-suite('Push', function() {
+describe('Push', function() {
     let Push;
 
     useMockery(() => {
         useMockery
             .registerMultiple({
                 'vscode': require('../mocks/node/vscode'),
-                './lib/ServiceSettings': {},
-                './lib/Service': {},
-                './lib/explorer/Explorer': {},
-                './lib/Paths': {},
+                './lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
+                './lib/Service': require('../mocks/lib/Service'),
+                './lib/explorer/Explorer': require('../mocks/lib/Explorer'),
+                // './lib/Paths': require('../mocks/lib/Paths'),
                 './lib/queue/Queue': {},
                 './lib/queue/QueueTask': {},
-                './lib/Watch': {},
-                './lib/SCM': {},
+                './lib/Watch': require('../mocks/lib/Watch'),
+                './lib/SCM': require('../mocks/lib/SCM'),
                 './lib/channel': {},
                 './lib/utils': {},
                 './lib/PushBase': require('../mocks/lib/PushBase'),
@@ -39,11 +41,37 @@ suite('Push', function() {
         Push = require('../../src/Push');
     });
 
+    beforeEach(() => {
+        counter.reset();
+    });
+
     // Defines a Mocha unit test
     describe('#didSaveTextDocument', () => {
         it('should return when textDocument has no uri', () => {
-            assert.equal(-1, [1, 2, 3].indexOf(5));
-            assert.equal(-1, [1, 2, 3].indexOf(0));
-        })
+            let push = new Push();
+            assert(push.didSaveTextDocument({}) === false);
+        });
+
+        it('should return when textDocument uri scheme is not valid', () => {
+            let push = new Push();
+            assert(push.didSaveTextDocument({
+                scheme: 'notfile'
+            }) === false);
+        });
+
+        it('should run queueForUpload when textDocument uri is valid', () => {
+            let push = new Push();
+
+            push.queueForUpload = counter.replace(
+                push.queueForUpload,
+                () => Promise.resolve()
+            );
+
+            push.didSaveTextDocument({
+                uri: fixtures.mockUriFile
+            });
+
+            assert(counter.getCount('queueForUpload') === 1);
+        });
     });
 });

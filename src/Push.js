@@ -115,7 +115,7 @@ class Push extends PushBase {
 
 		if (!textDocument.uri || !this.paths.isValidScheme(textDocument.uri)) {
 			// Empty or invalid URI
-			return;
+			return false;
 		}
 
 		this.settings.clear();
