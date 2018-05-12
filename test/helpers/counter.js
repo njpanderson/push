@@ -10,14 +10,25 @@ class Counter {
 	}
 
 	/**
+	 * Bind a counter to an ID, returning an empty function
+	 * @param {string} id
+	 */
+	bind(id) {
+		return function() {
+			this._increment(id, [...arguments]);
+		}.bind(this);
+	}
+
+	/**
 	 * Replace a function with a counter and an optional new function.
+	 * @param {string} id - function name/namespace.
 	 * @param {function} fn - function to replace.
 	 * @param {function} [newFn] - new function to invoke (if needed).
 	 * @return function - new function, with built in counter.
 	 */
-	replace(fn, newFn) {
+	replace(id, fn, newFn) {
 		return function() {
-			this._increment(this._getFnName(fn), [...arguments]);
+			this._increment(id, [...arguments]);
 
 			if (newFn) {
 				return newFn.call(this, arguments);
@@ -27,13 +38,14 @@ class Counter {
 
 	/**
 	 * Attach a counter to a function.
+	 * @param {string} fn - Function name/namespace.
 	 * @param {function} fn - Function to count.
 	 * @param {*} bound - `this` value to bind to.
 	 * @return function - passed function, with built in counter.
 	 */
-	count(fn, bound) {
+	count(id, fn, bound) {
 		return function() {
- 			this._increment(this._getFnName(fn), [...arguments]);
+ 			this._increment(id, [...arguments]);
 
 			if (typeof fn === 'function') {
 				// Invoke function (bound to new binding) unless bound is false
@@ -44,11 +56,31 @@ class Counter {
 
 	/**
 	 * Returns the number of times a function was invoked.
-	 * @param {string} fnName - Name of the function to test.
+	 * @param {string} id - ID of the function to test.
 	 * @return numer - Number of invocations.
 	 */
-	getCount(fnName) {
-		return (this._calls[fnName] && this._calls[fnName].length) || 0;
+	getCount(id) {
+		return (this._calls[id] && this._calls[id].length) || 0;
+	}
+
+	/**
+	 * Returns the number of times a function was invoked.
+	 * @param {string} id - ID of the function to test.
+	 * @param {number} [invocation=1] - 1-based invocation index.
+	 * @param {number} [index] - 0-based argument index.
+	 * @return numer - Number of invocations.
+	 */
+	getArgs(id, invocation = 1, index) {
+		let invoked;
+
+		if (
+			this._calls[id] &&
+			(invoked = this._calls[id][invocation - 1])
+		) {
+			return (invoked.length > index) ? invoked[index] : undefined;
+		}
+
+		return undefined;
 	}
 
 	/**
@@ -59,29 +91,16 @@ class Counter {
 	}
 
 	/**
-	 * Return the name of a function (or just give back a string).
-	 * @param {function|string} fn - Function to name (or string to return).
-	 * @return string - function name.
-	 */
-	_getFnName(fn) {
-		if (typeof fn === 'function') {
-			return fn.name;
-		} else if (typeof fn === 'string') {
-			return fn;
-		}
-	}
-
-	/**
 	 * Increment a call count by storing the arguments.
-	 * @param {string} fnName - Name of the function to increment.
+	 * @param {string} id - Name of the function to increment.
 	 * @param {array} args - Arguments passed to the function.
 	 */
-	_increment(fnName, args) {
-		if (!this._calls[fnName]) {
-			this._calls[fnName] = [];
+	_increment(id, args) {
+		if (!this._calls[id]) {
+			this._calls[id] = [];
 		}
 
-		this._calls[fnName].push(this._parseCall(args));
+		this._calls[id].push(this._parseCall(args));
 	}
 
 	/**

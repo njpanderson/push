@@ -361,7 +361,7 @@ class Push extends PushBase {
 			utils.showWarning(i18n.t('queue_empty'));
 		}
 
-		return uploadQueue
+		return uploadQueue;
 	}
 
 	/**

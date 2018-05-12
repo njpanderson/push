@@ -14,7 +14,7 @@ Uri.file = (uri) => {
 
 module.exports = {
 	commands: {
-		executeCommand: counter.count('executeCommand')
+		executeCommand: counter.count('vscode.commands.executeCommand')
 	},
 
 	window: {

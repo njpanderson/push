@@ -30,7 +30,7 @@ describe('Push', function() {
 				// './lib/queue/QueueTask': {},
 				'./lib/Watch': require('../mocks/lib/Watch'),
 				'./lib/SCM': require('../mocks/lib/SCM'),
-				'./lib/channel': {},
+				'./lib/channel': require('../mocks/lib/channel'),
 				'./lib/utils': {},
 				'./lib/PushBase': require('../mocks/lib/PushBase'),
 				'./lang/i18n': require('../mocks/lib/i18n')
@@ -63,6 +63,7 @@ describe('Push', function() {
 			let push = new Push();
 
 			push.queueForUpload = counter.replace(
+				'Push#queueForUpload',
 				push.queueForUpload,
 				() => Promise.resolve()
 			);
@@ -71,7 +72,7 @@ describe('Push', function() {
 				uri: fixtures.mockUriFile
 			});
 
-			assert(counter.getCount('queueForUpload') === 1);
+			assert(counter.getCount('Push#queueForUpload') === 1);
 		});
 	});
 
@@ -92,29 +93,46 @@ describe('Push', function() {
 
 		it('should run the queue immediately when required', () => {
 			let push = new Push();
-			push.execQueue = counter.replace(push.execQueue);
+			push.execQueue = counter.replace('Push#execQueue', push.execQueue);
 			push.queue([() => { }], true);
-			assert(counter.getCount('execQueue') === 1);
+			assert(counter.getCount('Push#execQueue') === 1);
 		});
 	});
 
 	describe('#queueForUpload', () => {
-		it('queues a single Uri for uploading', (done) => {
+		it('queues a single Uri for uploading', () => {
 			let push = new Push();
-			push.queueForUpload(fixtures.mockUriFile)
+			return push.queueForUpload(fixtures.mockUriFile)
 				.then(() => {
 					assert(push.queues[Push.queueDefs.upload.id].tasks.length === 2);
-				})
-				.then(done);
+				});
 		});
 
-		it('queues Uris for uploading', (done) => {
+		it('queues Uris for uploading', () => {
 			let push = new Push();
-			push.queueForUpload([fixtures.mockUriFile, fixtures.mockUriFile2])
+			return push.queueForUpload([fixtures.mockUriFile, fixtures.mockUriFile2])
 				.then(() => {
 					assert(push.queues[Push.queueDefs.upload.id].tasks.length === 3);
-				})
-				.then(done);
+				});
 		});
+	});
+
+	describe('#execUploadQueue', () => {
+		it('writes channel info if queueing is disabled', () => {
+			let push = new Push();
+			return push.queueForUpload(fixtures.mockUriFile)
+				.then(() => {
+					push.config.uploadQueue = false;
+					push.execUploadQueue();
+
+					assert(
+						counter.getArgs('Channel#appendLocalisedInfo', 1, 0) ===
+						'upload_queue_disabled'
+					);
+				});
+		});
+
+		it('executes a queue with >0 items');
+		it('shows a warning if queue is empty');
 	});
 });
