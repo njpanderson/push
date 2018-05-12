@@ -161,7 +161,8 @@ class Paths {
 
 	/**
 	 * Recursively returns the file contents of a directory.
-	 * @param {uri|string} include - Uri of directory to glob for paths, or a glob string.
+	 * @param {uri|string|array} include - Uri of directory to glob for paths, a glob string,
+	 * or an array of path components.
 	 * @param {array} [ignoreGlobs] - List of globs to ignore.
 	 */
 	getDirectoryContentsAsFiles(include, ignoreGlobs = []) {
