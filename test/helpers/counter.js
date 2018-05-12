@@ -10,15 +10,18 @@ class Counter {
 	}
 
 	/**
-	 * Replace a function with a new function and attach a counter.
+	 * Replace a function with a counter and an optional new function.
 	 * @param {function} fn - function to replace.
-	 * @param {function} newFn - new function to invoke.
+	 * @param {function} [newFn] - new function to invoke (if needed).
 	 * @return function - new function, with built in counter.
 	 */
 	replace(fn, newFn) {
 		return function() {
 			this._increment(this._getFnName(fn), [...arguments]);
-			return newFn.call(this, arguments);
+
+			if (newFn) {
+				return newFn.call(this, arguments);
+			}
 		}.bind(this);
 	}
 
@@ -34,7 +37,7 @@ class Counter {
 
 			if (typeof fn === 'function') {
 				// Invoke function (bound to new binding) unless bound is false
-				fn.apply((bound || null), arguments);
+				fn.apply((bound || undefined), arguments);
 			}
 		}.bind(this);
 	}
@@ -99,4 +102,5 @@ class Counter {
 	}
 }
 
+// Export a cached instance of Counter to be shared across modules
 module.exports = (new Counter());

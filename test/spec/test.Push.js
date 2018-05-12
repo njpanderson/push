@@ -16,62 +16,105 @@ const fixtures = require('../fixtures/general');
 
 // Defines a Mocha test suite to group tests of similar kind together
 describe('Push', function() {
-    let Push;
+	let Push;
 
-    useMockery(() => {
-        useMockery
-            .registerMultiple({
-                'vscode': require('../mocks/node/vscode'),
-                './lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
-                './lib/Service': require('../mocks/lib/Service'),
-                './lib/explorer/Explorer': require('../mocks/lib/Explorer'),
-                // './lib/Paths': require('../mocks/lib/Paths'),
-                './lib/queue/Queue': {},
-                './lib/queue/QueueTask': {},
-                './lib/Watch': require('../mocks/lib/Watch'),
-                './lib/SCM': require('../mocks/lib/SCM'),
-                './lib/channel': {},
-                './lib/utils': {},
-                './lib/PushBase': require('../mocks/lib/PushBase'),
-                './lang/i18n': require('../mocks/lib/i18n')
-            });
-    });
+	useMockery(() => {
+		useMockery
+			.registerMultiple({
+				'vscode': require('../mocks/node/vscode'),
+				'./lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
+				'./lib/Service': require('../mocks/lib/Service'),
+				'./lib/explorer/Explorer': require('../mocks/lib/Explorer'),
+				// './lib/Paths': require('../mocks/lib/Paths'),
+				'./lib/queue/Queue': require('../mocks/lib/Queue'),
+				// './lib/queue/QueueTask': {},
+				'./lib/Watch': require('../mocks/lib/Watch'),
+				'./lib/SCM': require('../mocks/lib/SCM'),
+				'./lib/channel': {},
+				'./lib/utils': {},
+				'./lib/PushBase': require('../mocks/lib/PushBase'),
+				'./lang/i18n': require('../mocks/lib/i18n')
+			});
+	});
 
-    before(() => {
-        Push = require('../../src/Push');
-    });
+	before(() => {
+		Push = require('../../src/Push');
+	});
 
-    beforeEach(() => {
-        counter.reset();
-    });
+	beforeEach(() => {
+		counter.reset();
+	});
 
-    // Defines a Mocha unit test
-    describe('#didSaveTextDocument', () => {
-        it('should return when textDocument has no uri', () => {
-            let push = new Push();
-            assert(push.didSaveTextDocument({}) === false);
-        });
+	// Defines a Mocha unit test
+	describe('#didSaveTextDocument', () => {
+		it('should return when textDocument has no uri', () => {
+			let push = new Push();
+			assert(push.didSaveTextDocument({}) === false);
+		});
 
-        it('should return when textDocument uri scheme is not valid', () => {
-            let push = new Push();
-            assert(push.didSaveTextDocument({
-                scheme: 'notfile'
-            }) === false);
-        });
+		it('should return when textDocument uri scheme is not valid', () => {
+			let push = new Push();
+			assert(push.didSaveTextDocument({
+				scheme: 'notfile'
+			}) === false);
+		});
 
-        it('should run queueForUpload when textDocument uri is valid', () => {
-            let push = new Push();
+		it('should run queueForUpload when textDocument uri is valid', () => {
+			let push = new Push();
 
-            push.queueForUpload = counter.replace(
-                push.queueForUpload,
-                () => Promise.resolve()
-            );
+			push.queueForUpload = counter.replace(
+				push.queueForUpload,
+				() => Promise.resolve()
+			);
 
-            push.didSaveTextDocument({
-                uri: fixtures.mockUriFile
-            });
+			push.didSaveTextDocument({
+				uri: fixtures.mockUriFile
+			});
 
-            assert(counter.getCount('queueForUpload') === 1);
-        });
-    });
+			assert(counter.getCount('queueForUpload') === 1);
+		});
+	});
+
+	describe('#queue', () => {
+		it('should add an initial function to a new queue', () => {
+			let push = new Push();
+			push.queue([() => {}]);
+			assert(push.queues[Push.queueDefs.default.id].tasks.length === 2);
+		});
+
+		it('should not add an initial function to a running queue', () => {
+			let push = new Push(),
+				queue = push.getQueue(Push.queueDefs.default);
+			queue.running = true;
+			push.queue([() => { }]);
+			assert(push.queues[Push.queueDefs.default.id].tasks.length === 1);
+		});
+
+		it('should run the queue immediately when required', () => {
+			let push = new Push();
+			push.execQueue = counter.replace(push.execQueue);
+			push.queue([() => { }], true);
+			assert(counter.getCount('execQueue') === 1);
+		});
+	});
+
+	describe('#queueForUpload', () => {
+		it('queues a single Uri for uploading', (done) => {
+			let push = new Push();
+			push.queueForUpload(fixtures.mockUriFile)
+				.then(() => {
+					assert(push.queues[Push.queueDefs.upload.id].tasks.length === 2);
+				})
+				.then(done);
+		});
+
+		it('queues Uris for uploading', (done) => {
+			let push = new Push();
+			push.queueForUpload([fixtures.mockUriFile, fixtures.mockUriFile2])
+				.then(() => {
+					assert(push.queues[Push.queueDefs.upload.id].tasks.length === 3);
+				})
+				.then(done);
+		});
+	});
 });
