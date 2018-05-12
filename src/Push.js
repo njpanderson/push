@@ -219,10 +219,6 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
-		if (!queue) {
-			throw new Error('No valid queue defined in Push#queue');
-		}
-
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
 			queue.addTask(new QueueTask(() => {
@@ -283,16 +279,22 @@ class Push extends PushBase {
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
 	queueForUpload(uris) {
+		let tasks = [];
+
+		if (!this.service) {
+			return Promise.reject('No service set');
+		}
+
 		if (!Array.isArray(uris)) {
+			// Force uris to an array
 			uris = [uris];
 		}
 
+		// Filter and queue each Uri
 		uris.forEach((uri) => {
-			let remotePath;
+			tasks.push(new Promise((resolve, reject) => {
+				let remotePath;
 
-			uri = this.paths.getFileSrc(uri);
-
-			if (this.service) {
 				remotePath = this.service.exec(
 					'convertUriToRemote',
 					this.configWithServiceSettings(uri),
@@ -312,16 +314,24 @@ class Push extends PushBase {
 							args: [uri, remotePath],
 							id: remotePath + this.paths.getNormalPath(uri)
 						}], false, Push.queueDefs.upload, {
-								showStatus: true,
-								statusToolTip: (num) => {
-									return i18n.t('num_to_upload', num);
-								},
-								statusCommand: 'push.uploadQueuedItems',
-								emptyOnFail: false
-							});
-					});
-			}
+							showStatus: true,
+							statusToolTip: (num) => {
+								return i18n.t('num_to_upload', num);
+							},
+							statusCommand: 'push.uploadQueuedItems',
+							emptyOnFail: false
+						});
+					})
+					.then(resolve)
+					.catch(reject);
+			}));
 		});
+
+		if (tasks.length) {
+			return Promise.all(tasks);
+		}
+
+		return Promise.resolve([]);
 	}
 
 	/**
@@ -405,6 +415,7 @@ class Push extends PushBase {
 		}
 
 		if (!this.queues[queueDef.id]) {
+			// Queue doesn't exist by ID
 			if (queueOptions === false) {
 				// No new queue wanted, just return null;
 				return null;
