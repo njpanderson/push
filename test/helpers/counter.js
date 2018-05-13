@@ -20,13 +20,21 @@ class Counter {
 	}
 
 	/**
-	 * Replace a function with a counter and an optional new function.
+	 * Replace a function with a counter and a new function.
 	 * @param {string} id - function name/namespace.
 	 * @param {function} fn - function to replace.
 	 * @param {function} [newFn] - new function to invoke (if needed).
 	 * @return function - new function, with built in counter.
 	 */
 	replace(id, fn, newFn) {
+		if (typeof fn !== 'function') {
+			throw new Error('fn must be a function object.');
+		}
+
+		if (typeof newFn !== 'function') {
+			throw new Error('newFn must be a function object.');
+		}
+
 		return function() {
 			this._increment(id, [...arguments]);
 
@@ -49,7 +57,7 @@ class Counter {
 
 			if (typeof fn === 'function') {
 				// Invoke function (bound to new binding) unless bound is false
-				fn.apply((bound || undefined), arguments);
+				return fn.apply((bound || undefined), arguments);
 			}
 		}.bind(this);
 	}

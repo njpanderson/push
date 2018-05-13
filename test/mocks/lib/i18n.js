@@ -1,5 +1,6 @@
 module.exports = {
-	t: () => {
-
+	t: (string) => {
+		// Just return the same string passed
+		return string;
 	}
 }

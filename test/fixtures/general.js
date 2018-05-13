@@ -20,5 +20,16 @@ module.exports = {
 			},
 			hash: '8b53a44c35c78bee907be597be901e60c658b547a3b59e63f52d964ae70f058e'
 		}
+	},
+
+	queueDefinitions: {
+		cancellable: {
+			id: 'testQueue',
+			cancellable: true
+		},
+
+		nonCancellable: {
+			id: 'testNonCancellableQueue'
+		}
 	}
 };

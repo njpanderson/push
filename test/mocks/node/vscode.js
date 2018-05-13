@@ -19,12 +19,29 @@ module.exports = {
 
 	window: {
 		activeTextEditor: null,
-		onDidChangeActiveTextEditor: () => { }
+		onDidChangeActiveTextEditor: () => { },
+		withProgress: counter.count(
+			'vscode.window.withProgress',
+			(options, callback) => {
+				return new Promise((resolve, reject) => {
+					// Bind an empty progress function to be counted
+					callback({
+						report: counter.bind('vscode.window.withProgress#progress.report')
+					})
+						.then(resolve, reject);
+				});
+			},
+			this
+		)
 	},
 
 	workspace: {
 		onDidSaveTextDocument: () => { },
 		onDidChangeConfiguration: () => { }
+	},
+
+	ProgressLocation: {
+		window: 0
 	},
 
 	Uri
