@@ -282,7 +282,7 @@ class Push extends PushBase {
 		let tasks = [];
 
 		if (!this.service) {
-			return Promise.reject('No service set');
+			return Promise.reject('No service set.');
 		}
 
 		if (!Array.isArray(uris)) {
@@ -339,29 +339,33 @@ class Push extends PushBase {
 	 * Copies the "upload" queue over to the default queue and runs the default queue.
 	 * The upload queue is then emptied once the default queue has completed without
 	 * errors.
+	 * @returns promise - Promise, resolving when the queue is complete.
 	 */
 	execUploadQueue() {
-		let uploadQueue, queue;
+		return new Promise((resolve, reject) => {
+			let uploadQueue, queue;
 
-		if (!this.config.uploadQueue) {
-			return channel.appendLocalisedInfo('upload_queue_disabled');
-		}
-
-		uploadQueue = this.getQueue(Push.queueDefs.upload);
-
-		if (uploadQueue.tasks.length) {
-			queue = this.queue(uploadQueue.tasks, true)
-
-			if (queue instanceof Promise) {
-				queue.then(() => {
-					uploadQueue.empty();
-				});
+			if (!this.config.uploadQueue) {
+				channel.appendLocalisedInfo('upload_queue_disabled');
+				return reject('Upload queue disabled.');
 			}
-		} else {
-			utils.showWarning(i18n.t('queue_empty'));
-		}
 
-		return uploadQueue;
+			uploadQueue = this.getQueue(Push.queueDefs.upload);
+
+			if (uploadQueue.tasks.length) {
+				queue = this.queue(uploadQueue.tasks, true)
+
+				if (queue instanceof Promise) {
+					queue.then(() => {
+						uploadQueue.empty();
+					})
+					.then(resolve);
+				}
+			} else {
+				utils.showWarning(i18n.t('queue_empty'));
+				return reject('Queue empty.');
+			}
+		});
 	}
 
 	/**
@@ -435,14 +439,11 @@ class Push extends PushBase {
 	execQueue(queueDef) {
 		const queue = this.getQueue(queueDef);
 
-		if (!(queue instanceof Queue)) {
-			throw new Error('Invalid queue definition type.');
-		}
-
 		if (queue.running) {
-			return null;
+			return Promise.reject('Queue running.');
 		}
 
+		// TODO: make channel clearing an option to turn on
 		// channel.clear();
 
 		// Fetch and execute queue
@@ -537,7 +538,8 @@ class Push extends PushBase {
 	 * @param {boolean} silent - Set `true` to create no notices when stopping the queue.
 	 */
 	stopCancellableQueues(force = false, silent = false) {
-		let def, queue;
+		let tasks = [],
+			def, queue;
 
 		for (def in Push.queueDefs) {
 			if (
@@ -545,9 +547,13 @@ class Push extends PushBase {
 				Push.queueDefs[def].cancellable &&
 				queue.running
 			) {
-				this.stopQueue(Push.queueDefs[def], force, silent);
+				tasks.push(
+					this.stopQueue(Push.queueDefs[def], force, silent)
+				);
 			}
 		}
+
+		return Promise.all(tasks);
 	}
 
 	/**
@@ -559,58 +565,66 @@ class Push extends PushBase {
 	 * stopping the queue.
 	 */
 	stopQueue(queueDef, force = false, silent = false) {
-		// Get the queue by definition and run its #stop method.
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
 			title: 'Push'
 		}, (progress) => {
 			return new Promise((resolve, reject) => {
-				let timer;
+				let tasks = [],
+					timer;
 
 				progress.report({ message: i18n.t('stopping') });
 
 				if (force) {
-					// Give X seconds to stop or force
+					// Give X seconds to stop or force by restarting the active service
 					timer = setTimeout(() => {
-						// Force stop the queue
-						let message = i18n.t(
+						// Force restart the active service
+						this.service.restartServiceInstance();
+
+						// Show the error
+						!silent && channel.appendError(i18n.t(
 							'queue_force_stopped',
 							queueDef.id,
 							Push.globals.FORCE_STOP_TIMEOUT
-						);
+						));
 
-						this.service.restartServiceInstance();
-
-						!silent && channel.appendError(message);
-						reject(message);
+						// Reject the outer promise - this is a lost cause
+						reject('Queue force stopped.');
 					}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
 				}
 
-				this.getQueue(queueDef)
-					.stop()
+				// Stop the queue
+				tasks.push(
+					this.getQueue(queueDef).stop()
 						.then((result) => {
-							resolve(result);
-
 							!silent && channel.appendLocalisedInfo(
 								'queue_cancelled',
 								queueDef.id
 							);
+
+							return result;
 						})
-						.catch((error) => {
-							reject(error);
-						});
+				);
 
 				if (force) {
-					// Ensure the service stops in addition to the queue emptying
-					this.service.stop()
-						.then(() => {
-							clearTimeout(timer);
-							resolve();
-						}, () => {
-							clearTimeout(timer);
-							reject();
-						});
+					// Stop the service as well
+					tasks.push(
+						this.service.stop()
+					);
 				}
+
+				// Resolve the outer promise (and clear the timeout) when all
+				// of the tasks have finished. The outer promise can also be rejected
+				// by the timeout (see above).
+				Promise.all(tasks)
+					.then((results) => {
+						clearTimeout(timer);
+						resolve(results[0]);
+					})
+					.catch((error) => {
+						clearTimeout(timer);
+						reject(error);
+					});
 			});
 		});
 	}
