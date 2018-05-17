@@ -452,6 +452,8 @@
   },
   "scripts": {
     "postinstall": "node ./node_modules/vscode/bin/install",
+    "t": "mocha --reporter dot",
+    "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
     "test": "mocha"
   },
   "devDependencies": {
@@ -459,6 +461,7 @@
     "@types/node": "^6.0.106",
     "eslint": "^4.19.1",
     "glob": "^7.1.2",
+    "istanbul": "^0.4.5",
     "mocha": "^5.1.1",
     "typescript": "^2.8.3",
     "vscode": "^1.1.17"

@@ -2,4 +2,3 @@
 --bail
 --check-leaks
 --colors
---timeout 999999

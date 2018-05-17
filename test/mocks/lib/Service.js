@@ -2,7 +2,7 @@ const counter = require('../../helpers/counter');
 
 class Service {
 	constructor() {
-		this.restartServiceInstance = counter.bind('Service#restartServiceInstance');
+		this.restartServiceInstance = counter.create('Service#restartServiceInstance');
 	}
 
 	exec(method, config, args) {

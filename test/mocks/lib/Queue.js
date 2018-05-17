@@ -6,8 +6,8 @@ class Queue {
 		this.tasks = [];
 		this.running = false;
 
-		this.exec = counter.count('Queue#exec', this.exec, this);
-		this.stop = counter.count('Queue#stop', this.stop, this);
+		this.exec = counter.attach('Queue#exec', this.exec, this);
+		this.stop = counter.attach('Queue#stop', this.stop, this);
 	}
 
 	addTask(task) {

@@ -14,19 +14,19 @@ Uri.file = (uri) => {
 
 module.exports = {
 	commands: {
-		executeCommand: counter.count('vscode.commands.executeCommand')
+		executeCommand: counter.attach('vscode.commands.executeCommand')
 	},
 
 	window: {
 		activeTextEditor: null,
 		onDidChangeActiveTextEditor: () => { },
-		withProgress: counter.count(
+		withProgress: counter.attach(
 			'vscode.window.withProgress',
 			(options, callback) => {
 				return new Promise((resolve, reject) => {
 					// Bind an empty progress function to be counted
 					callback({
-						report: counter.bind('vscode.window.withProgress#progress.report')
+						report: counter.create('vscode.window.withProgress#progress.report')
 					})
 						.then(resolve, reject);
 				});

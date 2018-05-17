@@ -636,13 +636,26 @@ class Push extends PushBase {
 	 * @returns {promise} - A promise, resolving when the file has transferred.
 	 */
 	transfer(uris, method) {
-		let ignoreGlobs = [], action, actionTaken;
+		let ignoreGlobs = [],
+			tasks = [],
+			action, actionTaken;
 
 		this.settings.clear();
+
+		if (typeof uris === 'undefined') {
+			throw new Error('No files defined.');
+		}
 
 		if (!Array.isArray(uris)) {
 			uris = [uris];
 		}
+
+		// Check there are no directories
+		uris.forEach((uri) => {
+			if (this.paths.isDirectory(uri)) {
+				throw new Error(`Path "${uri.path}" is a directory and cannot be transferred with Push#transfer.`);
+			}
+		});
 
 		if (method === 'put') {
 			action = 'upload';
@@ -654,18 +667,13 @@ class Push extends PushBase {
 			action = 'download';
 			actionTaken = 'downloaded';
 		} else {
-			throw new Error(`Unkown method "${method}"`);
+			throw new Error(`Unknown method "${method}"`);
 		}
 
 		uris.forEach((uri, index) => {
 			// Check the source file is a usable scheme
 			if (!this.paths.isValidScheme(uri)) {
 				return;
-			}
-
-			// Check the source file isn't a directory
-			if (this.paths.isDirectory(uri)) {
-				throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
 			}
 
 			// Check that the source file exists
@@ -679,42 +687,50 @@ class Push extends PushBase {
 			}
 
 			// Filter and add to the queue
-			this.paths.filterUriByGlobs(uri, ignoreGlobs)
-				.then((filteredUri) => {
-					let config, remotePath;
+			tasks.push(
+				this.paths.filterUriByGlobs(uri, ignoreGlobs)
+					.then((filteredUri) => {
+						let config, remotePath;
 
-					if (filteredUri !== false) {
-						config = this.configWithServiceSettings(filteredUri);
+						if (filteredUri !== false) {
+							config = this.configWithServiceSettings(filteredUri);
 
-						remotePath = this.service.exec(
-							'convertUriToRemote',
-							config,
-							[filteredUri]
-						);
+							remotePath = this.service.exec(
+								'convertUriToRemote',
+								config,
+								[filteredUri]
+							);
 
-						if (config) {
-							// Add to queue and return (also start on the last item added)
-							return this.queue([{
-								method,
-								actionTaken,
-								uriContext: filteredUri,
-								args: [
-									filteredUri,
-									remotePath
-								],
-								id: remotePath + this.paths.getNormalPath(filteredUri)
-							}], (index === uris.length - 1));
+							if (config) {
+								// Add to queue and return (also start on the last item added)
+								return this.queue([{
+									method,
+									actionTaken,
+									uriContext: filteredUri,
+									args: [
+										filteredUri,
+										remotePath
+									],
+									id: remotePath + this.paths.getNormalPath(filteredUri)
+								}], (index === uris.length - 1));
+							}
+						} else {
+							// Only one file is being transfered so warn the user it ain't happening
+							channel.appendLocalisedError(
+								'cannot_action_ignored_file',
+								action,
+								this.paths.getBaseName(uri)
+							);
 						}
-					} else {
-						// Only one file is being transfered so warn the user it ain't happening
-						channel.appendLocalisedError(
-							'cannot_action_ignored_file',
-							action,
-							this.paths.getBaseName(uri)
-						);
-					}
-				});
+					})
+			);
 		});
+
+		if (tasks.length) {
+			return Promise.all(tasks);
+		}
+
+		return Promise.resolve();
 	}
 
 	/**

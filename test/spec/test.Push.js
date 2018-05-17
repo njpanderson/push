@@ -18,7 +18,7 @@ const Queue = require('../mocks/lib/Queue');
 
 // Defines a Mocha test suite to group tests of similar kind together
 describe('Push', function() {
-	let Push;
+	let Push, push;
 
 	useMockery(() => {
 		useMockery
@@ -45,26 +45,23 @@ describe('Push', function() {
 	});
 
 	beforeEach(() => {
+		push = new Push();
 		counter.reset();
 	});
 
 	// Defines a Mocha unit test
 	describe('#didSaveTextDocument', () => {
-		it('should return when textDocument has no uri', () => {
-			const push = new Push();
+		it('returns when textDocument has no uri', () => {
 			assert(push.didSaveTextDocument({}) === false);
 		});
 
-		it('should return when textDocument uri scheme is not valid', () => {
-			const push = new Push();
+		it('returns when textDocument uri scheme is not valid', () => {
 			assert(push.didSaveTextDocument({
 				scheme: 'notfile'
 			}) === false);
 		});
 
-		it('should run queueForUpload when textDocument uri is valid', () => {
-			const push = new Push();
-
+		it('runs queueForUpload when textDocument uri is valid', () => {
 			push.queueForUpload = counter.replace(
 				'Push#queueForUpload',
 				push.queueForUpload,
@@ -80,15 +77,13 @@ describe('Push', function() {
 	});
 
 	describe('#queue', () => {
-		it('should add an initial function to a new queue', () => {
-			const push = new Push();
+		it('adds an initial function to a new queue', () => {
 			push.queue([() => {}]);
 			assert(push.queues[Push.queueDefs.default.id].tasks.length === 2);
 		});
 
 		it('should not add an initial function to a running queue', () => {
-			const push = new Push(),
-				queue = push.getQueue(Push.queueDefs.default);
+			const queue = push.getQueue(Push.queueDefs.default);
 
 			queue.running = true;
 			push.queue([() => { }]);
@@ -96,10 +91,8 @@ describe('Push', function() {
 			assert(push.queues[Push.queueDefs.default.id].tasks.length === 1);
 		});
 
-		it('should run the queue immediately when required', () => {
-			const push = new Push();
-
-			push.execQueue = counter.bind('Push#execQueue', push.execQueue);
+		it('runs the queue immediately when required', () => {
+			push.execQueue = counter.create('Push#execQueue', push.execQueue);
 			push.queue([() => { }], true);
 
 			assert(counter.getCount('Push#execQueue') === 1);
@@ -108,7 +101,6 @@ describe('Push', function() {
 
 	describe('#queueForUpload', () => {
 		it('queues a single Uri for uploading', () => {
-			const push = new Push();
 			return push.queueForUpload(fixtures.mockUriFile)
 				.then(() => {
 					assert(push.queues[Push.queueDefs.upload.id].tasks.length === 2);
@@ -116,7 +108,6 @@ describe('Push', function() {
 		});
 
 		it('queues Uris for uploading', () => {
-			const push = new Push();
 			return push.queueForUpload([fixtures.mockUriFile, fixtures.mockUriFile2])
 				.then(() => {
 					assert(push.queues[Push.queueDefs.upload.id].tasks.length === 3);
@@ -126,8 +117,6 @@ describe('Push', function() {
 
 	describe('#execUploadQueue', () => {
 		it('executes a queue with >0 items', () => {
-			const push = new Push();
-
 			push.execQueue = counter.replace('Push#execQueue', push.execQueue, () => {
 				return Promise.resolve();
 			});
@@ -142,8 +131,6 @@ describe('Push', function() {
 		});
 
 		it('writes channel info if queueing is disabled', () => {
-			const push = new Push();
-
 			return push.queueForUpload(fixtures.mockUriFile)
 				.catch(() => {
 					push.config.uploadQueue = false;
@@ -157,8 +144,6 @@ describe('Push', function() {
 		});
 
 		it('shows a warning if queue is empty', () => {
-			const push = new Push();
-
 			return push.queueForUpload(fixtures.mockUriFile)
 				.catch(() => {
 					push.execUploadQueue();
@@ -173,8 +158,6 @@ describe('Push', function() {
 
 	describe('#getQueue', () => {
 		it('throws without a valid queue', () => {
-			const push = new Push();
-
 			assert.throws(() => {
 				push.getQueue({});
 			});
@@ -185,20 +168,14 @@ describe('Push', function() {
 		});
 
 		it('returns a new queue if it doesn\'t exist', () => {
-			const push = new Push();
-
 			assert(push.getQueue(fixtures.queueDefinitions.cancellable) instanceof Queue);
 		});
 
 		it('returns null if no new queue is desired', () => {
-			const push = new Push();
-
 			assert(push.getQueue(fixtures.queueDefinitions.cancellable, false) === null);
 		});
 
 		it('returns a queue that exists', () => {
-			const push = new Push();
-
 			return push.queueForUpload(fixtures.mockUriFile)
 				.then(() => {
 					const queue = push.getQueue(Push.queueDefs.upload, false);
@@ -210,8 +187,6 @@ describe('Push', function() {
 
 	describe('#execQueue', () => {
 		it('executes a valid queue', () => {
-			const push = new Push();
-
 			push.queue([() => { }]);
 
 			push.execQueue(Push.queueDefs.default)
@@ -221,8 +196,6 @@ describe('Push', function() {
 		});
 
 		it('returns if a queue is running', () => {
-			const push = new Push();
-
 			push.queue([() => { }]);
 
 			return push.execQueue(Push.queueDefs.default)
@@ -234,11 +207,10 @@ describe('Push', function() {
 
 	describe('#stopCancellableQueues', () => {
 		it('stops all running queues that can be cancelled', () => {
-			const push = new Push(),
-				cancellable = push.getQueue(Push.queueDefs.default),
+			const cancellable = push.getQueue(Push.queueDefs.default),
 				nonCancellable = push.getQueue(Push.queueDefs.upload);
 
-			push.stopQueue = counter.bind('Push#stopQueue');
+			push.stopQueue = counter.create('Push#stopQueue');
 
 			cancellable.running = true;
 			nonCancellable.running = true;
@@ -252,8 +224,7 @@ describe('Push', function() {
 
 	describe('#stopQueue', () => {
 		it('stops a queue', () => {
-			const push = new Push(),
-				queue = push.getQueue(Push.queueDefs.default);
+			const queue = push.getQueue(Push.queueDefs.default);
 
 			queue.running = true;
 
@@ -268,8 +239,7 @@ describe('Push', function() {
 		});
 
 		it('stops a queue silently', () => {
-			const push = new Push(),
-				queue = push.getQueue(Push.queueDefs.default);
+			const queue = push.getQueue(Push.queueDefs.default);
 
 			queue.running = true;
 			push.stopQueue(Push.queueDefs.default, false, true)
@@ -279,16 +249,16 @@ describe('Push', function() {
 				});
 		});
 
-		it('force stops a queue after 2 seconds', () => {
-			const push = new Push(),
-				queue = push.getQueue(Push.queueDefs.default);
+		it('force stops a queue after 2 seconds', function() {
+			this.timeout(2500);
+			const queue = push.getQueue(Push.queueDefs.default);
 
 			queue.running = true;
 
 			// Replace Push#service#stop with a promise that never resolves
 			push.service.stop = () => new Promise(() => {});
 
-			return push.stopQueue(Push.queueDefs.default, true)
+			push.stopQueue(Push.queueDefs.default, true)
 				.catch(() => {
 					assert(
 						counter.getCount('Service#restartServiceInstance') === 1
@@ -302,4 +272,137 @@ describe('Push', function() {
 
 		});
 	});
+
+	describe('#transfer', () => {
+		const tests = [{
+				method: 'put',
+				files: fixtures.mockUriFile
+			}, {
+				method: 'put',
+				files: [fixtures.mockUriFile, fixtures.mockUriFile2]
+			}, {
+				method: 'get',
+				files: fixtures.mockUriFile
+			}, {
+				method: 'get',
+				files: [fixtures.mockUriFile, fixtures.mockUriFile2]
+			}];
+
+		beforeEach(() => {
+			push.queue = counter.attach(
+				'Push#queue',
+				() => Promise.resolve(),
+				push
+			);
+		});
+
+		tests.forEach((test) => {
+			it(`queues a ${test.method} for ${(Array.isArray(test.files) && test.files.length) || '1'} file(s)`, () => {
+				return push.transfer(test.files, test.method)
+					.then(() => {
+						let args;
+
+						if (Array.isArray(test.files)) {
+							let args = counter.getArgs('Push#queue');
+
+							assert(counter.getCount('Push#queue') === test.files.length);
+
+							test.files.forEach((file, index) => {
+								assert(args[index][0][0].method === test.method);
+								assert.deepEqual(args[index][0][0].uriContext, file);
+							});
+						} else {
+							args = counter.getArgs('Push#queue', 1, 0);
+
+							assert(counter.getCount('Push#queue') === 1);
+							assert(args[0].method === test.method);
+							assert.deepEqual(args[0].uriContext, test.files);
+						}
+					});
+			});
+		});
+
+		it('writes channel info if a file is not found', () => {
+			return push.transfer([
+				fixtures.mockUriMissingFile,
+				fixtures.mockUriFile
+			], 'put')
+				.then(() => {
+					assert(
+						counter.getArgs('Channel#appendLocalisedError', 1, 0) ===
+						'file_not_found'
+					);
+					assert(counter.getCount('Push#queue') === 1);
+				});
+		});
+
+		it('writes channel info if a file is ignored', () => {
+			return push.transfer([
+				fixtures.mockUriIgnoredFile,
+				fixtures.mockUriFile
+			], 'put')
+				.then(() => {
+					assert(
+						counter.getArgs('Channel#appendLocalisedError', 1, 0) ===
+						'cannot_action_ignored_file'
+					);
+				});
+		});
+
+		it('processes all but the ignored file', () => {
+			return push.transfer([
+				fixtures.mockUriFile,
+				fixtures.mockUriIgnoredFile,
+				fixtures.mockUriFile2
+			], 'put')
+				.then(() => {
+					let args = counter.getArgs('Push#queue');
+
+					assert(args[0][0][0].method === 'put');
+					assert.deepEqual(args[0][0][0].uriContext, fixtures.mockUriFile);
+
+					assert(args[1][0][0].method === 'put');
+					assert.deepEqual(args[1][0][0].uriContext, fixtures.mockUriFile2);
+				});
+		});
+
+		it('ignores files not in the supported scheme', () => {
+			return push.transfer([
+				fixtures.mockForeignSchemeFile
+			], 'put')
+				.then(() => {
+					assert(counter.getCount('Channel#appendLocalisedError') === 0);
+					assert(counter.getCount('Push#transfer') === 0);
+				});
+		});
+
+		it('throws if files is undefined', () => {
+			assert.throws(() => {
+				push.transfer();
+			}, /No files defined/);
+		});
+
+		it('throws if a method is undefined', () => {
+			assert.throws(() => {
+				push.transfer(fixtures.mockUriFile);
+			}, /Unknown method/);
+		});
+
+		it('throws if the method is not known', () => {
+			assert.throws(() => {
+				push.transfer(fixtures.mockUriFile, 'nomethod');
+			}, /Unknown method/);
+		});
+
+		it('throws if a directory is provided', () => {
+			assert.throws(() => {
+				push.transfer(fixtures.mockUriFolder, 'put');
+			}, /is a directory/);
+		});
+	});
+
+	describe('#transferDirectory', () => {
+		it('returns if the path is not a valid scheme');
+		it('throws if the path is not a directory');
+	})
 });

@@ -111,7 +111,7 @@ class Paths {
 
 		if (dir) {
 			try {
-				const stats = fs.statSync(this.getNormalPath(dir));
+				const stats = fs.statSync(dir);
 				return stats.isDirectory();
 			} catch(e) {
 				return false;

@@ -10,10 +10,13 @@ class Counter {
 	}
 
 	/**
-	 * Bind a counter to an ID, returning an empty function
+	 * @description
+	 * Create a counter with an ID, returning an empty function.
+	 *
+	 * Useful if you don't need the resulting function to do anything.
 	 * @param {string} id
 	 */
-	bind(id) {
+	create(id) {
 		return function() {
 			this._increment(id, [...arguments]);
 		}.bind(this);
@@ -51,7 +54,7 @@ class Counter {
 	 * @param {*} bound - `this` value to bind to.
 	 * @return function - passed function, with built in counter.
 	 */
-	count(id, fn, bound) {
+	attach(id, fn, bound) {
 		return function() {
  			this._increment(id, [...arguments]);
 
@@ -74,12 +77,17 @@ class Counter {
 	/**
 	 * Returns the number of times a function was invoked.
 	 * @param {string} id - ID of the function to test.
-	 * @param {number} [invocation=1] - 1-based invocation index.
+	 * @param {number} [invocation] - 1-based invocation index. (Leave blank
+	 * to return all invocations as an array).
 	 * @param {number} [index] - 0-based argument index.
 	 * @return numer - Number of invocations.
 	 */
-	getArgs(id, invocation = 1, index) {
+	getArgs(id, invocation, index) {
 		let invoked;
+
+		if (typeof invocation === 'undefined') {
+			return this._calls[id] || undefined;
+		}
 
 		if (
 			this._calls[id] &&
