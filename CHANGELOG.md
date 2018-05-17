@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.3
+ - Fix issue with editing service configs from the command pallet.
+
 ## 0.4.2
  - Fix issue with saved files not entering queue.
 
