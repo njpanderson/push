@@ -87,10 +87,13 @@ class File extends ServiceBase {
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
-			.then(() => this.getFileStats(dest, src, srcType))
+			.then(() => this.getFileStats(
+				(transferType === File.transferTypes.PUT) ? src : dest,
+				(transferType === File.transferTypes.PUT) ? dest : src,
+			))
 			.then((stats) => super.checkCollision(
-				stats.local,
-				stats.remote,
+				(transferType === File.transferTypes.PUT) ? stats.local : stats.remote,
+				(transferType === File.transferTypes.PUT) ? stats.remote : stats.local,
 				collisionAction
 			))
 			.then((result) => {
@@ -206,7 +209,7 @@ class File extends ServiceBase {
 	 * @param {string} srcType - One of the {@link PathCache.sources} types.
 	 */
 	list(dir, srcType = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, srcType,  this.pathCache);
+		return this.paths.listDirectory(dir, srcType, this.pathCache);
 	}
 
 	listRecursiveFiles(uri, ignoreGlobs) {
@@ -215,15 +218,14 @@ class File extends ServiceBase {
 
 	/**
 	 * Obtains local/remote stats for a file.
-	 * @param {uri} remote - Remote Uri.
 	 * @param {uri} local - Local Uri.
-	 * @param {uri} srcType - One of the {@link PathCache.sources} types.
+	 * @param {uri} remote - Remote Uri.
 	 */
-	getFileStats(remote, local, srcType = SRC_REMOTE) {
+	getFileStats(local, remote) {
 		const remotePath = this.paths.getNormalPath(remote),
 			remoteDir = path.dirname(remotePath);
 
-		return this.list(remoteDir, srcType)
+		return this.list(remoteDir, SRC_REMOTE)
 			.then(() => {
 				const remoteStat = this.pathCache.getFileByPath(
 					SRC_REMOTE,
