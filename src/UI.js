@@ -174,7 +174,7 @@ class UI extends Push {
 	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
-		if (this.getValidUri(uri)) {
+		if ((uri = this.getValidUri(uri))) {
 			this.service.editServiceConfig(uri);
 		}
 	}
