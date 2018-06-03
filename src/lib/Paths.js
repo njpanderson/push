@@ -142,7 +142,7 @@ class Paths {
 					}
 
 					list.forEach((filename) => {
-						let pathname = dir + '/' + filename,
+						let pathname = dir + Paths.sep + filename,
 							stats = fs.statSync(pathname);
 
 						cache.addCachedFile(
