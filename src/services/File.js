@@ -47,7 +47,6 @@ class File extends ServiceBase {
 			local,
 			vscode.Uri.file(remote),
 			vscode.Uri.file(this.config.service.root),
-			'>> ',
 			this.config.service.collisionUploadAction
 		);
 	}
