@@ -604,12 +604,11 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	/**
+	 * Get a single file from the SFTP server.
 	 * @param {uri} local - Local destination Uri.
 	 * @param {string} remote - Remote source filename.
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
-	 * @description
-	 * Get a single file from the SFTP server.
 	 */
 	get(local, remote, collisionAction) {
 		let localPath = this.paths.getNormalPath(local),

@@ -47,7 +47,6 @@ class File extends ServiceBase {
 			local,
 			vscode.Uri.file(remote),
 			vscode.Uri.file(this.config.service.root),
-			'>> ',
 			this.config.service.collisionUploadAction
 		);
 	}
@@ -56,17 +55,20 @@ class File extends ServiceBase {
 	 * Get a single file from the remote location.
 	 * @param {uri} local - Local Uri.
 	 * @param {uri} remote - Remote Uri.
+	 * @param {string} [collisionAction] - What to do on file collision. Use one
+	 * of the utils.collisionOpts collision actions.
 	 */
-	// TODO: check the remote file exists and error remote_file_not_found if not
-	get(local, remote) {
+	get(local, remote, collisionAction) {
+		collisionAction = collisionAction ||
+			this.config.service.collisionDownloadAction;
+
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
 			File.transferTypes.GET,
 			vscode.Uri.file(remote),
 			local,
 			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
-			'<< ',
-			this.config.service.collisionDownloadAction
+			collisionAction
 		);
 	}
 
@@ -88,10 +90,13 @@ class File extends ServiceBase {
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
-			.then(() => this.getFileStats(dest, src, srcType))
+			.then(() => this.getFileStats(
+				(transferType === File.transferTypes.PUT) ? src : dest,
+				(transferType === File.transferTypes.PUT) ? dest : src,
+			))
 			.then((stats) => super.checkCollision(
-				stats.local,
-				stats.remote,
+				(transferType === File.transferTypes.PUT) ? stats.local : stats.remote,
+				(transferType === File.transferTypes.PUT) ? stats.remote : stats.local,
 				collisionAction
 			))
 			.then((result) => {
@@ -207,7 +212,7 @@ class File extends ServiceBase {
 	 * @param {string} srcType - One of the {@link PathCache.sources} types.
 	 */
 	list(dir, srcType = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, srcType,  this.pathCache);
+		return this.paths.listDirectory(dir, srcType, this.pathCache);
 	}
 
 	listRecursiveFiles(uri, ignoreGlobs) {
@@ -216,15 +221,14 @@ class File extends ServiceBase {
 
 	/**
 	 * Obtains local/remote stats for a file.
-	 * @param {uri} remote - Remote Uri.
 	 * @param {uri} local - Local Uri.
-	 * @param {uri} srcType - One of the {@link PathCache.sources} types.
+	 * @param {uri} remote - Remote Uri.
 	 */
-	getFileStats(remote, local, srcType = SRC_REMOTE) {
+	getFileStats(local, remote) {
 		const remotePath = this.paths.getNormalPath(remote),
 			remoteDir = path.dirname(remotePath);
 
-		return this.list(remoteDir, srcType)
+		return this.list(remoteDir, SRC_REMOTE)
 			.then(() => {
 				const remoteStat = this.pathCache.getFileByPath(
 					SRC_REMOTE,

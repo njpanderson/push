@@ -457,10 +457,9 @@
   "devDependencies": {
     "@types/mocha": "^2.2.48",
     "@types/node": "^6.0.106",
-    "eslint": "^3.19.0",
-    "mocha": "^2.3.3",
-    "typescript": "^2.8.3",
-    "vscode": "^1.1.14"
+    "eslint": "^4.19.1",
+    "mocha": "^5.2.0",
+    "typescript": "^2.8.3"
   },
   "dependencies": {
     "glob": "^7.1.2",
@@ -469,6 +468,7 @@
     "mkdirp": "^0.5.1",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^1.1.0",
-    "tmp": "^0.0.33"
+    "tmp": "^0.0.33",
+    "vscode": "^1.1.18"
   }
 }
