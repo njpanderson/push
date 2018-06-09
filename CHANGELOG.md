@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.4
+ - Fix issues with transfers to some File service locations on windows.
+ - Fix issue with collision detection in the File service.
+ - Fix "compare" function in the File service.
+ - Security/patch updates in dependencies.
+
 ## 0.4.3
  - Fix issue with editing service configs from the command pallet.
 
