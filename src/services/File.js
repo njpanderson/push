@@ -55,16 +55,20 @@ class File extends ServiceBase {
 	 * Get a single file from the remote location.
 	 * @param {uri} local - Local Uri.
 	 * @param {uri} remote - Remote Uri.
+	 * @param {string} [collisionAction] - What to do on file collision. Use one
+	 * of the utils.collisionOpts collision actions.
 	 */
-	// TODO: check the remote file exists and error remote_file_not_found if not
-	get(local, remote) {
+	get(local, remote, collisionAction) {
+		collisionAction = collisionAction ||
+			this.config.service.collisionDownloadAction;
+
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
 			File.transferTypes.GET,
 			vscode.Uri.file(remote),
 			local,
 			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
-			this.config.service.collisionDownloadAction
+			collisionAction
 		);
 	}
 
