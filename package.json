@@ -96,6 +96,11 @@
           "type": "boolean",
           "default": false,
           "description": "Set true to queue watched files on change instead of uploading them."
+        },
+        "njpPush.autoUploadQueue": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set true to automatically upload files that enter the queue. This allows for changes within VS Code to be upload on save, while not uploading changes from outside VS Code (like a watcher would)."
         }
       }
     },

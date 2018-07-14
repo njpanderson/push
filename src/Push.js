@@ -127,9 +127,15 @@ class Push extends PushBase {
 		);
 
 		if (this.config.uploadQueue && settings) {
-			// File being changed is a within a service context - queue for uploading
+			// File being changed is within a service context - queue for uploading
 			this.queueForUpload(textDocument.uri)
-				.then(() => this.setEditorState());
+				.then(() => {
+					this.setEditorState();
+
+					if (this.config.autoUploadQueue) {
+						this.execUploadQueue();
+					}
+				});
 		}
 	}
 
@@ -184,6 +190,11 @@ class Push extends PushBase {
 			newConfig.serviceFilename = settings.file,
 				newConfig.service = settings.data[newConfig.serviceName];
 			newConfig.serviceSettingsHash = settings.hash;
+
+			// Expand environment variables
+			newConfig.service.root = newConfig.service.root.replace(/%([^%]+)%/g, function(_, n) {
+				return process.env[n] || _;
+			});
 
 			return newConfig;
 		} else {
@@ -287,7 +298,7 @@ class Push extends PushBase {
 			uris = [uris];
 		}
 
-		uris.forEach((uri) => {
+		return Promise.all(uris.map((uri) => {
 			let remotePath;
 
 			uri = this.paths.getFileSrc(uri);
@@ -299,29 +310,33 @@ class Push extends PushBase {
 					[uri]
 				);
 
-				this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
-					.then((filteredUri) => {
-						if (!filteredUri) {
-							return;
-						}
+				return new Promise((resolve, reject) => {
+					this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+						.then((filteredUri) => {
+							if (!filteredUri) {
+								return;
+							}
 
-						this.queue([{
-							method: 'put',
-							actionTaken: 'uploaded',
-							uriContext: uri,
-							args: [uri, remotePath],
-							id: remotePath + this.paths.getNormalPath(uri)
-						}], false, Push.queueDefs.upload, {
-								showStatus: true,
-								statusToolTip: (num) => {
-									return i18n.t('num_to_upload', num);
-								},
-								statusCommand: 'push.uploadQueuedItems',
-								emptyOnFail: false
-							});
-					});
+							this.queue([{
+								method: 'put',
+								actionTaken: 'uploaded',
+								uriContext: uri,
+								args: [uri, remotePath],
+								id: remotePath + this.paths.getNormalPath(uri)
+							}], false, Push.queueDefs.upload, {
+									showStatus: true,
+									statusToolTip: (num) => {
+										return i18n.t('num_to_upload', num);
+									},
+									statusCommand: 'push.uploadQueuedItems',
+									emptyOnFail: false
+								});
+
+							resolve();
+						});
+				})
 			}
-		});
+		}));
 	}
 
 	/**
@@ -577,17 +592,17 @@ class Push extends PushBase {
 
 				this.getQueue(queueDef)
 					.stop()
-						.then((result) => {
-							resolve(result);
+					.then((result) => {
+						resolve(result);
 
-							!silent && channel.appendLocalisedInfo(
-								'queue_cancelled',
-								queueDef.id
-							);
-						})
-						.catch((error) => {
-							reject(error);
-						});
+						!silent && channel.appendLocalisedInfo(
+							'queue_cancelled',
+							queueDef.id
+						);
+					})
+					.catch((error) => {
+						reject(error);
+					});
 
 				if (force) {
 					// Ensure the service stops in addition to the queue emptying
