@@ -127,23 +127,17 @@ class Push extends PushBase {
 		);
 
 		if (this.config.uploadQueue && settings) {
-			// File being changed is within a service context - queue for uploading
-			this.queueForUpload(textDocument.uri);
-
-			this.setEditorState();
-
 			let vm = this;
 
-			if (this.config.autoUploadQueue) {
-				let interval = setInterval(() => {
-					let uploadQueue = vm.getQueue(Push.queueDefs.upload, false);
+			// File being changed is within a service context - queue for uploading
+			this.queueForUpload(textDocument.uri)
+				.then(() => {
+					vm.setEditorState();
 
-					if (uploadQueue.tasks.length) {
+					if (vm.config.autoUploadQueue) {
 						vm.execUploadQueue();
-						clearInterval(interval);
 					}
-				}, 10);
-			}
+				});
 		}
 	}
 
@@ -297,45 +291,52 @@ class Push extends PushBase {
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
 	queueForUpload(uris) {
-
-		if (!Array.isArray(uris)) {
-			uris = [uris];
-		}
-
-		uris.forEach((uri) => {
-			let remotePath;
-
-			uri = this.paths.getFileSrc(uri);
-
-			if (this.service) {
-				remotePath = this.service.exec(
-					'convertUriToRemote',
-					this.configWithServiceSettings(uri),
-					[uri]
-				);
-
-				this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
-					.then((filteredUri) => {
-						if (!filteredUri) {
-							return;
-						}
-
-						this.queue([{
-							method: 'put',
-							actionTaken: 'uploaded',
-							uriContext: uri,
-							args: [uri, remotePath],
-							id: remotePath + this.paths.getNormalPath(uri)
-						}], false, Push.queueDefs.upload, {
-								showStatus: true,
-								statusToolTip: (num) => {
-									return i18n.t('num_to_upload', num);
-								},
-								statusCommand: 'push.uploadQueuedItems',
-								emptyOnFail: false
-							});
-					});
+		return new Promise((resolve, reject) => {
+			if (!Array.isArray(uris)) {
+				uris = [uris];
 			}
+
+			// Remaining promises to fulfill
+			let remaining = uris.length;
+
+			uris.forEach((uri) => {
+				let remotePath;
+
+				uri = this.paths.getFileSrc(uri);
+
+				if (this.service) {
+					remotePath = this.service.exec(
+						'convertUriToRemote',
+						this.configWithServiceSettings(uri),
+						[uri]
+					);
+
+					this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+						.then((filteredUri) => {
+							if (!filteredUri) {
+								return;
+							}
+
+							this.queue([{
+								method: 'put',
+								actionTaken: 'uploaded',
+								uriContext: uri,
+								args: [uri, remotePath],
+								id: remotePath + this.paths.getNormalPath(uri)
+							}], false, Push.queueDefs.upload, {
+									showStatus: true,
+									statusToolTip: (num) => {
+										return i18n.t('num_to_upload', num);
+									},
+									statusCommand: 'push.uploadQueuedItems',
+									emptyOnFail: false
+								});
+
+							if (!--remaining)
+								resolve();
+						});
+				}
+			});
 		});
 	}
 
