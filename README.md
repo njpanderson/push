@@ -268,7 +268,7 @@ Found a bug? Great! Let me know about it in the [Github issue tracker](https://g
 
 ### Help! Push deleted all my files, wiped my server and/or made my wife leave me!
 
-First of all, that's terrible and of course I wouldn't wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which could potentially cause data loss.
+First of all, that's terrible and of course I wouldn’t wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which could potentially cause data loss.
 
 ## Push in your language
 
@@ -280,6 +280,6 @@ Currently, Push supports the following languages which can be selected within th
 | 🇯🇵 Japanese | `ja` | Poor | (Built in) |
 | 🇮🇹 Italian | `it` | Low-Medum | (Built in) |
 
-If you'd like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
+If you’d like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
 
-Get in touch via the issues if you're interesting in helping to localise Push.
+Get in touch via the issues if you’re interested in helping to localise Push.

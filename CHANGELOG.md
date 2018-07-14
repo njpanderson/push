@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.5
+ - Add windows environment variable support to all service `root` properties. (Thanks, ephemerant!)
+ - Add autoUploadQueue setting (Thanks, ephemerant!)
+
 ## 0.4.4
  - Fix issues with transfers to some File service locations on windows.
  - Fix issue with collision detection in the File service.
