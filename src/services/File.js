@@ -171,7 +171,7 @@ class File extends ServiceBase {
 	}
 
 	/**
-	 * Recursively creates direcotories up to and including the basename of the given path.
+	 * Recursively creates directories up to and including the basename of the given path.
 	 * Will reject on an incompatible collision.
 	 * @param {string} dest - Destination directory to create
 	 */

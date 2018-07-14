@@ -193,6 +193,11 @@ class Push extends PushBase {
 				newConfig.service = settings.data[newConfig.serviceName];
 			newConfig.serviceSettingsHash = settings.hash;
 
+			// Expand environment variables
+			newConfig.service.root = newConfig.service.root.replace(/%([^%]+)%/g, function(_, n) {
+				return process.env[n] || _;
+			});
+
 			return newConfig;
 		} else {
 			// No settings for this context - show an error
@@ -291,26 +296,23 @@ class Push extends PushBase {
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
 	queueForUpload(uris) {
-		return new Promise((resolve, reject) => {
-			if (!Array.isArray(uris)) {
-				uris = [uris];
-			}
+		if (!Array.isArray(uris)) {
+			uris = [uris];
+		}
 
-			// Remaining promises to fulfill
-			let remaining = uris.length;
+		return Promise.all(uris.map((uri) => {
+			let remotePath;
 
-			uris.forEach((uri) => {
-				let remotePath;
+			uri = this.paths.getFileSrc(uri);
 
-				uri = this.paths.getFileSrc(uri);
+			if (this.service) {
+				remotePath = this.service.exec(
+					'convertUriToRemote',
+					this.configWithServiceSettings(uri),
+					[uri]
+				);
 
-				if (this.service) {
-					remotePath = this.service.exec(
-						'convertUriToRemote',
-						this.configWithServiceSettings(uri),
-						[uri]
-					);
-
+				return new Promise((resolve, reject) => {
 					this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
 						.then((filteredUri) => {
 							if (!filteredUri) {
@@ -332,12 +334,11 @@ class Push extends PushBase {
 									emptyOnFail: false
 								});
 
-							if (!--remaining)
-								resolve();
+							resolve();
 						});
-				}
-			});
-		});
+				})
+			}
+		}));
 	}
 
 	/**
