@@ -127,15 +127,13 @@ class Push extends PushBase {
 		);
 
 		if (this.config.uploadQueue && settings) {
-			let vm = this;
-
 			// File being changed is within a service context - queue for uploading
 			this.queueForUpload(textDocument.uri)
 				.then(() => {
-					vm.setEditorState();
+					this.setEditorState();
 
-					if (vm.config.autoUploadQueue) {
-						vm.execUploadQueue();
+					if (this.config.autoUploadQueue) {
+						this.execUploadQueue();
 					}
 				});
 		}
