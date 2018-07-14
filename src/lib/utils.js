@@ -45,6 +45,16 @@ const utils = {
 	},
 
 	/**
+	 * @description
+	 * Show a localised warning message using the VS Code interface.
+	 * Recieves the same arguments as i18n#t
+	 * @see i18n#t
+	 */
+	showLocalisedWarning() {
+		utils.showWarning(i18n.t.apply(i18n, [...arguments]));
+	},
+
+	/**
 	 * Show a status message, optionally removing it after x seconds.
 	 * @param {string} message - Message to show
 	 * @param {number} [removeAfter=0] - How many seconds to wait before removing the

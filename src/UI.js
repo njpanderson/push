@@ -176,6 +176,8 @@ class UI extends Push {
 	editServiceConfig(uri) {
 		if ((uri = this.getValidUri(uri))) {
 			this.service.editServiceConfig(uri);
+		} else {
+			utils.showLocalisedWarning('no_servicefile_context');
 		}
 	}
 
