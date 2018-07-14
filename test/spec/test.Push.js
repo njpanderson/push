@@ -402,7 +402,12 @@ describe('Push', function() {
 	});
 
 	describe('#transferDirectory', () => {
-		it('returns if the path is not a valid scheme');
+		it('returns false if the path is not a valid scheme', () => {
+			assert(push.transferDirectory(
+				fixtures.mockForeignSchemeFile
+			) === false);
+		});
+
 		it('throws if the path is not a directory');
 	})
 });

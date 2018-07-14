@@ -744,7 +744,7 @@ class Push extends PushBase {
 
 		// Check the source directory is a usable scheme
 		if (!this.paths.isValidScheme(uri)) {
-			return;
+			return false;
 		}
 
 		if (!this.paths.isDirectory(uri)) {
