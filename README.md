@@ -39,7 +39,7 @@ This extension contributes the following settings:
 | `queueCompleteMessageType` | `status` | Choose how to be notified on queue completion. Either `status`, or `message` for a permanent reminder. |
 | `statusMessageColor` | `notification.`<br>`infoBackground` | Choose the colour of the queue completion status message. |
 | `queueWatchedFiles` | `false` | When set to `true`, Push will queue watched files with changes detected instead of immediately uploading them. |
-| `autoUploadQueue` | `false` | When set to `true`, Push will automatically upload files that enter the queue. This allows for changes within VS Code to be committed on save, while not committing changes from outside VS Code (like a watcher would). |
+| `autoUploadQueue` | `false` | When set to `true`, Push will automatically upload files that enter the queue. This allows for changes within VS Code to be uploaded on save, while not uploading changes from outside VS Code (like a watcher would). |
 
 ## Using Push
 Push has three main modes of operation: 1) As a standard, on-demand uploader, 2) as a queue-based uploader on save, or 3) as a file watching uploader. All three can be combined or ignored as your preferences dictate.
