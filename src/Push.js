@@ -127,9 +127,23 @@ class Push extends PushBase {
 		);
 
 		if (this.config.uploadQueue && settings) {
-			// File being changed is a within a service context - queue for uploading
-			this.queueForUpload(textDocument.uri)
-				.then(() => this.setEditorState());
+			// File being changed is within a service context - queue for uploading
+			this.queueForUpload(textDocument.uri);
+
+			this.setEditorState();
+
+			let vm = this;
+
+			if (this.config.autoUploadQueue) {
+				let interval = setInterval(() => {
+					let uploadQueue = vm.getQueue(Push.queueDefs.upload, false);
+
+					if (uploadQueue.tasks.length) {
+						vm.execUploadQueue();
+						clearInterval(interval);
+					}
+				}, 10);
+			}
 		}
 	}
 
@@ -283,6 +297,7 @@ class Push extends PushBase {
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
 	queueForUpload(uris) {
+
 		if (!Array.isArray(uris)) {
 			uris = [uris];
 		}
@@ -577,17 +592,17 @@ class Push extends PushBase {
 
 				this.getQueue(queueDef)
 					.stop()
-						.then((result) => {
-							resolve(result);
+					.then((result) => {
+						resolve(result);
 
-							!silent && channel.appendLocalisedInfo(
-								'queue_cancelled',
-								queueDef.id
-							);
-						})
-						.catch((error) => {
-							reject(error);
-						});
+						!silent && channel.appendLocalisedInfo(
+							'queue_cancelled',
+							queueDef.id
+						);
+					})
+					.catch((error) => {
+						reject(error);
+					});
 
 				if (force) {
 					// Ensure the service stops in addition to the queue emptying
