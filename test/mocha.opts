@@ -1,0 +1,4 @@
+--ui bdd
+--bail
+--check-leaks
+--colors

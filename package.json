@@ -457,20 +457,25 @@
   },
   "scripts": {
     "postinstall": "node ./node_modules/vscode/bin/install",
-    "test": "node ./node_modules/vscode/bin/test"
+    "t": "mocha --reporter dot",
+    "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
+    "test": "mocha"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
     "@types/node": "^6.0.106",
     "eslint": "^4.19.1",
+    "glob": "^7.1.2",
+    "istanbul": "^0.4.5",
+    "typescript": "^2.8.3",
+    "vscode": "^1.1.17"
     "mocha": "^5.2.0",
-    "typescript": "^2.8.3"
   },
   "dependencies": {
-    "glob": "^7.1.2",
     "jsonc-parser": "^1.0.3",
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
+    "mockery": "^2.1.0",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",

@@ -115,7 +115,7 @@ class Push extends PushBase {
 
 		if (!textDocument.uri || !this.paths.isValidScheme(textDocument.uri)) {
 			// Empty or invalid URI
-			return;
+			return false;
 		}
 
 		this.settings.clear();
@@ -230,10 +230,6 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
-		if (!queue) {
-			throw new Error('No valid queue defined in Push#queue');
-		}
-
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
 			queue.addTask(new QueueTask(() => {
@@ -294,16 +290,20 @@ class Push extends PushBase {
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
 	queueForUpload(uris) {
+		let tasks = [];
+
+		if (!this.service) {
+			return Promise.reject('No service set.');
+		}
+
 		if (!Array.isArray(uris)) {
+			// Force uris to an array
 			uris = [uris];
 		}
 
 		return Promise.all(uris.map((uri) => {
 			let remotePath;
 
-			uri = this.paths.getFileSrc(uri);
-
-			if (this.service) {
 				remotePath = this.service.exec(
 					'convertUriToRemote',
 					this.configWithServiceSettings(uri),
@@ -344,29 +344,33 @@ class Push extends PushBase {
 	 * Copies the "upload" queue over to the default queue and runs the default queue.
 	 * The upload queue is then emptied once the default queue has completed without
 	 * errors.
+	 * @returns promise - Promise, resolving when the queue is complete.
 	 */
 	execUploadQueue() {
-		let uploadQueue, queue;
+		return new Promise((resolve, reject) => {
+			let uploadQueue, queue;
 
-		if (!this.config.uploadQueue) {
-			return channel.appendLocalisedInfo('upload_queue_disabled');
-		}
-
-		uploadQueue = this.getQueue(Push.queueDefs.upload);
-
-		if (uploadQueue.tasks.length) {
-			queue = this.queue(uploadQueue.tasks, true)
-
-			if (queue instanceof Promise) {
-				queue.then(() => {
-					uploadQueue.empty();
-				});
+			if (!this.config.uploadQueue) {
+				channel.appendLocalisedInfo('upload_queue_disabled');
+				return reject('Upload queue disabled.');
 			}
-		} else {
-			utils.showWarning(i18n.t('queue_empty'));
-		}
 
-		return uploadQueue
+			uploadQueue = this.getQueue(Push.queueDefs.upload);
+
+			if (uploadQueue.tasks.length) {
+				queue = this.queue(uploadQueue.tasks, true)
+
+				if (queue instanceof Promise) {
+					queue.then(() => {
+						uploadQueue.empty();
+					})
+					.then(resolve);
+				}
+			} else {
+				utils.showWarning(i18n.t('queue_empty'));
+				return reject('Queue empty.');
+			}
+		});
 	}
 
 	/**
@@ -420,6 +424,7 @@ class Push extends PushBase {
 		}
 
 		if (!this.queues[queueDef.id]) {
+			// Queue doesn't exist by ID
 			if (queueOptions === false) {
 				// No new queue wanted, just return null;
 				return null;
@@ -439,14 +444,11 @@ class Push extends PushBase {
 	execQueue(queueDef) {
 		const queue = this.getQueue(queueDef);
 
-		if (!(queue instanceof Queue)) {
-			throw new Error('Invalid queue definition type.');
-		}
-
 		if (queue.running) {
-			return null;
+			return Promise.reject('Queue running.');
 		}
 
+		// TODO: make channel clearing an option to turn on
 		// channel.clear();
 
 		// Fetch and execute queue
@@ -541,7 +543,8 @@ class Push extends PushBase {
 	 * @param {boolean} silent - Set `true` to create no notices when stopping the queue.
 	 */
 	stopCancellableQueues(force = false, silent = false) {
-		let def, queue;
+		let tasks = [],
+			def, queue;
 
 		for (def in Push.queueDefs) {
 			if (
@@ -549,9 +552,13 @@ class Push extends PushBase {
 				Push.queueDefs[def].cancellable &&
 				queue.running
 			) {
-				this.stopQueue(Push.queueDefs[def], force, silent);
+				tasks.push(
+					this.stopQueue(Push.queueDefs[def], force, silent)
+				);
 			}
 		}
+
+		return Promise.all(tasks);
 	}
 
 	/**
@@ -563,30 +570,31 @@ class Push extends PushBase {
 	 * stopping the queue.
 	 */
 	stopQueue(queueDef, force = false, silent = false) {
-		// Get the queue by definition and run its #stop method.
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
 			title: 'Push'
 		}, (progress) => {
 			return new Promise((resolve, reject) => {
-				let timer;
+				let tasks = [],
+					timer;
 
 				progress.report({ message: i18n.t('stopping') });
 
 				if (force) {
-					// Give X seconds to stop or force
+					// Give X seconds to stop or force by restarting the active service
 					timer = setTimeout(() => {
-						// Force stop the queue
-						let message = i18n.t(
+						// Force restart the active service
+						this.service.restartServiceInstance();
+
+						// Show the error
+						!silent && channel.appendError(i18n.t(
 							'queue_force_stopped',
 							queueDef.id,
 							Push.globals.FORCE_STOP_TIMEOUT
-						);
+						));
 
-						this.service.restartServiceInstance();
-
-						!silent && channel.appendError(message);
-						reject(message);
+						// Reject the outer promise - this is a lost cause
+						reject('Queue force stopped.');
 					}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
 				}
 
@@ -603,18 +611,38 @@ class Push extends PushBase {
 					.catch((error) => {
 						reject(error);
 					});
+				// Stop the queue
+				tasks.push(
+					this.getQueue(queueDef).stop()
+						.then((result) => {
+							!silent && channel.appendLocalisedInfo(
+								'queue_cancelled',
+								queueDef.id
+							);
+
+							return result;
+						})
+				);
 
 				if (force) {
-					// Ensure the service stops in addition to the queue emptying
-					this.service.stop()
-						.then(() => {
-							clearTimeout(timer);
-							resolve();
-						}, () => {
-							clearTimeout(timer);
-							reject();
-						});
+					// Stop the service as well
+					tasks.push(
+						this.service.stop()
+					);
 				}
+
+				// Resolve the outer promise (and clear the timeout) when all
+				// of the tasks have finished. The outer promise can also be rejected
+				// by the timeout (see above).
+				Promise.all(tasks)
+					.then((results) => {
+						clearTimeout(timer);
+						resolve(results[0]);
+					})
+					.catch((error) => {
+						clearTimeout(timer);
+						reject(error);
+					});
 			});
 		});
 	}
@@ -626,13 +654,26 @@ class Push extends PushBase {
 	 * @returns {promise} - A promise, resolving when the file has transferred.
 	 */
 	transfer(uris, method) {
-		let ignoreGlobs = [], action, actionTaken;
+		let ignoreGlobs = [],
+			tasks = [],
+			action, actionTaken;
 
 		this.settings.clear();
+
+		if (typeof uris === 'undefined') {
+			throw new Error('No files defined.');
+		}
 
 		if (!Array.isArray(uris)) {
 			uris = [uris];
 		}
+
+		// Check there are no directories
+		uris.forEach((uri) => {
+			if (this.paths.isDirectory(uri)) {
+				throw new Error(`Path "${uri.path}" is a directory and cannot be transferred with Push#transfer.`);
+			}
+		});
 
 		if (method === 'put') {
 			action = 'upload';
@@ -644,18 +685,13 @@ class Push extends PushBase {
 			action = 'download';
 			actionTaken = 'downloaded';
 		} else {
-			throw new Error(`Unkown method "${method}"`);
+			throw new Error(`Unknown method "${method}"`);
 		}
 
 		uris.forEach((uri, index) => {
 			// Check the source file is a usable scheme
 			if (!this.paths.isValidScheme(uri)) {
 				return;
-			}
-
-			// Check the source file isn't a directory
-			if (this.paths.isDirectory(uri)) {
-				throw new Error('Path is a directory and cannot be transferred with Push#transfer.');
 			}
 
 			// Check that the source file exists
@@ -669,42 +705,50 @@ class Push extends PushBase {
 			}
 
 			// Filter and add to the queue
-			this.paths.filterUriByGlobs(uri, ignoreGlobs)
-				.then((filteredUri) => {
-					let config, remotePath;
+			tasks.push(
+				this.paths.filterUriByGlobs(uri, ignoreGlobs)
+					.then((filteredUri) => {
+						let config, remotePath;
 
-					if (filteredUri !== false) {
-						config = this.configWithServiceSettings(filteredUri);
+						if (filteredUri !== false) {
+							config = this.configWithServiceSettings(filteredUri);
 
-						remotePath = this.service.exec(
-							'convertUriToRemote',
-							config,
-							[filteredUri]
-						);
+							remotePath = this.service.exec(
+								'convertUriToRemote',
+								config,
+								[filteredUri]
+							);
 
-						if (config) {
-							// Add to queue and return (also start on the last item added)
-							return this.queue([{
-								method,
-								actionTaken,
-								uriContext: filteredUri,
-								args: [
-									filteredUri,
-									remotePath
-								],
-								id: remotePath + this.paths.getNormalPath(filteredUri)
-							}], (index === uris.length - 1));
+							if (config) {
+								// Add to queue and return (also start on the last item added)
+								return this.queue([{
+									method,
+									actionTaken,
+									uriContext: filteredUri,
+									args: [
+										filteredUri,
+										remotePath
+									],
+									id: remotePath + this.paths.getNormalPath(filteredUri)
+								}], (index === uris.length - 1));
+							}
+						} else {
+							// Only one file is being transfered so warn the user it ain't happening
+							channel.appendLocalisedError(
+								'cannot_action_ignored_file',
+								action,
+								this.paths.getBaseName(uri)
+							);
 						}
-					} else {
-						// Only one file is being transfered so warn the user it ain't happening
-						channel.appendLocalisedError(
-							'cannot_action_ignored_file',
-							action,
-							this.paths.getBaseName(uri)
-						);
-					}
-				});
+					})
+			);
 		});
+
+		if (tasks.length) {
+			return Promise.all(tasks);
+		}
+
+		return Promise.resolve();
 	}
 
 	/**
@@ -718,7 +762,7 @@ class Push extends PushBase {
 
 		// Check the source directory is a usable scheme
 		if (!this.paths.isValidScheme(uri)) {
-			return;
+			return false;
 		}
 
 		if (!this.paths.isDirectory(uri)) {
