@@ -468,8 +468,7 @@
     "glob": "^7.1.2",
     "istanbul": "^0.4.5",
     "typescript": "^2.8.3",
-    "vscode": "^1.1.17"
-    "mocha": "^5.2.0",
+    "mocha": "^5.2.0"
   },
   "dependencies": {
     "jsonc-parser": "^1.0.3",
