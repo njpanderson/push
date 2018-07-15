@@ -290,8 +290,6 @@ class Push extends PushBase {
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to queue.
 	 */
 	queueForUpload(uris) {
-		let tasks = [];
-
 		if (!this.service) {
 			return Promise.reject('No service set.');
 		}
@@ -301,41 +299,36 @@ class Push extends PushBase {
 			uris = [uris];
 		}
 
-		return Promise.all(uris.map((uri) => {
+		return Promise.all(uris.map(uri => {
 			let remotePath;
 
-				remotePath = this.service.exec(
-					'convertUriToRemote',
-					this.configWithServiceSettings(uri),
-					[uri]
-				);
+			remotePath = this.service.exec(
+				'convertUriToRemote',
+				this.configWithServiceSettings(uri),
+				[uri]
+			);
 
-				return new Promise((resolve, reject) => {
-					this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
-						.then((filteredUri) => {
-							if (!filteredUri) {
-								return;
-							}
+			return this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+				.then((filteredUri) => {
+					if (!filteredUri) {
+						return;
+					}
 
-							this.queue([{
-								method: 'put',
-								actionTaken: 'uploaded',
-								uriContext: uri,
-								args: [uri, remotePath],
-								id: remotePath + this.paths.getNormalPath(uri)
-							}], false, Push.queueDefs.upload, {
-									showStatus: true,
-									statusToolTip: (num) => {
-										return i18n.t('num_to_upload', num);
-									},
-									statusCommand: 'push.uploadQueuedItems',
-									emptyOnFail: false
-								});
-
-							resolve();
+					this.queue([{
+						method: 'put',
+						actionTaken: 'uploaded',
+						uriContext: uri,
+						args: [uri, remotePath],
+						id: remotePath + this.paths.getNormalPath(uri)
+					}], false, Push.queueDefs.upload, {
+							showStatus: true,
+							statusToolTip: (num) => {
+								return i18n.t('num_to_upload', num);
+							},
+							statusCommand: 'push.uploadQueuedItems',
+							emptyOnFail: false
 						});
-				})
-			}
+				});
 		}));
 	}
 
@@ -598,19 +591,6 @@ class Push extends PushBase {
 					}, ((Push.globals.FORCE_STOP_TIMEOUT * 1000)));
 				}
 
-				this.getQueue(queueDef)
-					.stop()
-					.then((result) => {
-						resolve(result);
-
-						!silent && channel.appendLocalisedInfo(
-							'queue_cancelled',
-							queueDef.id
-						);
-					})
-					.catch((error) => {
-						reject(error);
-					});
 				// Stop the queue
 				tasks.push(
 					this.getQueue(queueDef).stop()
@@ -621,6 +601,9 @@ class Push extends PushBase {
 							);
 
 							return result;
+						})
+						.catch((error) => {
+							reject(error);
 						})
 				);
 
