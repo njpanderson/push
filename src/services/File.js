@@ -215,8 +215,20 @@ class File extends ServiceBase {
 		return this.paths.listDirectory(dir, srcType, this.pathCache);
 	}
 
-	listRecursiveFiles(uri, ignoreGlobs) {
-		return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs);
+	/**
+	 * @param {string} dir - Directory to list.
+	 * @param {string} ignoreGlobs - List of globs to ignore.
+	 * @description
+	 * Returns a promise either resolving to a recursive file list in the format
+	 * given by {@link PathCache#getRecursiveFiles}, or rejects if `dir` is not
+	 * found.
+	 * @returns {promise}
+	 */
+	listRecursiveFiles(dir, ignoreGlobs) {
+		return this.paths.getDirectoryContentsAsFiles(
+			vscode.Uri.file(dir),
+			ignoreGlobs
+		);
 	}
 
 	/**
@@ -229,24 +241,19 @@ class File extends ServiceBase {
 			remoteDir = path.dirname(remotePath);
 
 		return this.list(remoteDir, SRC_REMOTE)
-			.then(() => {
-				const remoteStat = this.pathCache.getFileByPath(
-					SRC_REMOTE,
-					remotePath
-				);
-
-				let localPath = this.paths.getNormalPath(local),
-					localStat = fs.statSync(localPath);
-
-				return {
-					local: {
-						name: path.basename(localPath),
-						modified: (localStat.mtime.getTime() / 1000),
-						type: (localStat.isDirectory() ? 'd' : 'f')
-					},
-					remote: remoteStat
-				};
-			});
+			.then(() => ({
+				// Get remote stats
+				remote: this.pathCache.getFileByPath(SRC_REMOTE, remotePath)
+			}))
+			.then(stats => (new Promise(resolve => {
+				// Get local stats
+				this.paths.getFileStats(this.paths.getNormalPath(local))
+					.then(local => {
+						resolve(Object.assign(stats, {
+							local
+						}));
+					});
+			})));
 	}
 
 	/**

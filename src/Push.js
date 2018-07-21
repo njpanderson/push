@@ -525,7 +525,6 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
-		// console.log(`Setting push context: push:${context} to "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
@@ -781,6 +780,7 @@ class Push extends PushBase {
 						let remotePath;
 
 						uri = vscode.Uri.file(uri);
+
 						remotePath = this.service.exec(
 							'convertUriToRemote',
 							config,

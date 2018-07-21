@@ -114,6 +114,7 @@ class Paths {
 		dir = this.getNormalPath(dir, 'file');
 
 		if (dir) {
+			// Use a try block to suppress statSync exceptions
 			try {
 				const stats = fs.statSync(dir);
 				return stats.isDirectory();
@@ -127,8 +128,11 @@ class Paths {
 
 	getGlobOptions(extend = {}) {
 		return Object.assign({
+			// Match dotfiles (".filename")
 			dot: true,
+			// Don't match directories (but still follow them)
 			nodir: true,
+			// Don't follow symlinks
 			follow: false
 		}, extend);
 	}
@@ -327,19 +331,20 @@ class Paths {
 
 	ensureDirExists(dir) {
 		return new Promise((resolve, reject) => {
-			fs.stat(dir, (error, stat) => {
-				if (!stat) {
-					mkdirp(dir, function (error) {
-						if (error) {
-							reject(error);
-						} else {
-							resolve();
-						}
-					});
-				} else {
-					resolve();
-				}
-			})
+			this.getFileStats(dir)
+				.then(stats => {
+					if (!stats) {
+						mkdirp(dir, function (error) {
+							if (error) {
+								reject(error);
+							} else {
+								resolve();
+							}
+						});
+					} else {
+						resolve();
+					}
+				});
 		});
 	}
 
@@ -370,6 +375,33 @@ class Paths {
 				} else {
 					resolve(data);
 				}
+			});
+		});
+	}
+
+	/**
+	 * @param {string} fileName - Name of the file to stat
+	 * @description
+	 * Non-rejecting file stats function. This function will safely (and consistently)
+	 * retrieve local file stats without bothering with rejections or exceptions (and
+	 * will just return `null` if the file isn't found).
+	 */
+	getFileStats(fileName) {
+		return new Promise((resolve) => {
+			fs.stat(fileName, (error, stat) => {
+				let result;
+
+				if (!error && stat) {
+					result = {
+						name: path.basename(fileName),
+						modified: (stat.mtime.getTime() / 1000),
+						type: (stat.isDirectory() ? 'd' : 'f')
+					};
+				} else {
+					result = null;
+				}
+
+				resolve(result);
 			});
 		});
 	}

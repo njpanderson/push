@@ -173,7 +173,6 @@ class ServiceSFTP extends ServiceBase {
 			// Set up client gateway and connect to it
 			client.gateway
 				.on('ready', () => {
-					console.log('Gateway connection ready');
 					if (client.options.privateKeyFile) {
 						// Get the private key file contents from the gateway, then connect
 						this.readWithSSH(client.gateway, client.options.privateKeyFile)
@@ -995,27 +994,11 @@ class ServiceSFTP extends ServiceBase {
 		let result = {};
 
 		return this.list(remoteDir)
-			.then(() => {
-				return new Promise((resolve) => {
-					const localPath = this.paths.getNormalPath(local);
-
-					fs.stat(localPath, (error, stat) => {
-						if (!error && stat) {
-							result.local = {
-								name: path.basename(localPath),
-								modified: (stat.mtime.getTime() / 1000),
-								type: (stat.isDirectory() ? 'd' : 'f')
-							};
-
-
-						} else {
-							result.local = null;
-						}
-
-						resolve();
-					});
-				});
-			})
+			.then(() => (this.paths.getFileStats(this.paths.getNormalPath(local))
+				.then(localStats => {
+					result.local = localStats;
+				})
+			))
 			.then(() => {
 				result.remote = this.pathCache.getFileByPath(
 					SRC_REMOTE,

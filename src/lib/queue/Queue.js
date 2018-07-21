@@ -457,8 +457,12 @@ class Queue {
 	 * @param {mixed} value - Context value
 	 */
 	_setContext(context, value) {
-		// console.log(`Setting queue context: push:queue-${this.id}-${context} to "${value}"`);
-		vscode.commands.executeCommand('setContext', `push:queue-${this.id}-${context}`, value);
+		vscode.commands.executeCommand(
+			'setContext',
+			`push:queue-${this.id}-${context}`,
+			value
+		);
+
 		return this;
 	}
 };
