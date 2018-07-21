@@ -174,7 +174,7 @@ class Paths {
 	 * or an array of path components.
 	 * @param {array} [ignoreGlobs] - List of globs to ignore.
 	 */
-	getDirectoryContentsAsFiles(include, ignoreGlobs = []) {
+	getDirectoryContentsAsFiles(include, ignoreGlobs = [], followSymlinks = false) {
 		let parsed;
 
 		if (include instanceof vscode.Uri) {
@@ -196,7 +196,8 @@ class Paths {
 			new glob.Glob(
 				include,
 				this.getGlobOptions({
-					ignore: ignoreGlobs
+					ignore: ignoreGlobs,
+					follow: followSymlinks
 				}),
 				(error, matches) => {
 					if (error) {

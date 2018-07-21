@@ -774,7 +774,11 @@ class Push extends PushBase {
 
 		if (method === 'put') {
 			// Recursively list local files and transfer each one
-			return this.paths.getDirectoryContentsAsFiles(uri, ignoreGlobs)
+			return this.paths.getDirectoryContentsAsFiles(
+				uri,
+				ignoreGlobs,
+				config.service.followSymlinks
+			)
 				.then((files) => {
 					let tasks = files.map((uri) => {
 						let remotePath;

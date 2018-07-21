@@ -4,6 +4,10 @@ All notable changes to Push will be documented in this file.
 ## 0.4.5
  - Add windows environment variable support to all service `root` properties. (Thanks, ephemerant!)
  - Add autoUploadQueue setting (Thanks, ephemerant!)
+ - Make certain file stat collections more reliable.
+ - Fix issues with downloading folders from File sources.
+ - Better local symlink handling.
+ - Add "followSymlinks" option for uploading — this effectively disables the symlink following behaviour by default.
 
 ## 0.4.4
  - Fix issues with transfers to some File service locations on windows.

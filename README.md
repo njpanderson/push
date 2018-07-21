@@ -256,6 +256,7 @@ The following options are available to all services:
 | `collisionUploadAction` | (Prompt) | Sets how to proceed when colliding with the same remote file. Set one of `stop` (Stop transfer entirely), `skip` (Skip the file), `overwrite` (Overwrite the file), or `rename` (Keep both files by renaming the source file). This option is ignored if the file type (directory or file) does not match the target.
 | `collisionDownloadAction` | (Prompt) | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
 | `timeZoneOffset` | `0` | The offset, in hours, the time is set to on the origin relative to the local device. I.e. if the origin is GMT+1 and the device is GMT-1, the offset would be `2` |
+| `followSymlinks` | `false` | If supported, the contents of symlinks may be included when uploading files. This will likely not affect downloads due to the nature of how they are normally represented on remote servers, as well as the potential for not having access to the linked-to files. |
 
 ## Known issues
 

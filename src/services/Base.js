@@ -416,7 +416,8 @@ ServiceBase.defaults = {
 	timeZoneOffset: 0,
 	testCollisionTimeDiffs: true,
 	collisionUploadAction: null,
-	collisionDownloadAction: null
+	collisionDownloadAction: null,
+	followSymlinks: false
 };
 
 ServiceBase.pathSep = Paths.sep;
