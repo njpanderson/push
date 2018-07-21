@@ -128,7 +128,8 @@ class Paths {
 	getGlobOptions(extend = {}) {
 		return Object.assign({
 			dot: true,
-			nodir: true
+			nodir: true,
+			follow: false
 		}, extend);
 	}
 
@@ -174,7 +175,7 @@ class Paths {
 
 		if (include instanceof vscode.Uri) {
 			// Create path out of Uri
-			include = `${this.getNormalPath(include)}${path.sep}**${path.sep}*`;
+			include = `${this.getNormalPath(include)}${path.sep}**`;
 		}
 
 		if (Array.isArray(include)) {
