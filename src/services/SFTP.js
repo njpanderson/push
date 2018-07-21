@@ -894,6 +894,11 @@ class ServiceSFTP extends ServiceBase {
 									match = micromatch([pathName], ignoreGlobs);
 								}
 
+								if (item.type !== 'd' && item.type !== '-') {
+									// Ignore any file that isn't a directory or a regular file
+									return;
+								}
+
 								if (!match || !match.length) {
 									this.pathCache.addCachedFile(
 										SRC_REMOTE,
