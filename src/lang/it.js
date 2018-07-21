@@ -53,7 +53,7 @@ module.exports = {
 	'watched_paths': 'Percorsi osservati:',
 	'path_with_trigger_count': '${1} (sparato ${2} p{2:volta:volte})',
 	'no_paths_watched': 'Nessun percorso osservato.',
-	'directory_out_of_root_no_create': 'La directory è al di fuori della radice e non può essere creata.',
+	'directory_out_of_root_no_create': 'La directory "${1}" non si trova nel percorso principale e non può essere creata.',
 	'directory_not_created_remote_mismatch': 'Impossibile creare la directory "${1}" (esiste un file con lo stesso nome sul telecomando!)',
 	'file_class_description': 'Trasferimenti di file locali / di rete',
 	'remote_file_not_found': 'Il file remoto "${1}" non esiste.',

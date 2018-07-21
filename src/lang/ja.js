@@ -53,7 +53,7 @@ module.exports = {
 	'watched_paths': '監視対象パス：',
 	'path_with_trigger_count': '${1}（${2}回p{2:発砲:点火}）',
 	'no_paths_watched': 'パスは監視されませんでした。',
-	'directory_out_of_root_no_create': 'ディレクトリがルートパスの外にあり、作成できません。',
+	'directory_out_of_root_no_create': 'ディレクトリ "${1}"はルートパスに含まれていないため作成できません。',
 	'directory_not_created_remote_mismatch': 'ディレクトリ${1}を作成できませんでした（同じ名前のファイルがリモートに存在します）。',
 	'file_class_description': 'ローカル/ネットワークファイル転送',
 	'remote_file_not_found': 'リモートファイル${1}は存在しません。',

@@ -53,7 +53,7 @@ module.exports = {
 	'watched_paths': 'Watched paths:',
 	'path_with_trigger_count': '${1} (fired ${2} p{2:time:times})',
 	'no_paths_watched': 'No paths watched.',
-	'directory_out_of_root_no_create': 'Directory is outside of root and cannot be created.',
+	'directory_out_of_root_no_create': 'The directory "${1}" is not within the root path and cannot be created.',
 	'directory_not_created_remote_mismatch': 'Directory "${1}" could not be created (a file with the same name exists on the remote!)',
 	'file_class_description': 'Local/network file transfers',
 	'file_not_found': 'The file "${1}" could not be found.',

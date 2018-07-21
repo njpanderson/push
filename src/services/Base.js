@@ -215,7 +215,7 @@ class ServiceBase {
 			return this.mkDirByList(dirList, fnDir);
 		}
 
-		return Promise.reject(i18n.t('directory_out_of_root_no_create'));
+		return Promise.reject(i18n.t('directory_out_of_root_no_create', dir));
 	}
 
 	mkDirByList(list, fnDir) {
