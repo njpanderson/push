@@ -21,7 +21,7 @@ module.exports = {
 	'empty': 'Empty',
 	'empty_template': 'Empty template',
 	'select_service_type_template': 'Select a service type template.',
-	'filename_exists': 'The file ${1} already exists.',
+	'filename_exists': 'The file ${1} already exists and appears to be newer.',
 	'filename_exists_mismatch': 'The file ${1} already exists and is of a different type.',
 	'skip': 'Skip',
 	'stop': 'Stop',
