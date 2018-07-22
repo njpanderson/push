@@ -85,14 +85,6 @@ class ServiceSFTP extends ServiceBase {
 	}
 
 	/**
-	 * Sets the current configuration.
-	 * @param {object} config
-	 */
-	setConfig(config) {
-		super.setConfig(config);
-	}
-
-	/**
 	 * Connect to an SSH server, returning a Promise resolving to a client instance.
 	 * @returns {promise} - Promise resolving to a connected SFTP client instance.
 	 */
