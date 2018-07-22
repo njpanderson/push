@@ -54,7 +54,7 @@ class UI extends Push {
 	 */
 	upload(uri) {
 		if (!(uri = this.getValidUri(uri))) {
-			return false;
+			return Promise.reject();
 		}
 
 		if (this.paths.isDirectory(uri)) {
@@ -73,7 +73,7 @@ class UI extends Push {
 	 */
 	download(uri) {
 		if (!(uri = this.getValidUri(uri))) {
-			return false;
+			return Promise.reject();
 		}
 
 		if (this.paths.isDirectory(uri)) {

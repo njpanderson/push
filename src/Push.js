@@ -870,12 +870,17 @@ class Push extends PushBase {
 	getValidUri(uri) {
 		uri = this.paths.getFileSrc(uri);
 
-		if (this.paths.isValidScheme(uri)) {
-			return uri;
+		if (!this.paths.isValidPath(uri)) {
+			utils.showError(i18n.t('invalid_path', uri.scheme));
+			return false;
 		}
 
-		utils.showError(i18n.t('invalid_uri_scheme', uri.scheme));
-		return false;
+		if (!this.paths.isValidScheme(uri)) {
+			utils.showError(i18n.t('invalid_uri_scheme', uri.scheme));
+			return false;
+		}
+
+		return uri;
 	}
 }
 

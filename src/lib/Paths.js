@@ -309,6 +309,26 @@ class Paths {
 	}
 
 	/**
+	 * @description
+	 * Check that a Uri or string path is valid.
+	 *
+	 * Checks that the path:
+	 * - Has at least one directory
+	 * - Contains a "root" path (e.g. / or c:\)
+	 * - Doesn't contain "bad" characters (e.g. traversal characters)
+	 * @param {Uri|string} uri
+	 */
+	isValidPath(uri) {
+		uri = path.parse(this.getNormalPath(uri));
+
+		return !(
+			uri.dir.length < 1 ||
+			uri.root === '' ||
+			Paths.re.badPathChars.test(uri.dir)
+		);
+	}
+
+	/**
 	 * Process a Uri and retrieve the basename component.
 	 * @param {Uri} uri - Uri to process.
 	 */
@@ -409,5 +429,9 @@ class Paths {
 }
 
 Paths.sep = path.sep;
+
+Paths.re = {
+	badPathChars: /\.\.\//
+};
 
 module.exports = Paths;
