@@ -11,6 +11,7 @@ All notable changes to Push will be documented in this file.
  - Fix issues with downloading folders from File sources.
  - Better local symlink handling.
  - Add "followSymlinks" option for uploading — this effectively disables the symlink following behaviour by default.
+ - Improved some language strings
 
 ## 0.4.4
  - Fix issues with transfers to some File service locations on windows.
