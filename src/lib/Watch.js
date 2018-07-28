@@ -11,14 +11,31 @@ class Watch {
 	 * Class constructor
 	 * @param {OutputChannel} channel - Channel for outputting information
 	 */
-	constructor() {
+	constructor(stateStorage) {
+		this.watchByWorkspaceFolders = this.watchByWorkspaceFolders.bind(this);
+
 		this.watchList = [];
 		this.paths = new Paths();
+		this.stateStorage = stateStorage;
+
+		vscode.workspace.onDidChangeWorkspaceFolders((event) => {
+			this.watchByWorkspaceFolders(event.added, event.removed);
+		});
+
+		// console.log('watch constructor', this.stateStorage.get('watchList'));
+		// this.context.workspaceState.update('watchList', watchList);
 
 		/**
 		 * Invoked when a watch list updates
+		 * @event
 		 */
 		this.onWatchUpdate = null;
+
+		/**
+		 * Invoced every time a watched Uri is triggered
+		 * @event
+		 */
+		this.onChange = null;
 
 		this.status = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.Left,
@@ -29,20 +46,102 @@ class Watch {
 	}
 
 	/**
+	 * @description
+	 * Adds or removes stored watchers found to exist within the defined workspace
+	 * folder(s). Use `add` to add watchers from the folders, `remove` to remove them.
+	 * @param {WorkspaceFolder[]} add - Watchers matching paths within this workspace
+	 * will be added.
+	 * @param {WorkspaceFolder[]} remove - Watchers matching paths within this
+	 * workspace will be removed.
+	 */
+	watchByWorkspaceFolders() {
+		let watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []),
+			args = [...arguments || []];
+
+		['add', 'remove'].forEach((action, i) => {
+			let folders;
+
+			args[i] && args[i].forEach((folder) => {
+				// Filter watch list by Uris in folder root then add watches
+				watchList
+					.filter(item => this.paths.pathInUri(
+						item.path,
+						folder.uri
+					))
+					.forEach(item => this[action].apply(this, [
+						vscode.Uri.file(item.path),
+						item.enabled
+					]));
+			});
+		});
+	}
+
+	addToWatchStore(uri, enabled = true) {
+		let watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []),
+			path = this.paths.getNormalPath(uri),
+			index = watchList.findIndex(item => item.path === path);
+
+		if (index !== -1) {
+			// Just update timestamp
+			watchList[index].date = Date.now();
+			watchList[index].enabled = enabled;
+		} else {
+			watchList.unshift({
+				path: this.paths.getNormalPath(uri),
+				date: (Date.now()),
+				enabled
+			});
+		}
+
+		// Make sure watchList isn't over max items
+		if (watchList.length > Watch.constants.WATCH_STORE_MAXLEN) {
+			console.log(`watchList too long! ${watchList.length} - reducing...`);
+			// Order by date, descending
+			watchList.sort((a, b) => {
+				return b.date - a.date;
+			});
+
+			// Splice
+			watchList.splice((Watch.constants.WATCH_STORE_MAXLEN));
+			console.log(`watchList.length: ${watchList.length}`);
+		}
+
+		this.stateStorage.update(Watch.constants.WATCH_STORE, watchList);
+
+		console.log('watchList', watchList);
+	}
+
+	removeWatchFromStore(uri) {
+		let watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []),
+			path = this.paths.getNormalPath(uri),
+			index = watchList.findIndex(item => item.path === path);
+
+		if (index !== -1) {
+			watchList.splice(index, 1);
+		}
+
+		this.stateStorage.update(Watch.constants.WATCH_STORE, watchList);
+
+		console.log('watchList', watchList);
+	}
+
+	/**
 	 * Add (and activate) a new watcher.
 	 * @param {Uri} uri - Uri to start watching.
-	 * @param {function} callback - Callback to fire on change event.
+	 * @param {bool} [enabled=true] - Whether to enable the watcher.
 	 */
-	add(uri, callback) {
+	add(uri, enabled = true) {
 		let item;
 
 		if ((item = this.find(uri)) === -1) {
 			// Watch doesn't already exist - add a new one
-			this.watchList.push(this._createWatch(uri, callback));
+			this.watchList.push(this._createWatch(uri, enabled));
 		} else {
 			// Watch for this Uri already exists - re-instantiate the watcher
 			this.watchList[item].initWatcher();
 		}
+
+		this.addToWatchStore(uri);
 
 		channel.appendLocalisedInfo('added_watch_for', this.paths.getNormalPath(uri));
 		this._updateStatus();
@@ -60,6 +159,8 @@ class Watch {
 			this.watchList.splice(item, 1);
 			channel.appendLocalisedInfo('removed_watch_for', this.paths.getNormalPath(uri));
 		}
+
+		this.removeWatchFromStore(uri);
 
 		this._updateStatus();
 	}
@@ -84,6 +185,8 @@ class Watch {
 			} else {
 				item.removeWatcher();
 			}
+
+			this.addToWatchStore(item.uri, on);
 		});
 
 		this._updateStatus();
@@ -124,12 +227,14 @@ class Watch {
 	/**
 	 * Create a watch list item instance.
 	 * @param {Uri} uri - Uri to watch.
+	 * @param {bool} enable - Whether to enable the watcher item.
 	 * @private
 	 */
-	_createWatch(uri, callback) {
+	_createWatch(uri, enable) {
 		return new WatchListItem(
 			uri,
-			callback
+			this.onChange,
+			enable
 		);
 	}
 
@@ -177,6 +282,11 @@ class Watch {
 		return this;
 	}
 };
+
+Watch.constants = {
+	WATCH_STORE: 'Watch:watchList',
+	WATCH_STORE_MAXLEN: 4
+}
 
 Watch.contexts = {
 	hasRunningWatchers: 'hasRunningWatchers',

@@ -21,7 +21,7 @@ let ui;
 exports.activate = (context) => {
 	let subscriptions, sub;
 
-	ui = new UI();
+	ui = new UI(context);
 
 	subscriptions = {
 		'push.upload': 'upload',
