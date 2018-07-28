@@ -109,13 +109,7 @@ class UI extends Push {
 			return false;
 		}
 
-		this.watch.add(uri, (uri) => {
-			if (this.config.queueWatchedFiles) {
-				this.queueForUpload(uri);
-			} else {
-				this.upload(uri);
-			}
-		});
+		this.watch.add(uri);
 	}
 
 	/**
