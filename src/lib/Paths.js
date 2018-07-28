@@ -22,6 +22,19 @@ class Paths {
 	}
 
 	/**
+	 * Tests whether the first Uri or path is within the second.
+	 * @param {Uri|string} path - Uri/Path to find.
+	 * @param {Uri|string} rootUri - Uri/Path to find within.
+	 */
+	pathInUri(path, rootUri) {
+		if (!path || !rootUri) {
+			return false;
+		}
+
+		return this.getNormalPath(path).startsWith(this.getNormalPath(rootUri));
+	}
+
+	/**
 	 * Retrieves the current workspace root path from the active workspace.
 	 */
 	getWorkspaceRootPaths() {

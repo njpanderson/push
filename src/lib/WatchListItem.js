@@ -4,7 +4,7 @@ const Paths = require('./Paths');
 
 const paths = new Paths();
 
-const WatchListItem = function (uri, callback) {
+const WatchListItem = function (uri, callback, enable = true) {
 	this.uri = uri;
 	this.path = paths.getNormalPath(uri);
 	this.glob = this._createWatchGlob(uri);
@@ -13,7 +13,7 @@ const WatchListItem = function (uri, callback) {
 	};
 	this.callback = callback;
 
-	this.initWatcher();
+	enable && this.initWatcher();
 }
 
 WatchListItem.prototype.initWatcher = function () {
