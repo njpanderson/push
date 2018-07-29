@@ -35,7 +35,7 @@ class Push extends PushBase {
 		this.watch = new Watch(context.globalState);
 		this.watch.onWatchUpdate = this.onWatchUpdate;
 		this.watch.onChange = this.onWatchChange;
-		this.watch.watchByWorkspaceFolders(vscode.workspace.workspaceFolders);
+		this.watch.recallByWorkspaceFolders(vscode.workspace.workspaceFolders);
 
 		this.queues = {};
 
@@ -45,23 +45,12 @@ class Push extends PushBase {
 
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		vscode.workspace.onDidChangeConfiguration(this.setContexts);
 		vscode.window.onDidChangeActiveTextEditor(this.setEditorState);
 	}
 
-	/**
-	 * Localised setConfig, also sets context and explorer config
-	 */
-	setConfig() {
-		super.setConfig();
-
+	onDidChangeConfiguration(config) {
 		if (this.setContexts) {
 			this.setContexts();
-		}
-
-		if (this.explorer) {
-			this.explorer.setConfig(this.config);
-			this.explorer.refresh();
 		}
 	}
 
