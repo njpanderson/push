@@ -32,7 +32,7 @@ class Push extends PushBase {
 		this.scm = new SCM();
 
 		// Create watch class and set initial watchers
-		this.watch = new Watch(context.workspaceState);
+		this.watch = new Watch(context.globalState);
 		this.watch.onWatchUpdate = this.onWatchUpdate;
 		this.watch.onChange = this.onWatchChange;
 		this.watch.watchByWorkspaceFolders(vscode.workspace.workspaceFolders);
