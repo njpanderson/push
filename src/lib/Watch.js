@@ -285,7 +285,7 @@ class Watch {
 
 Watch.constants = {
 	WATCH_STORE: 'Watch:watchList',
-	WATCH_STORE_MAXLEN: 4
+	WATCH_STORE_MAXLEN: 50
 }
 
 Watch.contexts = {
