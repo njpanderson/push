@@ -1,29 +1,29 @@
 const vscode = require('vscode');
 
 const WatchListItem = require('./WatchListItem');
+const Configurable = require('./Configurable');
 const Paths = require('./Paths');
 const channel = require('./channel');
 const constants = require('./constants');
 const i18n = require('../lang/i18n');
 
-class Watch {
+class Watch extends Configurable {
 	/**
 	 * Class constructor
 	 * @param {OutputChannel} channel - Channel for outputting information
 	 */
 	constructor(stateStorage) {
-		this.watchByWorkspaceFolders = this.watchByWorkspaceFolders.bind(this);
+		super();
+
+		this.watchByWorkspaceFolders = this.recallByWorkspaceFolders.bind(this);
 
 		this.watchList = [];
 		this.paths = new Paths();
 		this.stateStorage = stateStorage;
 
 		vscode.workspace.onDidChangeWorkspaceFolders((event) => {
-			this.watchByWorkspaceFolders(event.added, event.removed);
+			this.recallByWorkspaceFolders(event.added, event.removed);
 		});
-
-		// console.log('watch constructor', this.stateStorage.get('watchList'));
-		// this.context.workspaceState.update('watchList', watchList);
 
 		/**
 		 * Invoked when a watch list updates
@@ -45,6 +45,15 @@ class Watch {
 		this.status.command = 'push.listWatchers';
 	}
 
+	onDidChangeConfiguration(config, oldConfig) {
+		if (config.persistWatchers && !oldConfig.persistWatchers) {
+			// persistWatchers is being turned on - add current watchers
+			this.watchList.forEach((item) => {
+				this.setInWatchStore(item.uri, true, !!(item.watcher));
+			});
+		}
+	}
+
 	/**
 	 * @description
 	 * Adds or removes stored watchers found to exist within the defined workspace
@@ -54,13 +63,16 @@ class Watch {
 	 * @param {WorkspaceFolder[]} remove - Watchers matching paths within this
 	 * workspace will be removed.
 	 */
-	watchByWorkspaceFolders() {
+	recallByWorkspaceFolders() {
 		let watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []),
 			args = [...arguments || []];
 
-		['add', 'remove'].forEach((action, i) => {
-			let folders;
+		if (!this.config.persistWatchers) {
+			console.log('nahhh');
+			return;
+		}
 
+		['add', 'remove'].forEach((action, i) => {
 			args[i] && args[i].forEach((folder) => {
 				// Filter watch list by Uris in folder root then add watches
 				watchList
@@ -76,47 +88,46 @@ class Watch {
 		});
 	}
 
-	addToWatchStore(uri, enabled = true) {
-		let watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []),
-			path = this.paths.getNormalPath(uri),
-			index = watchList.findIndex(item => item.path === path);
+	setInWatchStore(uri, add, enabled = true) {
+		let watchList, path, index;
 
-		if (index !== -1) {
-			// Just update timestamp
-			watchList[index].date = Date.now();
-			watchList[index].enabled = enabled;
-		} else {
-			watchList.unshift({
-				path: this.paths.getNormalPath(uri),
-				date: (Date.now()),
-				enabled
-			});
+		if (!this.config.persistWatchers) {
+			console.log('nah');
+			return;
 		}
 
-		// Make sure watchList isn't over max items
-		if (watchList.length > Watch.constants.WATCH_STORE_MAXLEN) {
-			console.log(`watchList too long! ${watchList.length} - reducing...`);
-			// Order by date, descending
-			watchList.sort((a, b) => {
-				return b.date - a.date;
-			});
+		watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []);
+		path = this.paths.getNormalPath(uri);
+		index = watchList.findIndex(item => item.path === path);
 
-			// Splice
-			watchList.splice((Watch.constants.WATCH_STORE_MAXLEN));
-			console.log(`watchList.length: ${watchList.length}`);
-		}
+		if (add) {
+			// Add/update an item
+			if (index !== -1) {
+				// Just update timestamp
+				watchList[index].date = Date.now();
+				watchList[index].enabled = enabled;
+			} else {
+				watchList.unshift({
+					path: this.paths.getNormalPath(uri),
+					date: (Date.now()),
+					enabled
+				});
+			}
 
-		this.stateStorage.update(Watch.constants.WATCH_STORE, watchList);
+			// Make sure watchList isn't over max items
+			if (watchList.length > Watch.constants.WATCH_STORE_MAXLEN) {
+				console.log(`watchList too long! ${watchList.length} - reducing...`);
+				// Order by date, descending
+				watchList.sort((a, b) => {
+					return b.date - a.date;
+				});
 
-		console.log('watchList', watchList);
-	}
-
-	removeWatchFromStore(uri) {
-		let watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []),
-			path = this.paths.getNormalPath(uri),
-			index = watchList.findIndex(item => item.path === path);
-
-		if (index !== -1) {
+				// Splice
+				watchList.splice((Watch.constants.WATCH_STORE_MAXLEN));
+				console.log(`watchList.length: ${watchList.length}`);
+			}
+		} else if (index !== -1) {
+			// Remove an item (so long as it exists)
 			watchList.splice(index, 1);
 		}
 
@@ -141,7 +152,7 @@ class Watch {
 			this.watchList[item].initWatcher();
 		}
 
-		this.addToWatchStore(uri);
+		this.setInWatchStore(uri, true);
 
 		channel.appendLocalisedInfo('added_watch_for', this.paths.getNormalPath(uri));
 		this._updateStatus();
@@ -160,7 +171,7 @@ class Watch {
 			channel.appendLocalisedInfo('removed_watch_for', this.paths.getNormalPath(uri));
 		}
 
-		this.removeWatchFromStore(uri);
+		this.setInWatchStore(uri, false);
 
 		this._updateStatus();
 	}
@@ -186,7 +197,7 @@ class Watch {
 				item.removeWatcher();
 			}
 
-			this.addToWatchStore(item.uri, on);
+			this.setInWatchStore(item.uri, true, on);
 		});
 
 		this._updateStatus();
