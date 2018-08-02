@@ -156,6 +156,13 @@ class UI extends Push {
 		this.watch.clear();
 	}
 
+	/**
+	 * Purges all stored watchers within the contextual storage
+	 */
+	purgeStoredWatchers() {
+		this.watch.purge();
+	}
+
 	cancelQueues() {
 		this.stopCancellableQueues();
 	}
