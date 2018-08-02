@@ -279,6 +279,10 @@ Found a bug? Great! Let me know about it in the [Github issue tracker](https://g
 
 First of all, that's terrible and of course I wouldn’t wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which could potentially cause data loss.
 
+## Contributing
+
+If you would like to contribute, Huzzah! Thank you, and please check out the [Contributing Guide](https://github.com/njpanderson/push/blob/develop/.github/CONTRIBUTING.md) first
+
 ## Push in your language
 
 Currently, Push supports the following languages which can be selected within the configuration:
