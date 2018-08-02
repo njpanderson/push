@@ -235,6 +235,11 @@
         "command": "push.clearWatchers",
         "title": "Clear all Push watchers",
         "category": "Push"
+      },
+      {
+        "command": "push.purgeStoredWatchers",
+        "title": "Purge all stored watchers (and clear current list)",
+        "category": "Push"
       }
     ],
     "menus": {

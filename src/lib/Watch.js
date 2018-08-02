@@ -132,8 +132,6 @@ class Watch extends Configurable {
 		}
 
 		this.stateStorage.update(Watch.constants.WATCH_STORE, watchList);
-
-		console.log('watchList', watchList);
 	}
 
 	/**
@@ -204,14 +202,23 @@ class Watch extends Configurable {
 	}
 
 	/**
-	 * Clear the watchList and their watchers
+	 * Clear the watch list and their watchers
 	 */
 	clear() {
-		this.watchList.forEach((item) => item.removeWatcher());
+		this.watchList.forEach((item) => this.remove(item.uri));
 		this.watchList = [];
 
 		channel.appendLocalisedInfo('cleared_all_watchers');
 		this._updateStatus();
+	}
+
+	/**
+	 * Purge all stored watchers (and clear the local watch list)
+	 */
+	purge() {
+		this.clear();
+		this.stateStorage.update(Watch.constants.WATCH_STORE, []);
+		channel.appendLocalisedInfo('purged_all_watchers');
 	}
 
 	/**

@@ -44,6 +44,7 @@ exports.activate = (context) => {
 		'push.startWatch': 'startWatch',
 		'push.stopWatch': 'stopWatch',
 		'push.clearWatchers': 'clearWatchers',
+		'push.purgeStoredWatchers': 'purgeStoredWatchers',
 		'push.editServiceConfig': 'editServiceConfig',
 		'push.importConfig': 'importConfig'
 	};

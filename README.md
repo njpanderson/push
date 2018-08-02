@@ -103,7 +103,7 @@ If desired, watchers can persist across sessions of vscode. This means that when
 
 When enabled, up to 50 watchers are stored. If this limit is reached, watchers created or used the least recently will be removed and will need to be recreated as needed.
 
-To clear the entire list of stored watchers, see the **Clear stored watchers** command in the palette.
+To clear the entire list of stored watchers, see the **Purge all stored watchers** command in the palette.
 
 ## Service settings files
 
