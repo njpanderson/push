@@ -51,6 +51,7 @@ module.exports = {
 	'added_watch_for': 'Added watch for ${1}',
 	'removed_watch_for': 'Removed watch for ${1}',
 	'cleared_all_watchers': 'Cleared all watchers.',
+	'purged_all_watchers': 'Purged all watchers from storage.',
 	'watched_paths': 'Watched paths:',
 	'path_with_trigger_count': '${1} (fired ${2} p{2:time:times})',
 	'no_paths_watched': 'No paths watched.',
