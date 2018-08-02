@@ -1,27 +1,15 @@
 const vscode = require('vscode');
 
+const Configurable = require('./Configurable');
 const Paths = require('./Paths');
 const channel = require('./channel');
-const config = require('./config');
 const i18n = require('../lang/i18n');
 
-class PushBase {
+class PushBase extends Configurable {
 	constructor() {
+		super();
+
 		this.paths = new Paths();
-		this.setConfig = this.setConfig.bind(this);
-
-		// Set initial config
-		this.setConfig();
-
-		// Create event handlers
-		vscode.workspace.onDidChangeConfiguration(this.setConfig);
-	}
-
-	/**
-	 * Sets the current configuration for the active workspace.
-	 */
-	setConfig() {
-		this.config = config.get();
 	}
 
 	/**

@@ -97,6 +97,14 @@ If you loose track of which files and folders are being watched, either click on
 
 You can also remove items from the watch list or the upload queue from within this window, or clear the upload queue entirely.
 
+#### Watcher persistence
+
+If desired, watchers can persist across sessions of vscode. This means that when a watch is created, it will be recalled in its previous state if vscode is restarted or launched. To enable this feature, see the Push's `persistWatchers` setting.
+
+When enabled, up to 50 watchers are stored. If this limit is reached, watchers created or used the least recently will be removed and will need to be recreated as needed.
+
+To clear the entire list of stored watchers, see the **Purge all stored watchers** command in the palette.
+
 ## Service settings files
 
 To customise the server settings for a workspace, either use the context menu in the file explorer and choose **Create/edit Push configuration**, or add a file (by default, called `.push.settings.json`) to your workspace with the following format:

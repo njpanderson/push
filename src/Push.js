@@ -14,13 +14,16 @@ const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
 
 class Push extends PushBase {
-	constructor() {
+	constructor(context) {
 		super();
+
+		this.context = context;
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
 		this.setEditorState = this.setEditorState.bind(this);
-		this.refreshExplorerWatchList = this.refreshExplorerWatchList.bind(this);
+		this.onWatchUpdate = this.onWatchUpdate.bind(this);
+		this.onWatchChange = this.onWatchChange.bind(this);
 
 		this.initService();
 
@@ -28,8 +31,11 @@ class Push extends PushBase {
 		this.explorer = new Explorer(this.config);
 		this.scm = new SCM();
 
-		this.watch = new Watch();
-		this.watch.onWatchUpdate = this.refreshExplorerWatchList;
+		// Create watch class and set initial watchers
+		this.watch = new Watch(context.globalState);
+		this.watch.onWatchUpdate = this.onWatchUpdate;
+		this.watch.onChange = this.onWatchChange;
+		this.watch.recallByWorkspaceFolders(vscode.workspace.workspaceFolders);
 
 		this.queues = {};
 
@@ -39,23 +45,12 @@ class Push extends PushBase {
 
 		// Create event handlers
 		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		vscode.workspace.onDidChangeConfiguration(this.setContexts);
 		vscode.window.onDidChangeActiveTextEditor(this.setEditorState);
 	}
 
-	/**
-	 * Localised setConfig, also sets context and explorer config
-	 */
-	setConfig() {
-		super.setConfig();
-
+	onDidChangeConfiguration(config) {
 		if (this.setContexts) {
 			this.setContexts();
-		}
-
-		if (this.explorer) {
-			this.explorer.setConfig(this.config);
-			this.explorer.refresh();
 		}
 	}
 
@@ -513,10 +508,18 @@ class Push extends PushBase {
 	/**
 	 * Refresh the Push explorer watch list data.
 	 */
-	refreshExplorerWatchList(watchList) {
+	onWatchUpdate(watchList) {
 		this.explorer.refresh({
 			watchList: watchList
 		});
+	}
+
+	onWatchChange(uri) {
+		if (this.config.queueWatchedFiles) {
+			this.queueForUpload(uri);
+		} else {
+			this.upload(uri);
+		}
 	}
 
 	/**

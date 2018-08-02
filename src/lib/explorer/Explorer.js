@@ -1,13 +1,15 @@
 const vscode = require('vscode');
 
 const Item = require('./Item');
+const Configurable = require('../Configurable');
 const Paths = require('../Paths');
 
-class Explorer {
-	constructor(config) {
+class Explorer extends Configurable {
+	constructor() {
+		super();
+
 		this.getChildren = this.getChildren.bind(this);
 
-		this.setConfig(config);
 		this.data = {};
 		this.paths = new Paths();
 
@@ -15,16 +17,18 @@ class Explorer {
 		this.onDidChangeTreeData = this._onDidChangeTreeData.event;
 	}
 
-	setConfig(config) {
-		this.config = config;
+	onDidChangeConfiguration() {
+		this.refresh();
 	}
 
 	/**
 	 * Refresh by firing the change event - will run getChildren etc again
 	 */
 	refresh(data) {
-		this.data = Object.assign(this.data, data);
-		this._onDidChangeTreeData.fire();
+		if (this.data && data) {
+			this.data = Object.assign(this.data, data);
+			this._onDidChangeTreeData.fire();
+		}
 	}
 
 	/**

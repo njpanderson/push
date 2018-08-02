@@ -97,6 +97,11 @@
           "default": false,
           "description": "Set true to queue watched files on change instead of uploading them."
         },
+        "njpPush.persistWatchers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set true to persist watchers across sessions of vscode."
+        },
         "njpPush.autoUploadQueue": {
           "type": "boolean",
           "default": false,
@@ -229,6 +234,11 @@
       {
         "command": "push.clearWatchers",
         "title": "Clear all Push watchers",
+        "category": "Push"
+      },
+      {
+        "command": "push.purgeStoredWatchers",
+        "title": "Purge all stored watchers (and clear current list)",
         "category": "Push"
       }
     ],
