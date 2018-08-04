@@ -1,6 +1,6 @@
 # Push
 
-Push is a file transfer extension. It is inspired in part by Sublime's fantastic SFTP plugin as well as Coda's workflow features, and provides you with a tool to upload and download files within a workspace.
+Push is a file transfer extension. It is inspired in part by Sublime Text's fantastic [SFTP](https://wbond.net/sublime_packages/sftp) plugin as well as the FTP workflow features from [Coda](https://panic.com/coda/), and provides you with a tool to upload and download files within a workspace.
 
 ## Features
 
@@ -220,7 +220,7 @@ The following settings are available:
 
 The settings within `sshGateway` work in a similar way to the general SFTP settings.
 
-#### Settnig the `privateKey` while using `sshGateway`
+#### Setting the `privateKey` while using `sshGateway`
 
 The `privateKey` setting for the parent SFTP object is assumed to be a file **on the gateway itself**. That is, when connecting to the gateway using the `sshGateway` settings, a connection is then made to the server using the parent SFTP settings. For instance:
 
@@ -293,6 +293,6 @@ Currently, Push supports the following languages which can be selected within th
 | 🇯🇵 Japanese | `ja` | Poor | (Built in) |
 | 🇮🇹 Italian | `it` | Low-Medum | (Built in) |
 
-If you’d like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
+If you'd like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
 
-Get in touch via the issues if you’re interested in helping to localise Push.
+Get in touch via the issues if you're interested in helping to localise Push.
