@@ -15,6 +15,7 @@ const counter = require('../helpers/counter');
 const fixtures = require('../fixtures/general');
 
 const Queue = require('../mocks/lib/Queue');
+const vscode = require('../mocks/node/vscode');
 
 // Defines a Mocha test suite to group tests of similar kind together
 describe('Push', function() {
@@ -45,7 +46,7 @@ describe('Push', function() {
 	});
 
 	beforeEach(() => {
-		push = new Push();
+		push = new Push(new vscode.ExtensionContext);
 		counter.reset();
 	});
 
@@ -408,6 +409,10 @@ describe('Push', function() {
 			) === false);
 		});
 
-		it('throws if the path is not a directory');
+		it('throws if the path is not a directory', () => {
+			assert.throws(() => push.transferDirectory(
+				fixtures.mockUriFile
+			), /Path is a single file/);
+		});
 	})
 });
