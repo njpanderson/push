@@ -16,7 +16,7 @@ const fixtures = require('../fixtures/general');
 
 // Defines a Mocha test suite to group tests of similar kind together
 describe('Paths', function() {
-    let Paths;
+    let Paths, paths;
 
     useMockery(() => {
         useMockery
@@ -31,16 +31,23 @@ describe('Paths', function() {
 
     beforeEach(() => {
         counter.reset();
+        paths = new Paths();
     });
 
     // Defines a Mocha unit test
     describe('#fileExists', () => {
-        it('should return whether a Uri exists');
-        it('should return false if a non-file Uri is passed');
+        it('should return whether a Uri exists', () => {
+            assert(paths.fileExists(fixtures.mockUriFile) === true);
+        });
+        it('should return false if a non-file Uri is passed', () => {
+            assert(paths.fileExists(fixtures.mockForeignSchemeFile) === false);
+        });
     });
 
     describe('#getNormalPath', () => {
-        it('should return a normalised (string) version of a Uri');
+        it('should return a normalised (string) version of a Uri', {
+
+        });
     });
 
     describe('#getPathWithoutWorkspace', () => {

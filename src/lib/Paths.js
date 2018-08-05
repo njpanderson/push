@@ -9,7 +9,7 @@ const PathCache = require('../lib/PathCache');
 
 class Paths {
 	fileExists(file) {
-		file = this.getNormalPath(file);
+		file = this.getNormalPath(file, 'file');
 		return fs.existsSync(file);
 	}
 
