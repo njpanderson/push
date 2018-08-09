@@ -5,8 +5,12 @@ module.exports = {
 	mockUriFile2: vscode.Uri.file(__dirname + '/transfer/test-file-2.txt'),
 	mockForeignSchemeFile: new vscode.Uri('foreign-scheme', '', __dirname + '/transfer/test-file.txt'),
 	mockUriFolder: vscode.Uri.file(__dirname + '/transfer/test-folder/'),
+	mockUriSubFile: vscode.Uri.file(__dirname + '/transfer/test-folder/test-subfile.txt'),
 	mockUriMissingFile: vscode.Uri.file(__dirname + '/transfer/nofile.txt'),
 	mockUriIgnoredFile: vscode.Uri.file(__dirname + '/transfer/desktop.ini'),
+	mockWorkspace: {
+		rootPath: __dirname + '/transfer'
+	},
 
 	servers: {
 		SFTP: {
