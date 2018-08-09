@@ -46,6 +46,8 @@ In the event that your change requires new NPM/JS dependencies, please ensure yo
 ### 5. Does the issue you are trying to solve already reported, and if so, have you announced that you will take responsibility for fixing it?
 Please check that the problem you are attempting to solve hasn't already been reported, and consider announcing responsibility if you would like to take on the challenge of fixing it.
 
+## Creating a development environment
+
 If you've thought about, and are happy with all of these points, then feel free to continue with the contribution! A brief step-by-step to contributing is as follows:
 
  1. Fork/clone and `npm install` Push locally.
