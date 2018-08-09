@@ -14,6 +14,7 @@ const useMockery = require('../helpers/mockery');
 const counter = require('../helpers/counter');
 const fixtures = require('../fixtures/general');
 
+// Mocks
 const Queue = require('../mocks/lib/Queue');
 const vscode = require('../mocks/node/vscode');
 
@@ -24,7 +25,7 @@ describe('Push', function() {
 	useMockery(() => {
 		useMockery
 			.registerMultiple({
-				'vscode': require('../mocks/node/vscode'),
+				'vscode': vscode,
 				'./lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
 				'./lib/Service': require('../mocks/lib/Service'),
 				'./lib/explorer/Explorer': require('../mocks/lib/Explorer'),
