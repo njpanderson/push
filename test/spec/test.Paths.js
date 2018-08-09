@@ -14,6 +14,9 @@ const useMockery = require('../helpers/mockery');
 const counter = require('../helpers/counter');
 const fixtures = require('../fixtures/general');
 
+// Mocks
+const vscode = require('../mocks/node/vscode');
+
 // Defines a Mocha test suite to group tests of similar kind together
 describe('Paths', function() {
     let Paths, paths;
@@ -21,7 +24,7 @@ describe('Paths', function() {
     useMockery(() => {
         useMockery
             .registerMultiple({
-                'vscode': require('../mocks/node/vscode')
+                'vscode': vscode
             });
     });
 
@@ -44,14 +47,42 @@ describe('Paths', function() {
         });
     });
 
-    describe('#getNormalPath', () => {
-        it('should return a normalised (string) version of a Uri', {
+    describe('#pathInUri', () => {
+        it('should return true for a Uri within a Uri', () => {
+            assert(paths.pathInUri(
+                fixtures.mockUriSubFile,
+                fixtures.mockUriFolder
+            ) === true);
+        });
 
+        it('should return false for a Uri not within a Uri', () => {
+            assert(paths.pathInUri(
+                fixtures.mockUriFile2,
+                fixtures.mockUriFolder
+            ) === false);
+        });
+    });
+
+
+    describe('#getNormalPath', () => {
+        it('should return a normalised (string) version of a Uri', () => {
+            assert(typeof paths.getNormalPath(
+                fixtures.mockUriFile
+            ) === 'string');
+
+            assert(/test-file.txt/.test(paths.getNormalPath(
+                fixtures.mockUriFile
+            )));
         });
     });
 
     describe('#getPathWithoutWorkspace', () => {
-        it('should return a Uri normalised without workspace path');
+        it('should return a Uri normalised without workspace path', () => {
+            assert(paths.getPathWithoutWorkspace(
+                fixtures.mockUriFile,
+                fixtures.mockWorkspace
+            ) === '/test-file.txt')
+        });
     });
 
     describe('#stripTrailingSlash', () => {
