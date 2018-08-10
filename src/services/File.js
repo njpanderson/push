@@ -209,10 +209,10 @@ class File extends ServiceBase {
 	/**
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
-	 * @param {string} srcType - One of the {@link PathCache.sources} types.
+	 * @param {string} loc - One of the {@link PathCache.sources} types.
 	 */
-	list(dir, srcType = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, srcType, this.pathCache);
+	list(dir, loc = SRC_REMOTE) {
+		return this.paths.listDirectory(dir, loc, this.pathCache);
 	}
 
 	/**
