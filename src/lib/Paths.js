@@ -150,12 +150,27 @@ class Paths {
 		}, extend);
 	}
 
-	listDirectory(dir, src = PathCache.sources.LOCAL, cache) {
+	/**
+	 * @description
+	 * List the contents of a single filesystem-accessible directory.
+	 *
+	 * `loc` provides a mechanism for distinguishing between multiple "sets" of
+	 * caches. The distinction is arbitrary but generally recommended to use one
+	 * of the `PathCache.sources` options for consistent recall.
+	 *
+	 * An existing `cache` instance (of PathCache) may be supplied. Otherwise,
+	 * an instance specific to the Paths class is created.
+	 * @param {string} dir - Directory to list
+	 * @param {number} [loc=PathCache.sources.LOCAL] - `PathCache.sources` locations.
+	 * @param {class} [cache] - Cache class instance
+	 */
+	listDirectory(dir, loc = PathCache.sources.LOCAL, cache) {
 		// Use supplied cache or fall back to class instance
+		dir = this.stripTrailingSlash(dir);
 		cache = cache || this.getPathCache();
 
-		if (cache.dirIsCached(src, dir)) {
-			return Promise.resolve(cache.getDir(src, dir));
+		if (cache.dirIsCached(loc, dir)) {
+			return Promise.resolve(cache.getDir(loc, dir));
 		} else {
 			return new Promise((resolve, reject) => {
 				fs.readdir(dir, (error, list) => {
@@ -168,14 +183,14 @@ class Paths {
 							stats = fs.statSync(pathname);
 
 						cache.addCachedFile(
-							src,
+							loc,
 							pathname,
 							(stats.mtime.getTime() / 1000),
 							(stats.isDirectory() ? 'd' : 'f')
 						);
 					});
 
-					resolve(cache.getDir(src, dir));
+					resolve(cache.getDir(loc, dir));
 				});
 			});
 		}

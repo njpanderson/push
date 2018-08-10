@@ -7,6 +7,7 @@
 
 // The module 'assert' provides assertion methods from node
 const assert = require('assert');
+const expect = require('chai').expect;
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
@@ -86,21 +87,58 @@ describe('Paths', function() {
     });
 
     describe('#stripTrailingSlash', () => {
-        it('should strip a trailing slash');
-        it('should ignore no trailing slash exists');
+        it('should strip a trailing slash', () => {
+            assert(paths.stripTrailingSlash(
+                '/path/with/trailing/slash/'
+            ) === '/path/with/trailing/slash');
+        });
+
+        it('should ignore if no trailing slash exists', () => {
+            assert(paths.stripTrailingSlash(
+                '/path/without/trailing/slash'
+            ) === '/path/without/trailing/slash');
+        });
     });
 
     describe('#addTrailingSlash', () => {
-        it('should add exactly one trailing slash');
-        it('should ignore if a trailing slash exists');
+        it('should add exactly one trailing slash', () => {
+            assert(paths.addTrailingSlash(
+                '/path/without/trailing/slash'
+            ) === '/path/without/trailing/slash/');
+        });
+
+        it('should ignore if a trailing slash exists', () => {
+            assert(paths.addTrailingSlash(
+                '/path/with/trailing/slash/'
+            ) === '/path/with/trailing/slash/');
+        });
     });
 
     describe('#isDirectory', () => {
-        it('should confirm a string directory');
-        it('should confirm a Uri directory');
+        it('should not fault with a non-existent directory, but return false', () => {
+            assert(paths.isDirectory(
+                '/utter/nonsense/directory/flj3232joisdfosdjgkljhurfs/'
+            ) === false);
+        });
     });
 
-    describe('#listDirectory (tests pending documentation)', () => {
+    describe('#listDirectory', () => {
+        it('should list a directory', () => {
+            return paths.listDirectory(fixtures.mockFolder)
+                .then((list) => {
+                    expect(list[0].name).to.equal('.hidden-file');
+                    expect(list[0].pathName).to.have.string('/transfer/test-folder/.hidden-file');
+                    expect(list[0].type).to.equal('f');
+
+                    expect(list[1].name).to.equal('another-test-subfile.txt');
+                    expect(list[1].pathName).to.have.string('/transfer/test-folder/another-test-subfile.txt');
+                    expect(list[1].type).to.equal('f');
+
+                    expect(list[2].name).to.equal('test-subfile.txt');
+                    expect(list[2].pathName).to.have.string('/transfer/test-folder/test-subfile.txt');
+                    expect(list[2].type).to.equal('f');
+                });
+        });
     });
 
     describe('#getDirectoryContentsAsFiles', () => {
