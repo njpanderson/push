@@ -40,6 +40,7 @@ module.exports = {
 	'transfer_cancelled': 'Transfer cancelled',
 	'no_service_file': 'A settings file could not be found within your project. Have you created a file with the name "${1}" yet?',
 	'service_not_defined': 'A transfer service was not defined within the settings file at "${1}".',
+	'service_defined_but_no_config_exists': 'A transfer service was defined but no configuration could be found within the file at "${1}".',
 	'multiple_service_files_no_transfer': 'More than one service settings file was found within the selected directory. The transfer could not be completed.',
 	'service_setting_missing': 'Service setting file for type ${1} missing required setting: "${2}".',
 	'cannot_action_ignored_file': 'Cannot ${1} file "${2}" - It matches one of the defined ignoreGlobs filters.',
