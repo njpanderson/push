@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.6
+ - Fix issue with File service template producing the "SFTP" object. (Thanks, tbonzai!)
+
 ## 0.4.5
  - Add windows environment variable support to all service `root` properties. (Thanks, ephemerant!)
  - Add autoUploadQueue setting (Thanks, ephemerant!)
