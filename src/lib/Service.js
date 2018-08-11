@@ -225,17 +225,20 @@ class Service extends PushBase {
 	 * @return {array} List of the services.
 	 */
 	getList() {
-		let options = [], service;
+		let options = [], service, settingsPayload;
 
 		for (service in this.services) {
+			settingsPayload = {
+				service
+			};
+
+			settingsPayload[service] = this.getServiceDefaults(service);
+
 			options.push({
 				label: service,
 				description: this.services[service].description,
 				detail: this.services[service].detail,
-				settingsPayload: {
-					service,
-					'SFTP': this.getServiceDefaults(service)
-				}
+				settingsPayload
 			});
 		}
 

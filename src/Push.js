@@ -181,8 +181,22 @@ class Push extends PushBase {
 		if (settings) {
 			// Settings retrieved from JSON file within context
 			if (!settings.data.service) {
-				// Show a service error
-				channel.appendLocalisedError('service_not_defined', this.config.settingsFilename);
+				// No service defined
+				channel.appendLocalisedError(
+					'service_not_defined',
+					this.config.settingsFilename
+				);
+
+				return false;
+			}
+
+			if (!settings.data[newConfig.serviceName]) {
+				// Service defined but no config object found
+				channel.appendLocalisedError(
+					'service_defined_but_no_config_exists',
+					this.config.settingsFilename
+				);
+
 				return false;
 			}
 
