@@ -478,6 +478,7 @@
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",
+    "url-parse": "^1.4.1",
     "vscode": "^1.1.18"
   }
 }
