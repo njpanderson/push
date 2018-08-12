@@ -190,7 +190,7 @@ class Push extends PushBase {
 				return false;
 			}
 
-			if (!settings.data[newConfig.serviceName]) {
+			if (!settings.data[settings.data.service]) {
 				// Service defined but no config object found
 				channel.appendLocalisedError(
 					'service_defined_but_no_config_exists',

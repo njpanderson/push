@@ -1,6 +1,9 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.4.61
+ - Fix issue with service files not being read correctly. (Thanks, all those that reported.)
+
 ## 0.4.6
  - Fix issue with File service template producing the "SFTP" object. (Thanks, tbonzai!)
 
