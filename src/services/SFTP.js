@@ -15,7 +15,10 @@ const i18n = require('../lang/i18n');
 const SRC_REMOTE = PathCache.sources.REMOTE;
 // const SRC_LOCAL = PathCache.sources.LOCAL;
 
-class ServiceSFTP extends ServiceBase {
+/**
+ * SFTP transfers.
+ */
+class SFTP extends ServiceBase {
 	constructor(options, defaults) {
 		super(options, defaults);
 
@@ -64,7 +67,7 @@ class ServiceSFTP extends ServiceBase {
 		if (newSettings.sshGateway) {
 			newSettings.sshGateway = Object.assign(
 				{},
-				ServiceSFTP.gatewayDefaults,
+				SFTP.gatewayDefaults,
 				newSettings.sshGateway
 			)
 		}
@@ -1098,7 +1101,7 @@ class ServiceSFTP extends ServiceBase {
 	getBasicMimeCharset(file) {
 		const ext = path.extname(file);
 
-		if (ServiceSFTP.encodingByExtension.utf8.indexOf(ext) !== -1) {
+		if (SFTP.encodingByExtension.utf8.indexOf(ext) !== -1) {
 			return 'utf8';
 		}
 
@@ -1117,9 +1120,9 @@ class ServiceSFTP extends ServiceBase {
 	}
 };
 
-ServiceSFTP.description = i18n.t('sftp_class_description');
+SFTP.description = i18n.t('sftp_class_description');
 
-ServiceSFTP.defaults = {
+SFTP.defaults = {
 	host: '',
 	port: 22,
 	username: '',
@@ -1133,7 +1136,7 @@ ServiceSFTP.defaults = {
 	sshGateway: null
 };
 
-ServiceSFTP.gatewayDefaults = {
+SFTP.gatewayDefaults = {
 	host: '',
 	port: 22,
 	username: '',
@@ -1144,7 +1147,7 @@ ServiceSFTP.gatewayDefaults = {
 	debug: false
 };
 
-ServiceSFTP.encodingByExtension = {
+SFTP.encodingByExtension = {
 	'utf8': [
 		'.txt', '.html', '.shtml', '.js', '.jsx', '.css', '.less', '.sass',
 		'.php', '.asp', '.aspx', '.svg', '.sql', '.rb', '.py', '.log', '.sh', '.bat',
@@ -1152,4 +1155,4 @@ ServiceSFTP.encodingByExtension = {
 	]
 };
 
-module.exports = ServiceSFTP;
+module.exports = SFTP;
