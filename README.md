@@ -1,4 +1,4 @@
-# Push
+# Push [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push)
 
 Push is a file transfer extension. It is inspired in part by Sublime Text's fantastic [SFTP](https://wbond.net/sublime_packages/sftp) plugin as well as the FTP workflow features from [Coda](https://panic.com/coda/), and provides you with a tool to upload and download files within a workspace.
 
@@ -11,6 +11,12 @@ It currently provides:
  - Queueing (and transfer after save bulk).
  - Watching of files within the project.
  - SFTP gateway support - connect via an SSH gateway/bastion to your SFTP server.
+
+## Build status
+
+| `master` | `develop`
+| --- | --- |
+| [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push) | [![develop build Status](https://travis-ci.org/njpanderson/push.svg?branch=develop)](https://travis-ci.org/njpanderson/push) |
 
 ## ⚡️ Quick setup
 
