@@ -111,8 +111,13 @@
     },
     "commands": [
       {
+        "command": "push.createServiceConfig",
+        "title": "Create Push configuration",
+        "category": "Push"
+      },
+      {
         "command": "push.editServiceConfig",
-        "title": "Create/edit Push configuration",
+        "title": "Edit Push configuration",
         "category": "Push"
       },
       {

@@ -172,6 +172,17 @@ class UI extends Push {
 	}
 
 	/**
+	 * @see Service#createServiceConfig
+	 */
+	createServiceConfig(uri) {
+		if ((uri = this.getValidUri(uri))) {
+			this.service.editServiceConfig(uri, true);
+		} else {
+			utils.showLocalisedWarning('no_servicefile_context');
+		}
+	}
+
+	/**
 	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
