@@ -7,6 +7,7 @@
 
 // The module 'assert' provides assertion methods from node
 const assert = require('assert');
+const expect = require('chai').expect;
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
@@ -307,18 +308,18 @@ describe('Push', function() {
 						if (Array.isArray(test.files)) {
 							let args = counter.getArgs('Push#queue');
 
-							assert(counter.getCount('Push#queue') === test.files.length);
+							expect(counter.getCount('Push#queue')).to.equal(test.files.length);
 
 							test.files.forEach((file, index) => {
-								assert(args[index][0][0].method === test.method);
-								assert.deepEqual(args[index][0][0].uriContext, file);
+								expect(args[index][0][0].method).to.equal(test.method);
+								expect(args[index][0][0].uriContext).to.eql(file);
 							});
 						} else {
 							args = counter.getArgs('Push#queue', 1, 0);
 
-							assert(counter.getCount('Push#queue') === 1);
-							assert(args[0].method === test.method);
-							assert.deepEqual(args[0].uriContext, test.files);
+							expect(counter.getCount('Push#queue')).to.be.equal(1);
+							expect(args[0].method).to.equal(test.method);
+							expect(args[0].uriContext).to.eql(test.files);
 						}
 					});
 			});
