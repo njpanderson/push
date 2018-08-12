@@ -475,7 +475,8 @@
     "t": "mocha --reporter dot",
     "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
     "test": "mocha",
-    "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js"
+    "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
+    "publish": "npm run t && vsce package"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
@@ -497,6 +498,7 @@
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",
     "url-parse": "^1.4.1",
+    "vsce": "^1.46.0",
     "vscode": "^1.1.18"
   }
 }
