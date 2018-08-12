@@ -276,6 +276,8 @@ class Push extends PushBase {
 									if (typeof task.onTaskComplete === 'function') {
 										task.onTaskComplete.call(this, result);
 									}
+
+									return result;
 								});
 						}
 					}),
@@ -459,8 +461,24 @@ class Push extends PushBase {
 		// Fetch and execute queue
 		return queue
 			.exec(this.service.getStateProgress)
-			.then(() => {
-				this.refreshExplorerQueues();
+			.then((result) => {
+				let uris;
+
+				if (
+					result &&
+					result.success &&
+					(result.success.uploaded && result.success.uploaded.length)
+				) {
+					// Clear result items from "upload" queue
+					this.removeQueuedItem(
+						Push.queueDefs.upload,
+						result.success.uploaded
+					);
+				} else {
+					this.refreshExplorerQueues();
+				}
+
+				return result;
 			})
 			.catch((error) => {
 				this.refreshExplorerQueues();
@@ -491,13 +509,17 @@ class Push extends PushBase {
 	/**
 	 * Removes a single item from a queue by its Uri.
 	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 * @param {*} uri - Uri of the item to remove.
+	 * @param {Uri|Uri[]} uri - Uri(s) of the item to remove.
 	 */
 	removeQueuedItem(queueDef, uri) {
 		let queue = this.getQueue(queueDef, false);
 
+		if (!Array.isArray(uri)) {
+			uri = [uri];
+		}
+
 		if (queue) {
-			queue.removeTaskByUri(uri);
+			uri.forEach(uri => queue.removeTaskByUri(uri));
 			this.refreshExplorerQueues();
 		}
 	}

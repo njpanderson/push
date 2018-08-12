@@ -270,7 +270,10 @@ class Queue {
 								results.success[task.data.actionTaken] = [];
 							}
 
-							results.success[task.data.actionTaken].push(result);
+							// Push non falsy results, Uri contexts or `null`
+							results.success[task.data.actionTaken].push(
+								result || task.data.uriContext || null
+							);
 						}
 					}
 
