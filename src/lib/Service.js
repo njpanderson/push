@@ -29,9 +29,11 @@ class Service extends PushBase {
 
 	/**
 	 * Edits (or creates) a server configuration file
-	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 * @param {Uri} uri - Uri to start looking for a configuration file.
+	 * @param {boolean} forceCreate - Force servicefile creation. Has no effect
+	 * if the service file is level with the contextual file.
 	 */
-	editServiceConfig(uri) {
+	editServiceConfig(uri, forceCreate) {
 		let rootPaths, dirName, settingsFile,
 			settingsFilename = this.config.settingsFilename;
 
@@ -53,7 +55,17 @@ class Service extends PushBase {
 			rootPaths = this.paths.getWorkspaceRootPaths();
 		}
 
-		if (settingsFile) {
+		/**
+		 * If a settings file is found but forceCreate is true, then the file name
+		 * prompt path is chosen.
+		 *
+		 * In the case that a service file exists in the _same_ location as the
+		 * contextual file, it will still be edited (due to the logic within
+		 * getFileNamePromp() based on resolving immediately unless `forceDialog`
+		 * is true. This is intended behaviour as two service files should not
+		 * exist within the same folder.
+		 */
+		if (settingsFile && !forceCreate) {
 			// Edit the settings file found
 			this.openDoc(settingsFile);
 		} else {
