@@ -11,6 +11,9 @@ const i18n = require('../lang/i18n');
 const SRC_REMOTE = PathCache.sources.REMOTE;
 const SRC_LOCAL = PathCache.sources.LOCAL;
 
+/**
+ * Filesystem based uploading.
+ */
 class File extends ServiceBase {
 	constructor(options, defaults) {
 		super(options, defaults);

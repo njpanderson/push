@@ -7,6 +7,11 @@ const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
 const i18n = require('../lang/i18n');
 
+/**
+ * Base service class. Intended to be extended by any new service
+ * @param {object} options - Service options.
+ * @param {object} serviceDefaults - Default service options.
+ */
 class ServiceBase {
 	constructor(options, serviceDefaults) {
 		this.setOptions(options);

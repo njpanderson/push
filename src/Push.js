@@ -13,6 +13,9 @@ const channel = require('./lib/channel');
 const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
 
+/**
+ * Provides the main controller for Push.
+ */
 class Push extends PushBase {
 	constructor(context) {
 		super();
