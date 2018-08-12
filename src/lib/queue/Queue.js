@@ -164,7 +164,7 @@ class Queue {
 
 		this._setContext(Queue.contexts.running, true);
 
-		if (this._tasks && this._tasks.length) {
+		if (this._tasks && this._tasks.length > 1) {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(i18n.t('running_tasks_in_queue', (this._tasks.length - 1)));
 
