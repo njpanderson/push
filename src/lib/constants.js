@@ -20,5 +20,11 @@ module.exports = {
         UPLOAD_STATUS: 3
     },
 
+
+    TRANSFER_TYPES: {
+        PUT: 0,
+        GET: 1
+    },
+
     TMP_FILE_PREFIX: 'vscode-push-tmp-'
 };

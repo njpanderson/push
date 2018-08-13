@@ -7,6 +7,7 @@ const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
 const i18n = require('../lang/i18n');
+const { TRANSFER_TYPES } = require('../lib/constants');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
 const SRC_LOCAL = PathCache.sources.LOCAL;
@@ -46,7 +47,7 @@ class File extends ServiceBase {
 	put(local, remote) {
 		// Perform transfer from local to remote, setting root as defined by service
 		return this.transfer(
-			File.transferTypes.PUT,
+			TRANSFER_TYPES.PUT,
 			local,
 			vscode.Uri.file(remote),
 			vscode.Uri.file(this.config.service.root),
@@ -67,7 +68,7 @@ class File extends ServiceBase {
 
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
-			File.transferTypes.GET,
+			TRANSFER_TYPES.GET,
 			vscode.Uri.file(remote),
 			local,
 			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
@@ -77,7 +78,7 @@ class File extends ServiceBase {
 
 	/**
 	 * Transfers a single file from location to another.
-	 * @param {number} transferType - One of the {@link File.transferTypes} types.
+	 * @param {number} transferType - One of the {@link TRANSFER_TYPES} types.
 	 * @param {Uri} src - Source Uri.
 	 * @param {Uri} dest - Destination Uri.
 	 * @param {Uri} root - Root directory. Used for validation.
@@ -87,19 +88,19 @@ class File extends ServiceBase {
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
 			rootDir = this.paths.getNormalPath(root),
-			logPrefix = (transferType === File.transferTypes.PUT ? '>> ' : '<< '),
-			srcType = (transferType === File.transferTypes.PUT ? SRC_REMOTE : SRC_LOCAL);
+			logPrefix = (transferType === TRANSFER_TYPES.PUT ? '>> ' : '<< '),
+			srcType = (transferType === TRANSFER_TYPES.PUT ? SRC_REMOTE : SRC_LOCAL);
 
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
 			.then(() => this.getFileStats(
-				(transferType === File.transferTypes.PUT) ? src : dest,
-				(transferType === File.transferTypes.PUT) ? dest : src,
+				(transferType === TRANSFER_TYPES.PUT) ? src : dest,
+				(transferType === TRANSFER_TYPES.PUT) ? dest : src,
 			))
 			.then((stats) => super.checkCollision(
-				(transferType === File.transferTypes.PUT) ? stats.local : stats.remote,
-				(transferType === File.transferTypes.PUT) ? stats.remote : stats.local,
+				(transferType === TRANSFER_TYPES.PUT) ? stats.local : stats.remote,
+				(transferType === TRANSFER_TYPES.PUT) ? stats.remote : stats.local,
 				collisionAction
 			))
 			.then((result) => {
@@ -298,11 +299,6 @@ File.description = i18n.t('file_class_description');
 
 File.defaults = {
 	root: '/'
-};
-
-File.transferTypes = {
-	PUT: 0,
-	GET: 1
 };
 
 module.exports = File;

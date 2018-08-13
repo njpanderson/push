@@ -425,6 +425,11 @@ ServiceBase.defaults = {
 	followSymlinks: false
 };
 
+ServiceBase.transferTypes = {
+	PUT: 0,
+	GET: 1
+};
+
 ServiceBase.pathSep = Paths.sep;
 
 module.exports = ServiceBase;
