@@ -89,7 +89,7 @@
         },
         "njpPush.statusMessageColor": {
           "type": "string",
-          "default": "notification.infoBackground",
+          "default": "statusBar.foreground",
           "description": "Set the colour of a status message (except progress). See https://code.visualstudio.com/docs/getstarted/theme-color-reference"
         },
         "njpPush.queueWatchedFiles": {
