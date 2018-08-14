@@ -70,7 +70,8 @@ const utils = {
 		}
 
 		this._sb = new vscode.window.createStatusBarItem(
-			vscode.StatusBarAlignment.left
+			vscode.StatusBarAlignment.left,
+			1
 		);
 
 		this._sb.text = message;
@@ -83,7 +84,7 @@ const utils = {
 			}
 
 			this._timeouts.sb = setTimeout(() => {
-				this._sb.hide();
+				this.hideStatusMessage();
 				this._timeouts.sb = null;
 			}, (removeAfter * 1000));
 		}
@@ -96,7 +97,7 @@ const utils = {
 	 */
 	hideStatusMessage() {
 		if (this._sb) {
-			this._sb.hide();
+			this._sb.dispose();
 		}
 	},
 

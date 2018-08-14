@@ -316,7 +316,7 @@ class Push extends PushBase {
 		return Promise.all(uris.map(uri => {
 			let remotePath;
 
-			remotePath = this.service.exec(
+			remotePath = this.service.execSync(
 				'convertUriToRemote',
 				this.configWithServiceSettings(uri),
 				[uri]
@@ -389,7 +389,7 @@ class Push extends PushBase {
 
 		tmpFile = utils.getTmpFile();
 		config = this.configWithServiceSettings(uri);
-		remotePath = this.service.exec(
+		remotePath = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
@@ -737,7 +737,7 @@ class Push extends PushBase {
 						if (filteredUri !== false) {
 							config = this.configWithServiceSettings(filteredUri);
 
-							remotePath = this.service.exec(
+							remotePath = this.service.execSync(
 								'convertUriToRemote',
 								config,
 								[filteredUri]
@@ -808,7 +808,7 @@ class Push extends PushBase {
 		ignoreGlobs = this.config.ignoreGlobs;
 		config = this.configWithServiceSettings(uri);
 
-		remoteUri = this.service.exec(
+		remoteUri = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
@@ -827,7 +827,7 @@ class Push extends PushBase {
 
 						uri = vscode.Uri.file(uri);
 
-						remotePath = this.service.exec(
+						remotePath = this.service.execSync(
 							'convertUriToRemote',
 							config,
 							[uri]
@@ -856,7 +856,7 @@ class Push extends PushBase {
 						let uri;
 
 						file = file.pathName || file;
-						uri = this.service.exec(
+						uri = this.service.execSync(
 							'convertRemoteToUri',
 							config,
 							[file]

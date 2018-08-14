@@ -1,8 +1,8 @@
 const vscode = require('vscode');
 
-const utils = require('./utils');
 const configService = require('./config');
 const i18n = require('../lang/i18n');
+const { TRANSFER_TYPES } = require('../lib/constants');
 
 class Channel {
 	constructor(name) {
@@ -15,6 +15,32 @@ class Channel {
 	 */
 	appendLine() {
 		return this.channel.appendLine.apply(this.channel, arguments);
+	}
+
+	/**
+	 * @param {TransferResult} result - TransferResult instance.
+	 * @description
+	 * Produces a channel line to update users on the status of a single file.
+	 * used throughout processes like uploading/downloading, etc.
+	 */
+	appendTransferResult(result) {
+		let icon = this.getTransferIcon(result.type);
+
+		if (result.error) {
+			return this.appendError(`${icon}! ${result.src} (${result.error.message})`);
+		}
+
+		if (result.status === true || result.status === false) {
+			return this.appendLine(`${icon}${(result.status ? icon : '!')} ${result.src}`);
+		}
+	}
+
+	/**
+	 * Returns an "icon" given one of the TRANSFER_TYPES types.
+	 * @param {number} type - One of the {@link TRANSFER_TYPES} types.
+	 */
+	getTransferIcon(type) {
+		return Channel.transferTypesMap[type] || '';
 	}
 
 	/**
@@ -98,5 +124,10 @@ class Channel {
 		return this.channel.clear.apply(this.channel, arguments);
 	}
 }
+
+Channel.transferTypesMap = {
+	[TRANSFER_TYPES.PUT]: '>',
+	[TRANSFER_TYPES.GET]: '<'
+};
 
 module.exports = new Channel('Push');

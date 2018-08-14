@@ -250,6 +250,10 @@ class ServiceBase {
 	checkCollision(source, dest, defaultCollisionOption) {
 		let collisionType, timediff;
 
+		if (!source) {
+			throw new Error('Source file must exist');
+		}
+
 		// Dest file exists - get time difference
 		if (dest) {
 			timediff = (
@@ -423,11 +427,6 @@ ServiceBase.defaults = {
 	collisionUploadAction: null,
 	collisionDownloadAction: null,
 	followSymlinks: false
-};
-
-ServiceBase.transferTypes = {
-	PUT: 0,
-	GET: 1
 };
 
 ServiceBase.pathSep = Paths.sep;

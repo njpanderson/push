@@ -9,6 +9,10 @@ class Service {
 		return this[method].apply(this, args);
 	}
 
+	execSync(method, config, args) {
+		return this[method].apply(this, args);
+	}
+
 	convertUriToRemote(uri) {
 		return uri;
 	}

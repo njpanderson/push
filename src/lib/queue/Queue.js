@@ -5,6 +5,7 @@ const utils = require('../utils');
 const config = require('../config');
 const channel = require('../channel');
 const constants = require('../constants');
+const TransferResult = require('../../services/TransferResult');
 const i18n = require('../../lang/i18n');
 
 class Queue {
@@ -261,10 +262,16 @@ class Queue {
 				.then((result) => {
 					this.currentTask = null;
 
-					// Function/Promise was resolved
-					if (result !== false) {
-						// Add to success list if the result from the function is anything
-						// other than `false`
+					if (result instanceof TransferResult) {
+						// Result is a TransferResult instance - log the transfer in channel
+						channel.appendTransferResult(result);
+					}
+
+					if (
+						(result instanceof TransferResult && !result.error) ||
+						result !== false
+					) {
+						// Add to success list
 						if (task.data.actionTaken) {
 							if (!results.success[task.data.actionTaken]) {
 								results.success[task.data.actionTaken] = [];
@@ -281,7 +288,6 @@ class Queue {
 					this._loop(fnCallback, results);
 				})
 				.catch((error) => {
-					// Function/Promise was rejected
 					this.currentTask = null;
 
 					if (error instanceof Error) {
@@ -423,7 +429,6 @@ class Queue {
 				// Show completion in a message window
 				utils.showMessage(extra.join(' '));
 			}
-
 		}
 	}
 

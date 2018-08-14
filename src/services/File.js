@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ServiceBase = require('./Base');
+const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
@@ -45,6 +46,15 @@ class File extends ServiceBase {
 	 * @param {uri} remote - Remote Uri.
 	 */
 	put(local, remote) {
+		if (!this.paths.fileExists(local)) {
+			// Local file doesn't exist. Immediately resolve with failing TransferResult
+			return Promise.resolve(new TransferResult(
+				local,
+				new Error(i18n.t('file_not_found', local)),
+				TRANSFER_TYPES.PUT
+			));
+		}
+
 		// Perform transfer from local to remote, setting root as defined by service
 		return this.transfer(
 			TRANSFER_TYPES.PUT,
@@ -65,6 +75,15 @@ class File extends ServiceBase {
 	get(local, remote, collisionAction) {
 		collisionAction = collisionAction ||
 			this.config.service.collisionDownloadAction;
+
+		if (!this.paths.fileExists(remote)) {
+			// Remote file doesn't exist. Immediately resolve with failing TransferResult
+			return Promise.resolve(new TransferResult(
+				remote,
+				new Error(i18n.t('file_not_found', remote)),
+				TRANSFER_TYPES.PUT
+			));
+		}
 
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
@@ -98,21 +117,22 @@ class File extends ServiceBase {
 				(transferType === TRANSFER_TYPES.PUT) ? src : dest,
 				(transferType === TRANSFER_TYPES.PUT) ? dest : src,
 			))
-			.then((stats) => super.checkCollision(
-				(transferType === TRANSFER_TYPES.PUT) ? stats.local : stats.remote,
-				(transferType === TRANSFER_TYPES.PUT) ? stats.remote : stats.local,
-				collisionAction
-			))
-			.then((result) => {
+			.then((stats) => {
+				return super.checkCollision(
+					(transferType === TRANSFER_TYPES.PUT) ? stats.local : stats.remote,
+					(transferType === TRANSFER_TYPES.PUT) ? stats.remote : stats.local,
+					collisionAction
+				);
+			})
+			.then((collision) => {
 				// Figure out what to do based on the collision (if any)
-				if (result === false) {
+				if (collision === false) {
 					// No collision, just keep going
-					this.channel.appendLine(`${logPrefix}${destPath}`);
-					return this.copy(src, destPath);
+					return this.copy(src, destPath, transferType);
 				} else {
-					this.setCollisionOption(result);
+					this.setCollisionOption(collision);
 
-					switch (result.option) {
+					switch (collision.option) {
 						case utils.collisionOpts.stop:
 							throw utils.errors.stop;
 
@@ -120,8 +140,7 @@ class File extends ServiceBase {
 							return false;
 
 						case utils.collisionOpts.overwrite:
-							this.channel.appendLine(`${logPrefix}${destPath}`);
-							return this.copy(src, destPath);
+							return this.copy(src, destPath, transferType);
 
 						case utils.collisionOpts.rename:
 							return this.list(destDir, srcType)
@@ -264,8 +283,9 @@ class File extends ServiceBase {
 	 * Copies a file or stream from one location to another.
 	 * @param {*} src - Either a source Uri or a readable stream.
 	 * @param {string} dest - Destination filename.
+	 * @param {number} transferType - One of the TRANSFER_TYPES types.
 	 */
-	copy(src, dest) {
+	copy(src, dest, transferType) {
 		return new Promise((resolve, reject) => {
 			function fnError(error) {
 				this.stop(() => reject(error));
@@ -273,8 +293,16 @@ class File extends ServiceBase {
 
 			// Create write stream & attach events
 			this.writeStream = fs.createWriteStream(dest);
+
 			this.writeStream.on('error', fnError.bind(this));
-			this.writeStream.on('finish', resolve);
+
+			this.writeStream.on('finish', () => {
+				resolve(new TransferResult(
+					this.paths.getNormalPath(src),
+					true,
+					transferType
+				));
+			});
 
 			if (src instanceof vscode.Uri || typeof src === 'string') {
 				// Source is a VSCode Uri - create a read stream

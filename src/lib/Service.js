@@ -301,10 +301,35 @@ class Service extends PushBase {
 			this.activeService.setConfig(this.config);
 
 			// Run the service method with supplied arguments
+			let result = this.activeService[method].apply(
+				this.activeService,
+				args
+			)
+
+			if (!(result instanceof Promise)) {
+				throw new Error(
+					`Method ${method} does not return a Promise. This method cannot ` +
+					`be used with exec(). Try execSync()?`
+				);
+			}
+
+			return result;
+		}
+	}
+
+	execSync(method, config, args = []) {
+		// Set the current service configuration
+		this.setConfig(config);
+
+		if (this.activeService) {
+			// Set the active service's config
+			this.activeService.setConfig(this.config);
+
+			// Run the service method with supplied arguments
 			return this.activeService[method].apply(
 				this.activeService,
 				args
-			);
+			)
 		}
 	}
 
