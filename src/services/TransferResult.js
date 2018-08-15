@@ -1,9 +1,9 @@
-const { TRANSFER_TYPES } = require('../lib/constants');
+const { TRANSFER_TYPES, QUEUE_LOG_TYPES } = require('../lib/constants');
 
 /**
  * @param {string} srcPath - The source file being transferred.
  * @param {boolean|Error} status - The status of the transfer. Either a basic
- * boolean `true` for success or `false` for failure, or `Error` for a more
+ * boolean `true` for success or `false` for skipped, or `Error` for a more
  * detailed error.
  * @param {number} type - One of the {@link TRANSFER_TYPES} types.
  * @description
@@ -19,6 +19,14 @@ class TransferResult {
 		this.status = (status === true ? status : false);
 		this.type = type;
 		this.error = ((status instanceof Error) ? status : null);
+
+		if (this.error) {
+			this.logType = QUEUE_LOG_TYPES.fail;
+		} else if (this.status === false) {
+			this.logType = QUEUE_LOG_TYPES.skip;
+		} else {
+			this.logType = QUEUE_LOG_TYPES.success;
+		}
 	}
 }
 

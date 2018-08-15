@@ -26,5 +26,11 @@ module.exports = {
         GET: 1
     },
 
+    QUEUE_LOG_TYPES: {
+        success: 0,
+        fail: 1,
+        skip: 2
+    },
+
     TMP_FILE_PREFIX: 'vscode-push-tmp-'
 };

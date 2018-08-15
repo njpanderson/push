@@ -50,7 +50,7 @@ class File extends ServiceBase {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
 				local,
-				new Error(i18n.t('file_not_found', local)),
+				new Error(i18n.t('file_not_found', this.paths.getBaseName(local))),
 				TRANSFER_TYPES.PUT
 			));
 		}
@@ -80,7 +80,7 @@ class File extends ServiceBase {
 			// Remote file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
 				remote,
-				new Error(i18n.t('file_not_found', remote)),
+				new Error(i18n.t('file_not_found', this.paths.getBaseName(remote))),
 				TRANSFER_TYPES.PUT
 			));
 		}

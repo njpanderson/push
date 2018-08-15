@@ -4,9 +4,9 @@ const QueueTask = require('./QueueTask');
 const utils = require('../utils');
 const config = require('../config');
 const channel = require('../channel');
-const constants = require('../constants');
 const TransferResult = require('../../services/TransferResult');
 const i18n = require('../../lang/i18n');
+const { STATUS_PRIORITIES, QUEUE_LOG_TYPES } = require('../constants');
 
 class Queue {
 	/**
@@ -31,7 +31,7 @@ class Queue {
 
 		this.status = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.Left,
-			constants.STATUS_PRIORITIES.UPLOAD_QUEUE
+			STATUS_PRIORITIES.UPLOAD_QUEUE
 		);
 
 		if (typeof this.options.statusCommand === 'string') {
@@ -169,6 +169,9 @@ class Queue {
 			// Always report one less item (as there's an #init task added by default)
 			channel.appendLine(i18n.t('running_tasks_in_queue', (this._tasks.length - 1)));
 
+			// Initialise the results object
+			this._initQueueResults();
+
 			// Start progress interface
 			return vscode.window.withProgress({
 				location: vscode.ProgressLocation.Window,
@@ -220,7 +223,7 @@ class Queue {
 					}, 10);
 
 					// Execute all queue items in serial
-					this.execQueueItems(
+					this._execQueueItems(
 						(results) => {
 							clearInterval(this.progressInterval);
 							this._updateStatus(false);
@@ -238,17 +241,10 @@ class Queue {
 	 * Executes all items within a queue in serial and invokes the callback on completion.
 	 * @param {function} fnCallback - Callback to invoke once the queue is empty
 	 * @param {array} results - Results object, populated by queue tasks
+	 * @private
 	 */
-	execQueueItems(fnCallback, results) {
+	_execQueueItems(fnCallback, results) {
 		let task;
-
-		// Initialise the results object
-		if (!results) {
-			results = {
-				success: {},
-				fail: {}
-			};
-		}
 
 		if (this._tasks.length) {
 			// Further tasks to process
@@ -267,19 +263,19 @@ class Queue {
 						channel.appendTransferResult(result);
 					}
 
-					if (
-						(result instanceof TransferResult && !result.error) ||
-						result !== false
-					) {
-						// Add to success list
-						if (task.data.actionTaken) {
-							if (!results.success[task.data.actionTaken]) {
-								results.success[task.data.actionTaken] = [];
-							}
-
-							// Push non falsy results, Uri contexts or `null`
-							results.success[task.data.actionTaken].push(
-								result || task.data.uriContext || null
+					if (task.data.actionTaken) {
+						// Log the queue result if there is actionTaken data
+						if (result instanceof TransferResult) {
+							this.logQueueResult(
+								result.logType,
+								task.data.actionTaken,
+								result
+							);
+						} else {
+							this.logQueueResult(
+								(result !== false ? QUEUE_LOG_TYPES.success : QUEUE_LOG_TYPES.fail),
+								task.data.actionTaken,
+								result
 							);
 						}
 					}
@@ -290,31 +286,17 @@ class Queue {
 				.catch((error) => {
 					this.currentTask = null;
 
-					if (error instanceof Error) {
-						// Thrown Errors will stop the queue as well as alerting the user
-						channel.appendError(error);
-						channel.show();
+					// Thrown Errors will stop the queue as well as alerting the user
+					channel.appendError(error);
+					channel.show();
 
-						// Stop queue
-						this.stop(true, this.options.emptyOnFail)
-							.then(() => {
-								this.complete(results, fnCallback);
-							});
+					// Stop queue
+					this.stop(true, this.options.emptyOnFail)
+						.then(() => {
+							this.complete(results, fnCallback);
+						});
 
-						throw error;
-					} else if (typeof error === 'string') {
-						// String based errors add to fail list, but don't stop
-						if (!results.fail[task.data.actionTaken]) {
-							results.fail[task.data.actionTaken] = [];
-						}
-
-						results.fail[task.data.actionTaken].push(error);
-
-						channel.appendError(error);
-
-						// Loop
-						this._loop(fnCallback, results);
-					}
+					throw error;
 				});
 		} else {
 			// Complete queue
@@ -324,13 +306,14 @@ class Queue {
 	}
 
 	/**
-	 * Looper function for #execQueueItems
-	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
-	 * @param {object} results - Results object, as supplied to #execQueueItems
+	 * Looper function for #_execQueueItems
+	 * @param {function} fnCallback - Callback function, as supplied to #_execQueueItems.
+	 * @param {object} results - Results object, as supplied to #_execQueueItems.
+	 * @private
 	 */
 	_loop(fnCallback, results) {
 		this._tasks.shift();
-		this.execQueueItems(fnCallback, results);
+		this._execQueueItems(fnCallback, results);
 	}
 
 	/**
@@ -393,32 +376,60 @@ class Queue {
 	}
 
 	/**
-	 * Shows a message, reporting on the queue state once completed.
-	 * @param {object} results
+	 * Initialises the queue results object. Used once per queue run.
+	 * @private
 	 */
-	reportQueueResults(results) {
+	_initQueueResults() {
+		this.results = {
+			[QUEUE_LOG_TYPES.success]: {},
+			[QUEUE_LOG_TYPES.fail]: {},
+			[QUEUE_LOG_TYPES.skip]: {}
+		};
+	}
+
+	/**
+	 * Logs a single queue result.
+	 * @param {String} log - One of the QUEUE_LOG_TYPES logs.
+	 * @param {String} actionTaken - Localised verb describing the action taken. e.g. 'uploaded'.
+	 * @param {*} result - The result data.
+	 */
+	logQueueResult(log, actionTaken, result) {
+		if (!this.results[log][actionTaken]) {
+			// Create empty log as none yet exists
+			this.results[log][actionTaken] = [];
+		}
+
+		// Push result
+		this.results[log][actionTaken].push(
+			result || null
+		);
+	}
+
+	/**
+	 * Shows a message, reporting on the queue state once completed.
+	 */
+	reportQueueResults() {
 		let actionTaken,
+			log,
 			extra = [
 				i18n.t('queue_complete')
 			];
 
-		for (actionTaken in results.fail) {
-			if (results.fail[actionTaken].length) {
-				channel.show(true);
+		for (log in QUEUE_LOG_TYPES) {
+			for (actionTaken in this.results[QUEUE_LOG_TYPES[log]]) {
+				if (this.results[QUEUE_LOG_TYPES[log]][actionTaken].length) {
+					channel.show(true);
+				}
+
+				extra.push(i18n.t(
+					'queue_items_' + log,
+					this.results[QUEUE_LOG_TYPES[log]][actionTaken].length,
+					actionTaken
+				));
 			}
-
-			extra.push(i18n.t('queue_items_failed', results.fail[actionTaken].length));
 		}
 
-		for (actionTaken in results.success) {
-			extra.push(i18n.t(
-				'queue_items_actioned',
-				results.success[actionTaken].length,
-				actionTaken
-			));
-		}
-
-		if ((Object.keys(results.fail)).length) {
+		if ((Object.keys(this.results[QUEUE_LOG_TYPES.fail])).length) {
 			// Show a warning in a message window
 			utils.showWarning(extra.join(' '));
 		} else {
@@ -478,6 +489,6 @@ class Queue {
 Queue.contexts = {
 	itemCount: 'itemCount',
 	running: 'running'
-}
+};
 
 module.exports = Queue;

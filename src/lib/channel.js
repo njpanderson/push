@@ -31,7 +31,7 @@ class Channel {
 		}
 
 		if (result.status === true || result.status === false) {
-			return this.appendLine(`${icon}${(result.status ? icon : '!')} ${result.src}`);
+			return this.appendLine(`${icon}${(result.status ? icon : '-')} ${result.src}`);
 		}
 	}
 

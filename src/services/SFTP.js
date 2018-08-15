@@ -555,7 +555,7 @@ class SFTP extends ServiceBase {
 						throw utils.errors.stop;
 
 					case utils.collisionOpts.skip:
-						return false;
+						return new TransferResult(local, false, TRANSFER_TYPES.PUT);
 
 					case utils.collisionOpts.overwrite:
 						return this.clientPut(localPath, remote);
@@ -563,14 +563,12 @@ class SFTP extends ServiceBase {
 					case utils.collisionOpts.rename:
 						return this.list(remoteDir)
 							.then((dirContents) => {
-								let remotePath = remoteDir + '/' + this.getNonCollidingName(
-										remoteFilename,
-										dirContents
-									);
-
 								return this.put(
 									local,
-									remotePath
+									remoteDir + '/' + this.getNonCollidingName(
+										remoteFilename,
+										dirContents
+									)
 								);
 							});
 
@@ -580,7 +578,8 @@ class SFTP extends ServiceBase {
 			}
 		})
 		.then((result) => {
-			if (result !== false) {
+			if ((result instanceof TransferResult) && !result.error) {
+				// Transfer occured, no errors - set the remote file mode
 				return this.setRemotePathMode(remote, this.config.service.fileMode)
 					.then(() => result);
 			}
@@ -627,7 +626,14 @@ class SFTP extends ServiceBase {
 			.then(() => this.getFileStats(remote, local))
 			.then((stats) => {
 				if (!stats.remote) {
-					throw(i18n.t('remote_file_not_found', remote));
+					return new TransferResult(
+						remote,
+						new Error(i18n.t(
+							'remote_file_not_found',
+							this.paths.getBaseName(remote)
+						)),
+						TRANSFER_TYPES.GET
+					);
 				}
 
 				return super.checkCollision(
@@ -636,23 +642,27 @@ class SFTP extends ServiceBase {
 					collisionAction
 				);
 			})
-			.then((result) => {
+			.then((collision) => {
 				// Figure out what to do based on the collision (if any)
 				let localDir, localFilename;
 
-				if (result === false) {
+				if (collision instanceof TransferResult) {
+					return collision;
+				}
+
+				if (collision === false) {
 					// No collision, just keep going
 					return this.clientGetByStream(localPath, remote);
 				} else {
-					this.setCollisionOption(result);
+					this.setCollisionOption(collision);
 
-					switch (result.option) {
+					switch (collision.option) {
 						case utils.collisionOpts.stop:
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
 						case undefined:
-							return false;
+							return new TransferResult(remote, false, TRANSFER_TYPES.GET);
 
 						case utils.collisionOpts.overwrite:
 							return this.clientGetByStream(localPath, remote);
@@ -664,7 +674,8 @@ class SFTP extends ServiceBase {
 							// Rename (non-colliding) and get
 							return this.paths.listDirectory(localDir)
 								.then((dirContents) => {
-									let localPath = localDir + '/' + this.getNonCollidingName(
+									let localPath = localDir + '/' +
+										this.getNonCollidingName(
 											localFilename,
 											dirContents
 										);
