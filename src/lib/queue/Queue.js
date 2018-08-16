@@ -239,11 +239,10 @@ class Queue {
 
 	/**
 	 * Executes all items within a queue in serial and invokes the callback on completion.
-	 * @param {function} fnCallback - Callback to invoke once the queue is empty
-	 * @param {array} results - Results object, populated by queue tasks
+	 * @param {function} fnCallback - Callback to invoke once the queue is empty.
 	 * @private
 	 */
-	_execQueueItems(fnCallback, results) {
+	_execQueueItems(fnCallback) {
 		let task;
 
 		if (this._tasks.length) {
@@ -281,7 +280,7 @@ class Queue {
 					}
 
 					// Loop
-					this._loop(fnCallback, results);
+					this._loop(fnCallback);
 				})
 				.catch((error) => {
 					this.currentTask = null;
@@ -293,15 +292,15 @@ class Queue {
 					// Stop queue
 					this.stop(true, this.options.emptyOnFail)
 						.then(() => {
-							this.complete(results, fnCallback);
+							this.complete(fnCallback);
 						});
 
 					throw error;
 				});
 		} else {
 			// Complete queue
-			this.complete(results, fnCallback);
-			this.reportQueueResults(results);
+			this.complete(fnCallback);
+			this.reportQueueResults();
 		}
 	}
 
@@ -311,9 +310,9 @@ class Queue {
 	 * @param {object} results - Results object, as supplied to #_execQueueItems.
 	 * @private
 	 */
-	_loop(fnCallback, results) {
+	_loop(fnCallback) {
 		this._tasks.shift();
-		this._execQueueItems(fnCallback, results);
+		this._execQueueItems(fnCallback);
 	}
 
 	/**
@@ -350,15 +349,14 @@ class Queue {
 
 	/**
 	 * Invoked on queue completion (regardless of success).
-	 * @param {mixed} results - Result data from the queue process
 	 * @param {function} fnCallback - Callback function to invoke
 	 */
-	complete(results, fnCallback) {
+	complete(fnCallback) {
 		this.running = false;
 		this._setContext(Queue.contexts.running, false);
 
 		if (typeof fnCallback === 'function') {
-			fnCallback(results);
+			fnCallback(this.results);
 		}
 	}
 
