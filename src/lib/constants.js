@@ -20,5 +20,17 @@ module.exports = {
         UPLOAD_STATUS: 3
     },
 
+
+    TRANSFER_TYPES: {
+        PUT: 0,
+        GET: 1
+    },
+
+    QUEUE_LOG_TYPES: {
+        success: 0,
+        fail: 1,
+        skip: 2
+    },
+
     TMP_FILE_PREFIX: 'vscode-push-tmp-'
 };

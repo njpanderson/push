@@ -29,7 +29,7 @@ class UI extends Push {
 			uri = this.paths.getFileSrc(context);
 		}
 
-		super.removeQueuedItem(Push.queueDefs.upload, uri);
+		super.removeQueuedUri(Push.queueDefs.upload, uri);
 	}
 
 	queueGitChangedFiles() {

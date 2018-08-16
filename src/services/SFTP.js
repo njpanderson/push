@@ -7,10 +7,12 @@ const homedir = require('os').homedir;
 const micromatch = require("micromatch");
 
 const ServiceBase = require('./Base');
+const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const PathCache = require('../lib/PathCache');
 const channel = require('../lib/channel');
 const i18n = require('../lang/i18n');
+const { TRANSFER_TYPES } = require('../lib/constants');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
 // const SRC_LOCAL = PathCache.sources.LOCAL;
@@ -508,15 +510,14 @@ class SFTP extends ServiceBase {
 
 	/**
 	 * Put a single file to the SFTP server.
-	 * @param {uri} local - Local source Uri.
+	 * @param {Uri} local - Local source Uri.
 	 * @param {string} remote - Remote destination pathname.
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
 	 */
 	put(local, remote, collisionAction) {
 		let remoteDir = path.dirname(remote),
-			remoteFilename = path.basename(remote),
-			localPath = this.paths.getNormalPath(local);
+			remoteFilename = path.basename(remote);
 
 		collisionAction = collisionAction ||
 			this.config.service.collisionUploadAction;
@@ -544,8 +545,7 @@ class SFTP extends ServiceBase {
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
 				// No collision, just keep going
-				this.channel.appendLine(`>> ${remote}`);
-				return this.clientPut(localPath, remote);
+				return this.clientPut(local, remote);
 			} else {
 				this.setCollisionOption(result);
 
@@ -554,23 +554,20 @@ class SFTP extends ServiceBase {
 						throw utils.errors.stop;
 
 					case utils.collisionOpts.skip:
-						return false;
+						return new TransferResult(local, false, TRANSFER_TYPES.PUT);
 
 					case utils.collisionOpts.overwrite:
-						this.channel.appendLine(`>> ${remote}`);
-						return this.clientPut(localPath, remote);
+						return this.clientPut(local, remote);
 
 					case utils.collisionOpts.rename:
 						return this.list(remoteDir)
 							.then((dirContents) => {
-								let remotePath = remoteDir + '/' + this.getNonCollidingName(
-										remoteFilename,
-										dirContents
-									);
-
 								return this.put(
 									local,
-									remotePath
+									remoteDir + '/' + this.getNonCollidingName(
+										remoteFilename,
+										dirContents
+									)
 								);
 							});
 
@@ -580,7 +577,8 @@ class SFTP extends ServiceBase {
 			}
 		})
 		.then((result) => {
-			if (result !== false) {
+			if ((result instanceof TransferResult) && !result.error) {
+				// Transfer occured, no errors - set the remote file mode
 				return this.setRemotePathMode(remote, this.config.service.fileMode)
 					.then(() => result);
 			}
@@ -627,7 +625,14 @@ class SFTP extends ServiceBase {
 			.then(() => this.getFileStats(remote, local))
 			.then((stats) => {
 				if (!stats.remote) {
-					throw(i18n.t('remote_file_not_found', remote));
+					return new TransferResult(
+						local,
+						new Error(i18n.t(
+							'remote_file_not_found',
+							this.paths.getBaseName(remote)
+						)),
+						TRANSFER_TYPES.GET
+					);
 				}
 
 				return super.checkCollision(
@@ -636,43 +641,46 @@ class SFTP extends ServiceBase {
 					collisionAction
 				);
 			})
-			.then((result) => {
+			.then((collision) => {
 				// Figure out what to do based on the collision (if any)
 				let localDir, localFilename;
 
-				if (result === false) {
-					// No collision, just keep going
-					this.channel.appendLine(`<< ${localPath}`);
-					return this.clientGetByStream(localPath, remote);
-				} else {
-					this.setCollisionOption(result);
+				if (collision instanceof TransferResult) {
+					return collision;
+				}
 
-					switch (result.option) {
+				if (collision === false) {
+					// No collision, just keep going
+					return this.clientGetByStream(local, remote);
+				} else {
+					this.setCollisionOption(collision);
+
+					switch (collision.option) {
 						case utils.collisionOpts.stop:
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
 						case undefined:
-							return false;
+							return new TransferResult(local, false, TRANSFER_TYPES.GET);
 
 						case utils.collisionOpts.overwrite:
-							this.channel.appendLine(`<< ${localPath}`);
-							return this.clientGetByStream(localPath, remote);
+							return this.clientGetByStream(local, remote);
 
 						case utils.collisionOpts.rename:
 							localDir = path.dirname(localPath);
 							localFilename = path.basename(localPath);
 
+							// Rename (non-colliding) and get
 							return this.paths.listDirectory(localDir)
 								.then((dirContents) => {
-									let localPath = localDir + '/' + this.getNonCollidingName(
+									let localPath = localDir + '/' +
+										this.getNonCollidingName(
 											localFilename,
 											dirContents
 										);
-									this.channel.appendLine(`<< ${localPath}`);
 
 									return this.clientGetByStream(
-										localPath,
+										vscode.Uri.path(localPath),
 										remote
 									);
 								});
@@ -683,7 +691,6 @@ class SFTP extends ServiceBase {
 				}
 			})
 			.catch((error) => {
-				console.log(`error! ${error.message || error}`);
 				this.setProgress(false);
 				throw(error);
 			});
@@ -774,14 +781,37 @@ class SFTP extends ServiceBase {
 		});
 	}
 
+	/**
+	 * Uploads a single file using the SSH library.
+	 * @param {Uri} local - Local Uri to put to the server.
+	 * @param {string} remote - Remote path to replace upload to.
+	 */
 	clientPut(local, remote) {
+		let localPath = this.paths.getNormalPath(local);
+
 		return new Promise((resolve, reject) => {
 			this.globalReject = reject;
 
 			this.connect().then((client) => {
-				client.put(local, remote)
-					.then(resolve)
+				client.put(localPath, remote)
+					.then(() => {
+						resolve(new TransferResult(
+							local,
+							true,
+							TRANSFER_TYPES.PUT
+						));
+					})
 					.catch((error) => {
+						if (error.code === 'ENOENT') {
+							// File no longer exists - skip (but don't stop)
+							return resolve(new TransferResult(
+								local,
+								new Error(i18n.t('file_not_found', localPath)),
+								TRANSFER_TYPES.PUT
+							));
+						}
+
+						// Other errors
 						reject(new Error(`${remote}: ${error.message}`));
 					});
 			});
@@ -790,22 +820,19 @@ class SFTP extends ServiceBase {
 
 	/**
 	 * Retrieves a file from the server using its get stream method.
-	 * @param {string} local - Local pathname.
+	 * @param {Uri} local - Local Uri.
 	 * @param {string} remote - Remote pathname.
 	 */
 	clientGetByStream(local, remote) {
-		let client;
+		let client,
+			localPath = this.paths.getNormalPath(local);
 
 		return this.connect()
 			.then((connection) => {
 				client = connection;
 			})
-			.then(() => {
-				return this.paths.ensureDirExists(path.dirname(local));
-			})
-			.then(() => {
-				return this.getMimeCharset(remote);
-			})
+			.then(() => this.paths.ensureDirExists(path.dirname(localPath)))
+			.then(() => this.getMimeCharset(remote))
 			.then((charset) => {
 				return new Promise((resolve, reject) => {
 					// Get file with client#get and stream to local pathname
@@ -813,8 +840,14 @@ class SFTP extends ServiceBase {
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
-							utils.writeFileFromStream(stream, local, remote)
-								.then(resolve, reject)
+							utils.writeFileFromStream(stream, localPath, remote)
+								.then(() => {
+									resolve(new TransferResult(
+										local,
+										true,
+										TRANSFER_TYPES.GET
+									));
+								}, reject)
 						})
 						.catch((error) => {
 							throw new Error(`${remote}: ${error && error.message}`);

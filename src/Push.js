@@ -12,6 +12,7 @@ const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
+const { QUEUE_LOG_TYPES } = require('./lib/constants');
 
 /**
  * Provides the main controller for Push.
@@ -316,7 +317,7 @@ class Push extends PushBase {
 		return Promise.all(uris.map(uri => {
 			let remotePath;
 
-			remotePath = this.service.exec(
+			remotePath = this.service.execSync(
 				'convertUriToRemote',
 				this.configWithServiceSettings(uri),
 				[uri]
@@ -389,7 +390,7 @@ class Push extends PushBase {
 
 		tmpFile = utils.getTmpFile();
 		config = this.configWithServiceSettings(uri);
-		remotePath = this.service.exec(
+		remotePath = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
@@ -462,17 +463,17 @@ class Push extends PushBase {
 		return queue
 			.exec(this.service.getStateProgress)
 			.then((result) => {
-				let uris;
+				let log;
 
 				if (
 					result &&
-					result.success &&
-					(result.success.uploaded && result.success.uploaded.length)
+					(log = result[QUEUE_LOG_TYPES.success]) &&
+					(log.uploaded && log.uploaded.length)
 				) {
 					// Clear result items from "upload" queue
-					this.removeQueuedItem(
+					this.remoteQueuedItemsByTransfer(
 						Push.queueDefs.upload,
-						result.success.uploaded
+						log.uploaded
 					);
 				} else {
 					this.refreshExplorerQueues();
@@ -504,22 +505,33 @@ class Push extends PushBase {
 		} else {
 			channel.appendLocalisedInfo('no_current_upload_queue');
 		}
+
+	}
+
+	/**
+	 * Removes items from a queue matching the TransferResult paths.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 * @param {TransferResult[]} transferResults - Results to draw Uris from.
+	 */
+	remoteQueuedItemsByTransfer(queueDef, transferResults) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			transferResults.forEach(result => queue.removeTaskByUri(result.src));
+			this.refreshExplorerQueues();
+		}
 	}
 
 	/**
 	 * Removes a single item from a queue by its Uri.
 	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 * @param {Uri|Uri[]} uri - Uri(s) of the item to remove.
+	 * @param {uri} uri - Uri of the item to remove.
 	 */
-	removeQueuedItem(queueDef, uri) {
+	removeQueuedUri(queueDef, uri) {
 		let queue = this.getQueue(queueDef, false);
 
-		if (!Array.isArray(uri)) {
-			uri = [uri];
-		}
-
 		if (queue) {
-			uri.forEach(uri => queue.removeTaskByUri(uri));
+			queue.removeTaskByUri(uri);
 			this.refreshExplorerQueues();
 		}
 	}
@@ -737,7 +749,7 @@ class Push extends PushBase {
 						if (filteredUri !== false) {
 							config = this.configWithServiceSettings(filteredUri);
 
-							remotePath = this.service.exec(
+							remotePath = this.service.execSync(
 								'convertUriToRemote',
 								config,
 								[filteredUri]
@@ -808,7 +820,7 @@ class Push extends PushBase {
 		ignoreGlobs = this.config.ignoreGlobs;
 		config = this.configWithServiceSettings(uri);
 
-		remoteUri = this.service.exec(
+		remoteUri = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
@@ -827,7 +839,7 @@ class Push extends PushBase {
 
 						uri = vscode.Uri.file(uri);
 
-						remotePath = this.service.exec(
+						remotePath = this.service.execSync(
 							'convertUriToRemote',
 							config,
 							[uri]
@@ -856,7 +868,7 @@ class Push extends PushBase {
 						let uri;
 
 						file = file.pathName || file;
-						uri = this.service.exec(
+						uri = this.service.execSync(
 							'convertRemoteToUri',
 							config,
 							[file]
