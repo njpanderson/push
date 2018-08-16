@@ -1,7 +1,9 @@
+const vscode = require('vscode');
+
 const { TRANSFER_TYPES, QUEUE_LOG_TYPES } = require('../lib/constants');
 
 /**
- * @param {string} srcPath - The source file being transferred.
+ * @param {Url} src - The source file Uri being transferred.
  * @param {boolean|Error} status - The status of the transfer. Either a basic
  * boolean `true` for success or `false` for skipped, or `Error` for a more
  * detailed error.
@@ -14,8 +16,12 @@ const { TRANSFER_TYPES, QUEUE_LOG_TYPES } = require('../lib/constants');
  * and/or are not localised. (I.e. do not use errors directly from APIs).
  */
 class TransferResult {
-	constructor(srcPath, status = true, type = TRANSFER_TYPES.PUT) {
-		this.src = srcPath;
+	constructor(src, status = true, type = TRANSFER_TYPES.PUT) {
+		if (!src instanceof vscode.Uri) {
+			throw new Error('src must be an instance of vscode.Uri');
+		}
+
+		this.src = src;
 		this.status = (status === true ? status : false);
 		this.type = type;
 		this.error = ((status instanceof Error) ? status : null);

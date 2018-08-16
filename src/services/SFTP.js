@@ -510,15 +510,14 @@ class SFTP extends ServiceBase {
 
 	/**
 	 * Put a single file to the SFTP server.
-	 * @param {uri} local - Local source Uri.
+	 * @param {Uri} local - Local source Uri.
 	 * @param {string} remote - Remote destination pathname.
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
 	 */
 	put(local, remote, collisionAction) {
 		let remoteDir = path.dirname(remote),
-			remoteFilename = path.basename(remote),
-			localPath = this.paths.getNormalPath(local);
+			remoteFilename = path.basename(remote);
 
 		collisionAction = collisionAction ||
 			this.config.service.collisionUploadAction;
@@ -546,7 +545,7 @@ class SFTP extends ServiceBase {
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
 				// No collision, just keep going
-				return this.clientPut(localPath, remote);
+				return this.clientPut(local, remote);
 			} else {
 				this.setCollisionOption(result);
 
@@ -558,7 +557,7 @@ class SFTP extends ServiceBase {
 						return new TransferResult(local, false, TRANSFER_TYPES.PUT);
 
 					case utils.collisionOpts.overwrite:
-						return this.clientPut(localPath, remote);
+						return this.clientPut(local, remote);
 
 					case utils.collisionOpts.rename:
 						return this.list(remoteDir)
@@ -627,7 +626,7 @@ class SFTP extends ServiceBase {
 			.then((stats) => {
 				if (!stats.remote) {
 					return new TransferResult(
-						remote,
+						local,
 						new Error(i18n.t(
 							'remote_file_not_found',
 							this.paths.getBaseName(remote)
@@ -652,7 +651,7 @@ class SFTP extends ServiceBase {
 
 				if (collision === false) {
 					// No collision, just keep going
-					return this.clientGetByStream(localPath, remote);
+					return this.clientGetByStream(local, remote);
 				} else {
 					this.setCollisionOption(collision);
 
@@ -662,10 +661,10 @@ class SFTP extends ServiceBase {
 
 						case utils.collisionOpts.skip:
 						case undefined:
-							return new TransferResult(remote, false, TRANSFER_TYPES.GET);
+							return new TransferResult(local, false, TRANSFER_TYPES.GET);
 
 						case utils.collisionOpts.overwrite:
-							return this.clientGetByStream(localPath, remote);
+							return this.clientGetByStream(local, remote);
 
 						case utils.collisionOpts.rename:
 							localDir = path.dirname(localPath);
@@ -681,7 +680,7 @@ class SFTP extends ServiceBase {
 										);
 
 									return this.clientGetByStream(
-										localPath,
+										vscode.Uri.path(localPath),
 										remote
 									);
 								});
@@ -782,12 +781,19 @@ class SFTP extends ServiceBase {
 		});
 	}
 
+	/**
+	 * Uploads a single file using the SSH library.
+	 * @param {Uri} local - Local Uri to put to the server.
+	 * @param {string} remote - Remote path to replace upload to.
+	 */
 	clientPut(local, remote) {
+		let localPath = this.paths.getNormalPath(local);
+
 		return new Promise((resolve, reject) => {
 			this.globalReject = reject;
 
 			this.connect().then((client) => {
-				client.put(local, remote)
+				client.put(localPath, remote)
 					.then(() => {
 						resolve(new TransferResult(
 							local,
@@ -800,7 +806,7 @@ class SFTP extends ServiceBase {
 							// File no longer exists - skip (but don't stop)
 							return resolve(new TransferResult(
 								local,
-								new Error(i18n.t('file_not_found', local)),
+								new Error(i18n.t('file_not_found', localPath)),
 								TRANSFER_TYPES.PUT
 							));
 						}
@@ -814,22 +820,19 @@ class SFTP extends ServiceBase {
 
 	/**
 	 * Retrieves a file from the server using its get stream method.
-	 * @param {string} local - Local pathname.
+	 * @param {Uri} local - Local Uri.
 	 * @param {string} remote - Remote pathname.
 	 */
 	clientGetByStream(local, remote) {
-		let client;
+		let client,
+			localPath = this.paths.getNormalPath(local);
 
 		return this.connect()
 			.then((connection) => {
 				client = connection;
 			})
-			.then(() => {
-				return this.paths.ensureDirExists(path.dirname(local));
-			})
-			.then(() => {
-				return this.getMimeCharset(remote);
-			})
+			.then(() => this.paths.ensureDirExists(path.dirname(localPath)))
+			.then(() => this.getMimeCharset(remote))
 			.then((charset) => {
 				return new Promise((resolve, reject) => {
 					// Get file with client#get and stream to local pathname
@@ -837,7 +840,7 @@ class SFTP extends ServiceBase {
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
-							utils.writeFileFromStream(stream, local, remote)
+							utils.writeFileFromStream(stream, localPath, remote)
 								.then(() => {
 									resolve(new TransferResult(
 										local,
