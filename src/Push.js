@@ -12,6 +12,7 @@ const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
+const { QUEUE_LOG_TYPES } = require('./lib/constants');
 
 /**
  * Provides the main controller for Push.
@@ -462,17 +463,17 @@ class Push extends PushBase {
 		return queue
 			.exec(this.service.getStateProgress)
 			.then((result) => {
-				let uris;
+				let log;
 
 				if (
 					result &&
-					result.success &&
-					(result.success.uploaded && result.success.uploaded.length)
+					(log = result[QUEUE_LOG_TYPES.success]) &&
+					(log.uploaded && log.uploaded.length)
 				) {
 					// Clear result items from "upload" queue
-					this.removeQueuedItem(
+					this.remoteQueuedItemsByTransfer(
 						Push.queueDefs.upload,
-						result.success.uploaded
+						log.uploaded
 					);
 				} else {
 					this.refreshExplorerQueues();
@@ -504,22 +505,33 @@ class Push extends PushBase {
 		} else {
 			channel.appendLocalisedInfo('no_current_upload_queue');
 		}
+
+	}
+
+	/**
+	 * Removes items from a queue matching the TransferResult paths.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 * @param {TransferResult[]} transferResults - Results to draw Uris from.
+	 */
+	remoteQueuedItemsByTransfer(queueDef, transferResults) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			transferResults.forEach(result => queue.removeTaskByUri(result.src));
+			this.refreshExplorerQueues();
+		}
 	}
 
 	/**
 	 * Removes a single item from a queue by its Uri.
 	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 * @param {Uri|Uri[]} uri - Uri(s) of the item to remove.
+	 * @param {uri} uri - Uri of the item to remove.
 	 */
-	removeQueuedItem(queueDef, uri) {
+	removeQueuedUri(queueDef, uri) {
 		let queue = this.getQueue(queueDef, false);
 
-		if (!Array.isArray(uri)) {
-			uri = [uri];
-		}
-
 		if (queue) {
-			uri.forEach(uri => queue.removeTaskByUri(uri));
+			queue.removeTaskByUri(uri);
 			this.refreshExplorerQueues();
 		}
 	}
