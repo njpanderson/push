@@ -38,7 +38,8 @@ describe('Push', function() {
 				'./lib/channel': require('../mocks/lib/channel'),
 				'./lib/utils': require('../mocks/lib/utils'),
 				'./lib/PushBase': require('../mocks/lib/PushBase'),
-				'./lang/i18n': require('../mocks/lib/i18n')
+				'./lang/i18n': require('../mocks/lib/i18n'),
+				'../lang/i18n': require('../mocks/lib/i18n')
 			});
 	});
 
