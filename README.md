@@ -46,24 +46,25 @@ This extension contributes the following settings:
 | `statusMessageColor` | `statusBar.`<br>`foreground` | Choose the colour of the queue completion status message. |
 | `queueWatchedFiles` | `false` | When set to `true`, Push will queue watched files with changes detected instead of immediately uploading them. |
 | `autoUploadQueue` | `false` | When set to `true`, Push will automatically upload files that enter the queue. This allows for changes within VS Code to be uploaded on save, while not uploading changes from outside VS Code (like a watcher would). |
+| `persistWatchers` | `false` | When test to `true`, Push will retain up to 50 watchers between a restart of VS Code. See [Watcher Persistence](#watcher-persistence)
 
 ## Using Push
 Push has three main modes of operation: 1) As a standard, on-demand uploader, 2) as a queue-based uploader on save, or 3) as a file watching uploader. All three methods may be combined as your preferences dictate.
 
-### How does Push upload?
-When Push uploads a file within the workspace, it does a few things to make sure the file gets into the right place on your remote location - regardless of which service is used:
+### How does Push transfer files?
+When Push transfers a file within the workspace, it does a few things to make sure the file gets into the right place — regardless of which service is used:
 
- 1. Find the nearest `.push.settings.json` (or equivalent) to the file being uploaded. Push will look upwards along the ancestor tree of the file to find this.
+ 1. Find the nearest `.push.settings.json` (or equivalent) to the file being transferred. Push will look upwards along the ancestor tree of the file to find this.
  2. Connect to the service required and find the root path as defined.
- 3. Use the root path as a basis for uploading the file at its own path, relative to the workspace.
- 4. Upload the file, optionally presenting overwrite options to the user.
+ 3. Use the root path as a basis for transferring the file at its own path, relative to the workspace.
+ 4. Transfer the file, optionally presenting overwrite options to the user.
 
 #### Root path resolving
 Root path resolving can be a tricky concept if you've not used it before. Simply put, it is a method by which Push figures out where the files should go, relative to where they are in your project.
 
-If, for instance, an SFTP connection has been defined in the settings file for your workspace, and it has a `root` of `/home/myaccount/public`, files will be uploaded there as a base path.
+For example: an SFTP connection has been defined in the `.push.settings.json` file for your workspace folder, and it has a `root` setting of `/home/myaccount/public`.
 
-If your workspace root was `/Users/myusername/Projects/myproject/`, the `push.settings.json` file was in the root of this workspace, and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
+If your **workspace** root was `/Users/myusername/Projects/myproject/`, the `push.settings.json` file was directly within `myproject/`, and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
 
 ### On demand uploading
 There are a few methods you can use to upload on demand. Two of which are the command palette, and the context menu in the file explorer, seen below:
@@ -73,6 +74,8 @@ There are a few methods you can use to upload on demand. Two of which are the co
 ![Uploading with the command Palette](https://raw.github.com/njpanderson/push/master/img/command-palette-upload.png)
 
 **Context menu:**
+
+Right click on a file or folder within the explorer to see the following options:
 
 <img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276">
 
