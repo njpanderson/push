@@ -290,20 +290,29 @@ class Paths {
 	 * @param {string} startDir - The directory to start looking in.
 	 */
 	findFileInAncestors(file, startDir) {
-		let loop = 0,
-			rootPaths = this.getWorkspaceRootPaths();
+		let matches,
+			loop = 0,
+			rootPaths = this.getWorkspaceRootPaths(),
+			globOptions = {
+				matchBase: true,
+				follow: false,
+				nosort: true
+			};
 
-		while (!fs.existsSync(startDir + path.sep + file)) {
+		// while (!fs.existsSync(startDir + path.sep + file)) {
+		while (!(matches = (glob.sync(startDir + path.sep + file, globOptions))).length) {
+			// console.log(glob.sync(startDir + path.sep + file));
 			if (rootPaths.indexOf(startDir) !== -1 || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
+			// Strip off directory basename
 			startDir = startDir.substring(0, startDir.lastIndexOf(path.sep));
 			loop += 1;
 		}
 
-		return path.join(startDir + path.sep + file);
+		return matches[0];
 	}
 
 	/**

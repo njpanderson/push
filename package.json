@@ -48,7 +48,7 @@
         },
         "njpPush.settingsFilename": {
           "type": "string",
-          "default": ".push.settings.json",
+          "default": ".push.settings.json*",
           "description": "Defines the push settings JSON filename."
         },
         "njpPush.debugMode": {
