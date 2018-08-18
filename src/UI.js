@@ -64,7 +64,7 @@ class UI extends Push {
 				});
 		}
 
-		return this.transfer(uri, 'put');
+		return this.transfer(uri, 'put').catch(this.catchError);
 	}
 
 	/**
@@ -83,7 +83,7 @@ class UI extends Push {
 				});
 		}
 
-		return this.transfer(uri, 'get');
+		return this.transfer(uri, 'get').catch(this.catchError);
 	}
 
 	/**
@@ -94,7 +94,7 @@ class UI extends Push {
 	 */
 	diff(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			this.diffRemote(uri);
+			return this.diffRemote(uri).catch(this.catchError);
 		}
 	}
 

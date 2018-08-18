@@ -5,6 +5,7 @@ const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
+const PushError = require('./PushError');
 const config = require('./config');
 const channel = require('./channel');
 const constants = require('./constants');
@@ -272,6 +273,20 @@ class Service extends PushBase {
 			typeof configObject !== 'undefined' &&
 			configObject.serviceName !== this.config.serviceName
 		);
+
+		/**
+		 * Check serviceName is correct.
+		 * Done here instead of within ServiceSettings as this class knows
+		 * more about the available services.
+		 */
+		if (configObject && !this.services[configObject.serviceName]) {
+			// Service doesn't exist - return null and produce error
+			throw new PushError(i18n.t(
+				'service_name_invalid',
+				configObject.serviceName,
+				configObject.serviceFilename
+			));
+		}
 
 		this.config = Object.assign({}, config.get(), configObject);
 

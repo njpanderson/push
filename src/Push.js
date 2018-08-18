@@ -52,7 +52,7 @@ class Push extends PushBase {
 		vscode.window.onDidChangeActiveTextEditor(this.setEditorState);
 	}
 
-	onDidChangeConfiguration(config) {
+	onDidChangeConfiguration() {
 		if (this.setContexts) {
 			this.setContexts();
 		}
@@ -179,26 +179,7 @@ class Push extends PushBase {
 
 		if (settings) {
 			// Settings retrieved from JSON file within context
-			if (!settings.data.service) {
-				// No service defined
-				channel.appendLocalisedError(
-					'service_not_defined',
-					this.config.settingsFilename
-				);
-
-				return false;
-			}
-
-			if (!settings.data[settings.data.service]) {
-				// Service defined but no config object found
-				channel.appendLocalisedError(
-					'service_defined_but_no_config_exists',
-					this.config.settingsFilename
-				);
-
-				return false;
-			}
-
+			newConfig.env = settings.data.env;
 			newConfig.serviceName = settings.data.service;
 			newConfig.serviceFilename = settings.file,
 				newConfig.service = settings.data[newConfig.serviceName];
@@ -211,8 +192,7 @@ class Push extends PushBase {
 
 			return newConfig;
 		} else {
-			// No settings for this context - show an error
-			channel.appendLocalisedError('no_service_file', this.config.settingsFilename);
+			// No settings for this context
 			return false;
 		}
 	}

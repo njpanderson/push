@@ -73,7 +73,7 @@ class SCM {
 				}
 			});
 		} else {
-			return Promise.reject(Error(`Unknown method ${method}`));
+			return Promise.reject(new Error(`Unknown method ${method}`));
 		}
 	}
 

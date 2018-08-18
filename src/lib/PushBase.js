@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const Configurable = require('./Configurable');
 const Paths = require('./Paths');
+const PushError = require('./PushError');
 const channel = require('./channel');
 const i18n = require('../lang/i18n');
 
@@ -101,6 +102,22 @@ class PushBase extends Configurable {
 				resolve(this.paths.getNormalPath(rootPaths[0].uri));
 			}
 		});
+	}
+
+	/**
+	 * Catches (and potentially throws) general errors.
+	 * @param {Error} error - Any object, inheriting from Error.
+	 */
+	catchError(error) {
+		if (error instanceof PushError) {
+			// This is an expected exception, generated for user display.
+			channel.appendError(error);
+		} else {
+			// This is an unexpected or uncaught exception.
+			console.error(error);
+			throw error;
+			debugger;
+		}
 	}
 };
 

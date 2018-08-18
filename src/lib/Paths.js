@@ -6,6 +6,7 @@ const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
+const PushError = require('../lib/PushError');
 
 class Paths {
 	fileExists(file) {

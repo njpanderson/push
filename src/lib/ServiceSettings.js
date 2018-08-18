@@ -3,7 +3,10 @@ const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
 
+const channel = require('../lib/channel');
+const PushError = require('../lib/PushError');
 const Paths = require('../lib/Paths');
+const i18n = require('../lang/i18n');
 
 class ServiceSettings {
 	constructor() {
@@ -24,10 +27,12 @@ class ServiceSettings {
 	 * eventually ascending the directory tree to the root of the project.
 	 * @param {object} uri - URI of the path in which to start looking.
 	 * @param {string} settingsFilename - Name of the settings file.
+	 * @param {boolean} quiet - Produce no errors if a settings file couldn't be
+	 * found. (Will not affect subsequent errors.)
 	 */
-	getServerJSON(uri, settingsFilename) {
+	getServerJSON(uri, settingsFilename, quiet) {
 		let uriPath = this.paths.getNormalPath(uri),
-			file, fileContents, newFile, hash, digest;
+			settingsFile, fileContents, newFile, data, hash, digest;
 
 		// If the path isn't a directory, get its directory name
 		if (!this.paths.isDirectory(uriPath)) {
@@ -41,19 +46,24 @@ class ServiceSettings {
 		}
 
 		// Find the settings file
-		file = this.paths.findFileInAncestors(
+		settingsFile = this.paths.findFileInAncestors(
 			settingsFilename,
 			uriPath
 		);
 
-		if (file !== '' && fs.existsSync(file)) {
+		if (settingsFile !== '' && fs.existsSync(settingsFile)) {
 			// File isn't empty and exists - read and set into cache
-			fileContents = (fs.readFileSync(file, "UTF-8")).toString().trim();
+			fileContents = (fs.readFileSync(settingsFile, "UTF-8")).toString().trim();
 
 			if (fileContents !== '') {
 				try {
+					data = this.normalise(
+						jsonc.parse(fileContents),
+						settingsFile
+					);
+
 					hash = crypto.createHash('sha256');
-					hash.update(file + '\n' + fileContents);
+					hash.update(settingsFile + '\n' + fileContents);
 					digest = hash.digest('hex');
 
 					// Check file is new by comparing existing hash
@@ -64,21 +74,79 @@ class ServiceSettings {
 
 					// Cache entry
 					this.settingsCache[uriPath] = {
-						file,
+						file: settingsFile,
 						fileContents,
 						newFile,
-						data: jsonc.parse(fileContents),
+						data,
 						hash: digest
 					};
 
 					return this.settingsCache[uriPath];
-				} catch(e) {
+				} catch(error) {
+					channel.appendError(error.message);
 					return null;
 				}
 			}
 		}
 
+		if (!quiet) {
+			channel.appendLocalisedError('no_service_file', settingsFilename);
+		}
+
 		return null;
+	}
+
+	/**
+	 * Normalises server data into a consistent format.
+	 * @param {object} settings - Settings data as retrieved by JSON/C files
+	 */
+	normalise(settings, filename) {
+		let serviceData, variant;
+
+		if (!settings.service) {
+			if (settings.env) {
+				// env exists - new style of service
+				if ((serviceData = settings[settings.env])) {
+					settings.service = serviceData.service;
+					settings[settings.service] = serviceData.options;
+
+					// Strip out service variants (to ensure they don't make it to Push)
+					for (variant in settings) {
+						if (
+							settings.hasOwnProperty(variant) &&
+							variant !== 'service' &&
+							variant !== settings.service &&
+							variant !== "env"
+						) {
+							delete settings[variant];
+						}
+					}
+				} else {
+					// env defined, but it doesn't exist
+					throw new PushError(i18n.t(
+						'active_service_not_found',
+						settings.env,
+						filename
+					));
+				}
+			} else {
+				// No service defined
+				throw new PushError(i18n.t(
+					'service_not_defined',
+					filename
+				));
+			}
+		}
+
+		if (!settings[settings.service]) {
+			// Service defined but no config object found
+			throw new PushError(i18n.t(
+				'service_defined_but_no_config_exists',
+				filename
+			));
+		}
+
+		return settings;
 	}
 }
 

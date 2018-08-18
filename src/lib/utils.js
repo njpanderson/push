@@ -4,6 +4,7 @@ const fs = require('fs');
 
 const config = require('./config');
 const constants = require('./constants');
+const PushError = require('./PushError');
 const i18n = require('../lang/i18n');
 
 const utils = {
@@ -318,7 +319,7 @@ utils.collisionOptsAll = {
 };
 
 utils.errors = {
-	stop: new Error(i18n.t('transfer_cancelled'))
+	stop: new PushError(i18n.t('transfer_cancelled'))
 };
 
 module.exports = utils;
