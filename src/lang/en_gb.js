@@ -87,5 +87,6 @@ module.exports = {
 	'error_from_gateway': 'Error occured on SSH gateway: "${1}"',
 	'invalid_uri_scheme': 'Sorry, the filesystem scheme "${1}" is not supported. Push cannot work on files of this type.',
 	'invalid_path': 'The path "${1}" does not appear to be valid and has been skipped.',
-	'no_servicefile_context': 'A folder/path context for creating a service file could not be found. Please either open a workspace or select "Create/edit Push configuration" from a folder or open file.'
+	'no_servicefile_context': 'A folder/path context for creating a service file could not be found. Please either open a workspace or select "Create/edit Push configuration" from a folder or open file.',
+	'env_tooltip': 'The "${1}" environment is active for the currently open file.'
 };

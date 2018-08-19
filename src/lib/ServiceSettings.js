@@ -27,10 +27,10 @@ class ServiceSettings {
 	 * eventually ascending the directory tree to the root of the project.
 	 * @param {object} uri - URI of the path in which to start looking.
 	 * @param {string} settingsFilename - Name of the settings file.
-	 * @param {boolean} quiet - Produce no errors if a settings file couldn't be
+	 * @param {boolean} [quiet=false] - Produce no errors if a settings file couldn't be
 	 * found. (Will not affect subsequent errors.)
 	 */
-	getServerJSON(uri, settingsFilename, quiet) {
+	getServerJSON(uri, settingsFilename, quiet = false) {
 		let uriPath = this.paths.getNormalPath(uri),
 			settingsFile, fileContents, newFile, data, hash, digest;
 
@@ -39,8 +39,8 @@ class ServiceSettings {
 			uriPath = path.dirname(uriPath);
 		}
 
-		// Use a cached version, if it exists
 		if (this.settingsCache[uriPath]) {
+			// Return a cached version
 			this.settingsCache[uriPath].newFile = false;
 			return this.settingsCache[uriPath];
 		}

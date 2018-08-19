@@ -106,6 +106,20 @@
           "type": "boolean",
           "default": false,
           "description": "Set true to automatically upload files that enter the queue. This allows for changes within VS Code to be upload on save, while not uploading changes from outside VS Code (like a watcher would)."
+        },
+        "njpPush.useEnvLabel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Set true to show the currently active environment for the opened editor in the status bar."
+        },
+        "njpPush.envColours": {
+          "type": "object",
+          "default": {
+            "dev": "#62defd",
+            "stage": "#ffd08a",
+            "prod": "#f7ed00"
+          },
+          "description": "Defines the colours for specific environment names within the service settings file. The colour names as well as their values can be customised, and matching names will be coloured accordingly."
         }
       }
     },

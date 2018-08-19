@@ -15,11 +15,13 @@ module.exports = {
     ].join('\n'),
 
     STATUS_PRIORITIES: {
-        UPLOAD_QUEUE: 1,
-        WATCH: 2,
-        UPLOAD_STATUS: 3
+        ENV: 1,
+        UPLOAD_QUEUE: 2,
+        WATCH: 3,
+        UPLOAD_STATUS: 4
     },
 
+    ENV_DEFAULT_STATUS_COLOR: 'statusBar.foreground',
 
     TRANSFER_TYPES: {
         PUT: 0,

@@ -46,7 +46,9 @@ This extension contributes the following settings:
 | `statusMessageColor` | `statusBar.`<br>`foreground` | Choose the colour of the queue completion status message. |
 | `queueWatchedFiles` | `false` | When set to `true`, Push will queue watched files with changes detected instead of immediately uploading them. |
 | `autoUploadQueue` | `false` | When set to `true`, Push will automatically upload files that enter the queue. This allows for changes within VS Code to be uploaded on save, while not uploading changes from outside VS Code (like a watcher would). |
-| `persistWatchers` | `false` | When test to `true`, Push will retain up to 50 watchers between a restart of VS Code. See [Watcher Persistence](#watcher-persistence)
+| `persistWatchers` | `false` | When test to `true`, Push will retain up to 50 watchers between a restart of VS Code. See [Watcher Persistence](#watcher-persistence) |
+| `useEnvLabel` | `true` | Set `false` to disable the currently active environment label within the status bar. |
+| `envColours` | `dev: #62defd`<br>`stage: #ffd08a`<br>`prod: #f7ed00` | The currently defined transfer environments (and their status bar colours). VS Code's [theme colours](https://code.visualstudio.com/docs/getstarted/theme-color-reference) can also be used here. |
 
 ## Using Push
 Push has three main modes of operation: 1) As a standard, on-demand uploader, 2) as a queue-based uploader on save, or 3) as a file watching uploader. All three methods may be combined as your preferences dictate.
@@ -66,8 +68,8 @@ For example: an SFTP connection has been defined in the `.push.settings.json` fi
 
 If your **workspace** root was `/Users/myusername/Projects/myproject/`, the `push.settings.json` file was directly within `myproject/`, and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
 
-### On demand uploading
-There are a few methods you can use to upload on demand. Two of which are the command palette, and the context menu in the file explorer, seen below:
+### On demand transfers
+There are a few methods you can use to transfer files on demand. Two of which are the command palette, and the context menu in the file explorer, seen below:
 
 **Command palette:**
 
@@ -80,6 +82,16 @@ Right click on a file or folder within the explorer to see the following options
 <img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276">
 
 The same two methods can be used to perform downloads, as well as most of the other features of Push.
+
+#### Environment labels
+
+A benefit of using the on demand transfers feature combined with environment aware service configurations is that the currently active environment will show in the status bar. For example, the following environments are configured by default with Push:
+
+<img src="https://raw.github.com/njpanderson/push/master/img/env-status.png" alt="Uploading with the context menu" width="251">
+
+When a file is being edited, Push will remind you of the environment to which the open file would be transferred should you use on demand transfers. **Note** - This does not affect queued uploading or file watchers. The environment they are uploaded to will be determined by the individual file during the upload process.
+
+The default environments are optimised to work well with the VS Code default "blue" status bar, and if you would like to use your own colours, or even your own environment labels, the setting `envColours` can be edited.
 
 ### Queued uploading
 
@@ -116,35 +128,78 @@ To clear the entire list of stored watchers, see the **Purge all stored watchers
 
 ## Service settings files
 
-To customise the server settings for a workspace, either use the context menu in the file explorer and choose **Create/edit Push configuration**, or add a file (by default, called `.push.settings.json`) to your workspace with the following format:
+To customise the server settings for a workspace, either use the context menu in the file explorer and choose **Create/edit Push configuration**, or add a file (by default, called `.push.settings.jsonc`) to your workspace with the following format:
 
 ```javascript
 {
-	"service": "[ServiceName]",
-	"[ServiceName]": {
+	"env": "[active_env_name]",
+	"[env_name]": {
+		...
+	},
+	"[another_env_name]": {
 		...
 	}
 }
 ```
 
-Each available service has its own set of settings which are within the `[ServiceName]` object on the main server settings object. For instance, if using the `SFTP` service, your config might look something like this:
+Each available service has its own set of settings which are within the `[options]` object within a single environment object. For instance, if using the `SFTP` service, your config might look something like this:
 
 ```javascript
 {
-	// Service name here is "SFTP"
-	"service": "SFTP",
-	// "SFTP" here matches the service name
-	"SFTP": {
-		// SFTP Specific options
-		"host": "upload.bobssite.com",
-		"username": "bob"
-		"password": "xxxxxxx",
-		"root": "/home/bob",
-		// Global service options
-		"collisionUploadAction": "overwrite"
+	"env": "dev",
+	"dev": {
+		// "SFTP" here matches the service name
+		"service": "SFTP",
+		"options": {
+			// SFTP Specific options
+			"host": "upload.bobssite.com",
+			"username": "bob"
+			"password": "xxxxxxx",
+			"root": "/home/bob",
+			// Global service options
+			"collisionUploadAction": "overwrite"
+		}
 	}
 }
 ```
+
+### Environments
+
+Service settings files support the concept of *environments*, i.e. multiple services and options to use in a single settings file. This means that you can change the active environment by altering the `env` property, avoiding the need to rewrite the settings file each time.
+
+For example, a service settings file may have two environments - `dev` and `prod`. This can be defined in the following manner:
+
+```javascript
+{
+	"env": "dev",
+	"dev": {
+		"service": "SFTP",
+		"options": {
+			// ... settings
+		}
+	},
+	"prod": {
+		"service": "File",
+		"options": {
+			// ... settings
+		}
+	}
+}
+```
+
+In the above example, the `dev` environment is active, and any files transferred  within the scope of these settings will use the options defined within the `dev` object. Change the `env` property to `prod`, and files will then be transferred using the `prod` object.
+
+As with the above example, the service does not have to be the same for all of the environments. You could, for instance, upload to an SFTP server in `dev`, and to a File location in `prod`.
+
+#### Uploading with the queue or watchers
+
+The upload queue and watchers ultimately use the same process as the on demand uploader, including resolving a service settings file and using its data to perform a file transfer. The only thing to keep in mind is that if you have the environment label within the status bar enabled, it only applies to the currently edited file.
+
+If you don't need the environment label, or would prefer not to have it, it can be removed by altering the `useEnvLabel` setting.
+
+#### Changing the active environment
+
+To change the active environment for a service settings scope, simply choose "Push: Change current service environment" from within the command menu. You can also edit the settings file manually.
 
 ### Multiple service settings files
 

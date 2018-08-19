@@ -12,7 +12,11 @@ const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
-const { QUEUE_LOG_TYPES } = require('./lib/constants');
+const {
+	STATUS_PRIORITIES,
+	QUEUE_LOG_TYPES,
+	ENV_DEFAULT_STATUS_COLOR
+} = require('./lib/constants');
 
 /**
  * Provides the main controller for Push.
@@ -139,7 +143,8 @@ class Push extends PushBase {
 	}
 
 	setEditorState(textEditor) {
-		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
+		let uploadQueue = this.getQueue(Push.queueDefs.upload, false),
+			settings;
 
 		if (!textEditor) {
 			// Ensure textEditor defaults
@@ -148,7 +153,29 @@ class Push extends PushBase {
 
 		if (!textEditor || !textEditor.document) {
 			// Bail if there's still no editor, or no document
+			this.setEnvStatus(false);
+
 			return;
+		}
+
+		// Get current server settings for the editor
+		settings = this.settings.getServerJSON(
+			textEditor.document.uri,
+			this.config.settingsFilename,
+			true
+		);
+
+		if (this.config.useEnvLabel && settings && settings.data.env) {
+			// Check env state and add to status
+			this.setTimedExecution(
+				Push.globals.ENV_TIMER_ID,
+				500,
+				this.setEnvStatus,
+				this,
+				settings.data.env
+			);
+		} else {
+			this.setEnvStatus(false);
 		}
 
 		if (
@@ -564,6 +591,40 @@ class Push extends PushBase {
 	}
 
 	/**
+	 * Set the environment status message in the status bar
+	 * @param {*} env
+	 */
+	setEnvStatus(env = '') {
+		this.clearTimedExecution(Push.globals.ENV_TIMER_ID);
+
+		if (env) {
+			if (!this.statusEnv) {
+				// Create status for active environment
+				this.statusEnv = vscode.window.createStatusBarItem(
+					vscode.StatusBarAlignment.Left,
+					STATUS_PRIORITIES.ENV
+				);
+			}
+
+			this.statusEnv.text = '$(versions) ' + env;
+			this.statusEnv.tooltip = i18n.t('env_tooltip', env);
+
+			if (this.config.envColours[env]) {
+				this.statusEnv.color = this.config.envColours[env];
+			} else {
+				this.statusEnv.color = ENV_DEFAULT_STATUS_COLOR;
+			}
+
+			this.statusEnv.show();
+		} else {
+			if (this.statusEnv) {
+				// Hide the env status label, if it's been created
+				this.statusEnv.hide();
+			}
+		}
+	}
+
+	/**
 	 * Stop any current queue operations.
 	 * @param {boolean} force - Set `true` to force any current operations to stop.
 	 * @param {boolean} silent - Set `true` to create no notices when stopping the queue.
@@ -934,7 +995,8 @@ Push.queueDefs = {
 };
 
 Push.globals = {
-	FORCE_STOP_TIMEOUT: 5 // In seconds
+	FORCE_STOP_TIMEOUT: 5, // In seconds
+	ENV_TIMER_ID: 'env-switch'
 };
 
 Push.contexts = {
