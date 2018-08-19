@@ -11,6 +11,7 @@ class PushBase extends Configurable {
 		super();
 
 		this.paths = new Paths();
+		this.timers = {};
 	}
 
 	/**
@@ -117,6 +118,50 @@ class PushBase extends Configurable {
 			console.error(error);
 			throw error;
 			debugger;
+		}
+	}
+
+	/**
+	 * @param {string} id - Identifier.
+	 * @param {number} timeout - Timeout, in milliseconds.
+	 * @param {function} fn - Function to call.
+	 * @param {*} context - Context to apply to the function, if necessary.
+	 * @param {...*} mixed - Arguments to provide to the function
+	 * @description
+	 * Will call the provided function within the provided context after `timeout`
+	 * milliseconds. If called again with the same `id` before `timeout` has elapsed,
+	 * the original request is cancelled and a new one is made.
+	 * @returns {number} Timer id.
+	 */
+	setTimedExecution(id, timeout, fn, context = null) {
+		let args = [];
+
+		// Clear any previously set timers with this id
+		this.clearTimedExecution(id);
+
+		if (arguments.length > 4) {
+			// Add arguments for calling
+			args = [...arguments].slice(4);
+		}
+
+		// Set a timer
+		this.timers[id] = setTimeout(() => {
+			// Call function with context and arguments
+			fn.apply(context, args)
+		}, timeout);
+
+		return this.timers[id];
+	}
+
+	/**
+	 * Clears a previous set timed execution.
+	 * @param {string} id - Identifier, as passed to {@link PushBase#setTimedExecution}.
+	 */
+	clearTimedExecution(id) {
+		if (this.timers[id]) {
+			// Clear timer and delete the timer id
+			clearTimeout(this.timers[id]);
+			delete this.timers[id];
 		}
 	}
 };
