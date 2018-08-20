@@ -287,6 +287,15 @@ const utils = {
 		}
 
 		return tmpobj.name;
+	},
+
+	trace(id) {
+		if (process.debugPort) {
+			console.log(
+				(new Date).toLocaleTimeString() +
+				`[${id}] - "${[...arguments].slice(1).join(', ')}"`
+			);
+		}
 	}
 };
 

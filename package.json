@@ -126,17 +126,22 @@
     "commands": [
       {
         "command": "push.createServiceConfig",
-        "title": "Create Push configuration",
+        "title": "Create Push service configuration",
         "category": "Push"
       },
       {
         "command": "push.editServiceConfig",
-        "title": "Edit Push configuration",
+        "title": "Edit Push service configuration",
         "category": "Push"
       },
       {
         "command": "push.importConfig",
-        "title": "Import Push configuration",
+        "title": "Import Push service configuration",
+        "category": "Push"
+      },
+      {
+        "command": "push.setServiceEnv",
+        "title": "Set service environment for current file",
         "category": "Push"
       },
       {
@@ -375,6 +380,10 @@
       ],
       "commandPalette": [
         {
+          "command": "push.setServiceEnv",
+          "when": "editorIsOpen && push:hasServiceContext"
+        },
+        {
           "command": "push.uploadFolder",
           "when": "false"
         },
@@ -504,7 +513,7 @@
     "typescript": "^2.8.3"
   },
   "dependencies": {
-    "jsonc-parser": "^1.0.3",
+    "jsonc-parser": "^2.0.1",
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "mockery": "^2.1.0",

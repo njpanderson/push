@@ -199,7 +199,7 @@ If you don't need the environment label, or would prefer not to have it, it can 
 
 #### Changing the active environment
 
-To change the active environment for a service settings scope, simply choose "Push: Change current service environment" from within the command menu. You can also edit the settings file manually.
+To change the active environment for a service settings scope, simply choose "Push: Set service environment" from within the command menu. You can also edit the settings file manually.
 
 ### Multiple service settings files
 

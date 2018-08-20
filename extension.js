@@ -47,6 +47,7 @@ exports.activate = (context) => {
 		'push.purgeStoredWatchers': 'purgeStoredWatchers',
 		'push.editServiceConfig': 'editServiceConfig',
 		'push.createServiceConfig': 'createServiceConfig',
+		'push.setServiceEnv': 'setServiceEnv',
 		'push.importConfig': 'importConfig'
 	};
 

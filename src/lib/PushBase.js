@@ -116,9 +116,29 @@ class PushBase extends Configurable {
 		} else {
 			// This is an unexpected or uncaught exception.
 			console.error(error);
-			throw error;
 			debugger;
+			throw error;
 		}
+	}
+
+	/**
+	 * Converts a function to a rate-limited version of itself.
+	 * @param {string} id
+	 * @param {number} timeout
+	 * @param {function} fn
+	 * @param {*} context
+	 * @see PushBase#setTimedExecution
+	 */
+	rateLimit(id, timeout, fn, context = null) {
+		// Arguments supplied to new function will be used for eventual execution
+		return function() {
+			this.setTimedExecution.apply(this, [
+				id,
+				timeout,
+				fn,
+				context
+			].concat([...arguments]));
+		}.bind(context);
 	}
 
 	/**

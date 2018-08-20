@@ -1,6 +1,5 @@
 const vscode = require('vscode');
 
-const ServiceSettings = require('./lib/ServiceSettings');
 const Service = require('./lib/Service');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
@@ -29,9 +28,17 @@ class Push extends PushBase {
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
-		this.setEditorState = this.setEditorState.bind(this);
+		this.didChangeActiveTextEditor = this.didChangeActiveTextEditor.bind(this);
 		this.onWatchUpdate = this.onWatchUpdate.bind(this);
 		this.onWatchChange = this.onWatchChange.bind(this);
+
+		// Rate limit functions
+		this.setEnvStatus = this.rateLimit(
+			Push.globals.ENV_TIMER_ID,
+			500,
+			this.setEnvStatus,
+			this
+		);
 
 		this.initService();
 
@@ -49,11 +56,17 @@ class Push extends PushBase {
 
 		// Set initial contexts
 		this.setContexts(true);
-		this.setEditorState(vscode.window.activeTextEditor);
+
+		this.event('onDidChangeActiveTextEditor', vscode.window.activeTextEditor);
 
 		// Create event handlers
-		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		vscode.window.onDidChangeActiveTextEditor(this.setEditorState);
+		vscode.workspace.onDidSaveTextDocument((textDocument) => {
+			this.event('onDidSaveTextDocument', textDocument);
+		});
+
+		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
+			this.event('onDidChangeActiveTextEditor', textEditor);
+		});
 	}
 
 	onDidChangeConfiguration() {
@@ -70,6 +83,7 @@ class Push extends PushBase {
 
 		if (initial === true) {
 			this.setContext(Push.contexts.initialised, true);
+			this.setContext(Push.contexts.hasServiceContext, false);
 		}
 	}
 
@@ -77,10 +91,12 @@ class Push extends PushBase {
 	 * Initialises the service class.
 	 */
 	initService() {
-		this.settings = new ServiceSettings();
 		this.service = new Service({
 			onDisconnect: (hadError) => {
 				this.stopCancellableQueues(!!hadError, !!hadError);
+			},
+			onServiceFileUpdate: (uri) => {
+				this.event('onServiceFileUpdate', uri);
 			}
 		});
 	}
@@ -110,31 +126,88 @@ class Push extends PushBase {
 	}
 
 	/**
+	 * Handle generic events (with a uri) and return settings.
+	 * @param {string} eventType - Type of event, mainly for logging.
+	 * @param {*} data
+	 * @returns {object} settings object, obtained from the uri.
+	 */
+	event(eventType, data) {
+		let uri, method, args, settings;
+
+		switch (eventType) {
+			case 'onDidSaveTextDocument':
+				uri = data && data.uri;
+				method = 'didSaveTextDocument';
+				args = [data];
+				break;
+
+			case 'onDidChangeActiveTextEditor':
+				if (!data) {
+					data = vscode.window.activeTextEditor;
+				}
+
+				uri = (data && data.document && data.document.uri);
+				method = 'didChangeActiveTextEditor'
+				args = [data];
+				break;
+
+			case 'onServiceFileUpdate':
+				uri = data;
+				break;
+
+			default:
+				throw new Error('Unrecognised event type');
+		}
+
+		utils.trace('Push#event', eventType);
+
+		if (!uri) {
+			// Bail if there's no uri
+			this.setEnvStatus(false);
+			return;
+		}
+
+		// Get current server settings for the editor
+		settings = this.service.settings.getServerJSON(
+			uri,
+			this.config.settingsFilename,
+			true,
+			true
+		);
+
+		if (this.config.useEnvLabel && settings && settings.data.env) {
+			// Check env state and add to status
+			this.setEnvStatus(settings.data.env);
+		} else {
+			this.setEnvStatus(false);
+		}
+
+		if (method) {
+			this[method].apply(this, args.concat([settings]));
+		}
+	}
+
+	/**
 	 * Handle text document save events
 	 * @param {textDocument} textDocument
 	 */
-	didSaveTextDocument(textDocument) {
-		let settings;
-
+	didSaveTextDocument(textDocument, settings) {
 		if (!textDocument.uri || !this.paths.isValidScheme(textDocument.uri)) {
 			// Empty or invalid URI
 			return false;
 		}
 
-		this.settings.clear();
-
-		settings = this.settings.getServerJSON(
-			textDocument.uri,
-			this.config.settingsFilename,
-			true
+		utils.trace(
+			'Push#didSaveTextDocument',
+			`Text document saved at ${textDocument.uri.fsPath}`
 		);
+
+		this.service.settings.clear();
 
 		if (this.config.uploadQueue && settings) {
 			// File being changed is within a service context - queue for uploading
 			this.queueForUpload(textDocument.uri)
 				.then(() => {
-					this.setEditorState();
-
 					if (this.config.autoUploadQueue) {
 						this.execUploadQueue();
 					}
@@ -142,41 +215,23 @@ class Push extends PushBase {
 		}
 	}
 
-	setEditorState(textEditor) {
-		let uploadQueue = this.getQueue(Push.queueDefs.upload, false),
-			settings;
-
-		if (!textEditor) {
-			// Ensure textEditor defaults
-			textEditor = vscode.window.activeTextEditor;
-		}
+	didChangeActiveTextEditor(textEditor, settings) {
+		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
 
 		if (!textEditor || !textEditor.document) {
 			// Bail if there's still no editor, or no document
-			this.setEnvStatus(false);
-
 			return;
 		}
 
-		// Get current server settings for the editor
-		settings = this.settings.getServerJSON(
-			textEditor.document.uri,
-			this.config.settingsFilename,
-			true
+		utils.trace(
+			'Push#didChangeActiveTextEditor',
+			`Editor switched to ${textEditor.document.uri.fsPath}`
 		);
 
-		if (this.config.useEnvLabel && settings && settings.data.env) {
-			// Check env state and add to status
-			this.setTimedExecution(
-				Push.globals.ENV_TIMER_ID,
-				500,
-				this.setEnvStatus,
-				this,
-				settings.data.env
-			);
-		} else {
-			this.setEnvStatus(false);
-		}
+		this.setContext(
+			Push.contexts.hasServiceContext,
+			!!settings
+		);
 
 		if (
 			uploadQueue &&
@@ -196,7 +251,7 @@ class Push extends PushBase {
 	 * @param {uri} uriContext
 	 */
 	configWithServiceSettings(uriContext) {
-		const settings = this.settings.getServerJSON(
+		const settings = this.service.settings.getServerJSON(
 			uriContext,
 			this.config.settingsFilename
 		);
@@ -586,6 +641,7 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
+		utils.trace('Push#setContext', context, value);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
@@ -595,6 +651,8 @@ class Push extends PushBase {
 	 * @param {*} env
 	 */
 	setEnvStatus(env = '') {
+		utils.trace('Push#setEnvStatus', `Setting environment label to ${env}`);
+
 		this.clearTimedExecution(Push.globals.ENV_TIMER_ID);
 
 		if (env) {
@@ -735,7 +793,7 @@ class Push extends PushBase {
 			tasks = [],
 			action, actionTaken;
 
-		this.settings.clear();
+		this.service.settings.clear();
 
 		if (typeof uris === 'undefined') {
 			throw new Error('No files defined.');
@@ -1002,7 +1060,8 @@ Push.globals = {
 Push.contexts = {
 	hasUploadQueue: 'hasUploadQueue',
 	initialised: 'initialised',
-	activeEditorInUploadQueue: 'activeEditorInUploadQueue'
+	activeEditorInUploadQueue: 'activeEditorInUploadQueue',
+	hasServiceContext: 'hasServiceContext'
 };
 
 module.exports = Push;

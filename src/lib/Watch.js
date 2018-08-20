@@ -5,6 +5,7 @@ const Configurable = require('./Configurable');
 const Paths = require('./Paths');
 const channel = require('./channel');
 const constants = require('./constants');
+const utils = require('./utils');
 const i18n = require('../lang/i18n');
 
 class Watch extends Configurable {
@@ -68,7 +69,6 @@ class Watch extends Configurable {
 			args = [...arguments || []];
 
 		if (!this.config.persistWatchers) {
-			console.log('nahhh');
 			return;
 		}
 
@@ -92,7 +92,6 @@ class Watch extends Configurable {
 		let watchList, path, index;
 
 		if (!this.config.persistWatchers) {
-			console.log('nah');
 			return;
 		}
 
@@ -116,7 +115,11 @@ class Watch extends Configurable {
 
 			// Make sure watchList isn't over max items
 			if (watchList.length > Watch.constants.WATCH_STORE_MAXLEN) {
-				console.log(`watchList too long! ${watchList.length} - reducing...`);
+				utils.trace(
+					'Watch#setInWatchStore',
+					`Watch list trunacated (${watchList.length})...`
+				);
+
 				// Order by date, descending
 				watchList.sort((a, b) => {
 					return b.date - a.date;
@@ -124,7 +127,6 @@ class Watch extends Configurable {
 
 				// Splice
 				watchList.splice((Watch.constants.WATCH_STORE_MAXLEN));
-				console.log(`watchList.length: ${watchList.length}`);
 			}
 		} else if (index !== -1) {
 			// Remove an item (so long as it exists)
