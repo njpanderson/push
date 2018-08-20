@@ -71,12 +71,12 @@ describe('Push', function() {
 				() => Promise.resolve()
 			);
 
-			push.didSaveTextDocument({
-				uri: fixtures.mockUriFile
-			}, push.event(
-				fixtures.mockUriFile,
-				'onDidSaveTextDocument'
-			));
+			push.event(
+				'onDidSaveTextDocument',
+				{
+					uri: fixtures.mockUriFile
+				},
+			);
 
 			assert(counter.getCount('Push#queueForUpload') === 1);
 		});
