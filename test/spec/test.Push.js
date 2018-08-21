@@ -27,7 +27,6 @@ describe('Push', function() {
 		useMockery
 			.registerMultiple({
 				'vscode': vscode,
-				'./lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
 				'./lib/Service': require('../mocks/lib/Service'),
 				'./lib/explorer/Explorer': require('../mocks/lib/Explorer'),
 				// './lib/Paths': require('../mocks/lib/Paths'),
@@ -72,9 +71,12 @@ describe('Push', function() {
 				() => Promise.resolve()
 			);
 
-			push.didSaveTextDocument({
-				uri: fixtures.mockUriFile
-			});
+			push.event(
+				'onDidSaveTextDocument',
+				{
+					uri: fixtures.mockUriFile
+				},
+			);
 
 			assert(counter.getCount('Push#queueForUpload') === 1);
 		});

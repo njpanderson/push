@@ -39,10 +39,14 @@ module.exports = {
 	'rename_all': 'Rename all',
 	'keep_all_existing_by_renaming_uploaded': 'Keep all existing files by renaming the uploaded files',
 	'transfer_cancelled': 'Transfer cancelled',
-	'no_service_file': 'A settings file could not be found within your project. Have you created a file with the name "${1}" yet?',
+	'no_service_file': 'A settings file could not be found within your project. Have you created a file matching "${1}" yet?',
 	'service_not_defined': 'A transfer service was not defined within the settings file at "${1}".',
 	'service_defined_but_no_config_exists': 'A transfer service was defined but no configuration could be found within the file at "${1}".',
+	'active_service_not_found': 'The active service "${1}" could not be found within the settings file at "${2}"',
+	'no_service_env': 'The service file at "${1}" isn’t configured for environments. Please see the README on configuring services for multiple environments.',
+	'single_env': 'The service file at "${1}" only contains one environment (${2}). It cannot be switched.',
 	'multiple_service_files_no_transfer': 'More than one service settings file was found within the selected directory. The transfer could not be completed.',
+	'service_name_invalid': 'The service name "${1}" within settings file "${2}" does not Exist. Please choose a valid service name.',
 	'service_setting_missing': 'Service setting file for type ${1} missing required setting: "${2}".',
 	'cannot_action_ignored_file': 'Cannot ${1} file "${2}" - It matches one of the defined ignoreGlobs filters.',
 	'no_import_file': 'Config file not specified. Please either run this command from within a configuration file or from the explorer context menu.',
@@ -85,5 +89,9 @@ module.exports = {
 	'error_from_gateway': 'Error occured on SSH gateway: "${1}"',
 	'invalid_uri_scheme': 'Sorry, the filesystem scheme "${1}" is not supported. Push cannot work on files of this type.',
 	'invalid_path': 'The path "${1}" does not appear to be valid and has been skipped.',
-	'no_servicefile_context': 'A folder/path context for creating a service file could not be found. Please either open a workspace or select "Create/edit Push configuration" from a folder or open file.'
+	'no_servicefile_context': 'A folder/path context for creating a service file could not be found. Please either open a workspace or select "Create/edit Push configuration" from a folder or open file.',
+	'env_tooltip': 'The "${1}" environment is active for the currently open file.',
+	'select_env': 'Select an environment to activate',
+	'error_writing_json': 'There was an error writing to the service JSON file. Error: "${1}".',
+	'no_error': 'No error message.'
 };

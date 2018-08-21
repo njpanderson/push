@@ -7,6 +7,7 @@ const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
+const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('../lib/constants');
 
@@ -50,7 +51,7 @@ class File extends ServiceBase {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
 				local,
-				new Error(i18n.t('file_not_found', this.paths.getBaseName(local))),
+				new PushError(i18n.t('file_not_found', this.paths.getBaseName(local))),
 				TRANSFER_TYPES.PUT
 			));
 		}
@@ -80,7 +81,7 @@ class File extends ServiceBase {
 			// Remote file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
 				remote,
-				new Error(i18n.t('file_not_found', this.paths.getBaseName(remote))),
+				new PushError(i18n.t('file_not_found', this.paths.getBaseName(remote))),
 				TRANSFER_TYPES.PUT
 			));
 		}
@@ -222,7 +223,7 @@ class File extends ServiceBase {
 						});
 					});
 				} else if (existing.type === 'f') {
-					return Promise.reject(new Error(
+					return Promise.reject(new PushError(
 						i18n.t('directory_not_created_remote_mismatch', dir)
 					));
 				}

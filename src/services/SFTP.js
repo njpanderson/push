@@ -9,6 +9,7 @@ const micromatch = require("micromatch");
 const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
+const PushError = require('../lib/PushError');
 const PathCache = require('../lib/PathCache');
 const channel = require('../lib/channel');
 const i18n = require('../lang/i18n');
@@ -114,7 +115,7 @@ class SFTP extends ServiceBase {
 				// Catch the native error and throw a better one
 				if (error.code === 'ENOTFOUND' && error.level === 'client-socket') {
 					// This is likely the error that means the client couldn't connect
-					throw new Error(
+					throw new PushError(
 						i18n.t(
 							'sftp_could_not_connect_server',
 							this.config.service.host,
@@ -278,7 +279,7 @@ class SFTP extends ServiceBase {
 				return client.sftp;
 			})
 			.catch(() => {
-				throw new Error(
+				throw new PushError(
 					i18n.t('sftp_missing_root', this.config.settingsFilename)
 				);
 			});
@@ -617,7 +618,7 @@ class SFTP extends ServiceBase {
 				// List the source directory in order to cache the file data
 				return this.list(remoteDir)
 					.catch((error) => {
-						throw new Error(
+						throw new PushError(
 							i18n.t('cannot_list_directory', remoteDir, error.message)
 						);
 					});
@@ -627,7 +628,7 @@ class SFTP extends ServiceBase {
 				if (!stats.remote) {
 					return new TransferResult(
 						local,
-						new Error(i18n.t(
+						new PushError(i18n.t(
 							'remote_file_not_found',
 							this.paths.getBaseName(remote)
 						)),
@@ -806,13 +807,13 @@ class SFTP extends ServiceBase {
 							// File no longer exists - skip (but don't stop)
 							return resolve(new TransferResult(
 								local,
-								new Error(i18n.t('file_not_found', localPath)),
+								new PushError(i18n.t('file_not_found', localPath)),
 								TRANSFER_TYPES.PUT
 							));
 						}
 
 						// Other errors
-						reject(new Error(`${remote}: ${error.message}`));
+						reject(new PushError(`${remote}: ${error.message}`));
 					});
 			});
 		});
@@ -850,7 +851,7 @@ class SFTP extends ServiceBase {
 								}, reject)
 						})
 						.catch((error) => {
-							throw new Error(`${remote}: ${error && error.message}`);
+							throw new PushError(`${remote}: ${error && error.message}`);
 						});
 				});
 			});
@@ -1036,7 +1037,7 @@ class SFTP extends ServiceBase {
 				return result;
 			})
 			.catch((error) => {
-				throw new Error(
+				throw new PushError(
 					i18n.t('cannot_list_directory', remoteDir, error.message)
 				);
 			})

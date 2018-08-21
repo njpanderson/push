@@ -22,7 +22,6 @@ module.exports = {
 		if ((!item || item === 'ignoreGlobs') && Array.isArray(config.ignoreGlobs)) {
 			settingsGlob = `**/${config.settingsFilename}`;
 			config.ignoreGlobs.push(settingsGlob);
-
 			// Ensure glob list only contains unique values
 			config.ignoreGlobs = tools.uniqArray(config.ignoreGlobs);
 		}

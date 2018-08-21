@@ -4,6 +4,7 @@ const configService = require('./config');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('./constants');
 const Paths = require('./Paths');
+const PushError = require('./PushError');
 
 class Channel {
 	constructor(name) {
@@ -53,12 +54,12 @@ class Channel {
 
 	/**
 	 * Produces a line formatted as an error (and also shows the output window).
-	 * @param {string} error - Error or string to show.
+	 * @param {string|PushError} error - PushError or string to show.
 	 */
 	appendError(error) {
 		let message, config;
 
-		if (error instanceof Error) {
+		if (error instanceof PushError) {
 			config = configService.get();
 			message = error.message;
 
@@ -78,14 +79,14 @@ class Channel {
 	 * @description
 	 * Produces a line formatted as an error (and also shows the output window).
 	 * Uses localisation.
-	 * @param {string} error - Localised string key to show.
+	 * @param {string|PushError} error - Localised string or PushError key to show.
 	 * @param {...mixed} $2 - Replacement arguments as needed.
 	 */
 	appendLocalisedError(error) {
 		let message, config,
 			placeHolders = [...arguments].slice(1);
 
-		if (error instanceof Error) {
+		if (error instanceof PushError) {
 			config = config.get();
 			message = i18n.t.apply(i18n, [error.message].concat(placeHolders));
 

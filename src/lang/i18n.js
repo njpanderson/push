@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 
 const config = require('../lib/config');
+const PushError = require('../lib/PushError');
 
 /**
  * Internationalisation (i18n) class.
@@ -38,7 +39,7 @@ class i18n {
 			this._locale = locale;
 			return;
 		} catch(e) {
-			throw new Error(this.t('no_locale', locale));
+			throw new PushError(this.t('no_locale', locale));
 		}
 	}
 

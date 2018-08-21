@@ -3,11 +3,14 @@ const vscode = require('vscode');
 const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
+const ServiceSettings = require('./ServiceSettings');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
+const PushError = require('./PushError');
 const config = require('./config');
 const channel = require('./channel');
 const constants = require('./constants');
+const utils = require('./utils');
 const i18n = require('../lang/i18n');
 
 class Service extends PushBase {
@@ -15,6 +18,11 @@ class Service extends PushBase {
 		super();
 
 		this.setOptions(options);
+
+		// Create ServiceSettings instance for managing the files
+		this.settings = new ServiceSettings({
+			onServiceFileUpdate: this.options.onServiceFileUpdate
+		});
 
 		this.getStateProgress = this.getStateProgress.bind(this);
 
@@ -34,15 +42,14 @@ class Service extends PushBase {
 	 * if the service file is level with the contextual file.
 	 */
 	editServiceConfig(uri, forceCreate) {
-		let rootPaths, dirName, settingsFile,
-			settingsFilename = this.config.settingsFilename;
+		let rootPaths, dirName, settingsFile;
 
 		uri = this.paths.getFileSrc(uri);
 		dirName = this.paths.getDirName(uri, true);
 
 		// Find the nearest settings file
 		settingsFile = this.paths.findFileInAncestors(
-			settingsFilename,
+			this.config.settingsFilename,
 			dirName
 		);
 
@@ -70,7 +77,7 @@ class Service extends PushBase {
 			this.openDoc(settingsFile);
 		} else {
 			// Produce a prompt to create a new settings file
-			this.getFileNamePrompt(settingsFilename, rootPaths)
+			this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
 				.then((file) => {
 					if (file.exists) {
 						this.openDoc(file.fileName);
@@ -85,6 +92,10 @@ class Service extends PushBase {
 					}
 				});
 		}
+	}
+
+	setConfigEnv(uri) {
+		return this.settings.setConfigEnv(uri, this.config.settingsFilename);
 	}
 
 	/**
@@ -228,7 +239,8 @@ class Service extends PushBase {
 	 */
 	setOptions(options) {
 		this.options = Object.assign({}, {
-			onDisconnect: null
+			onDisconnect: null,
+			onServiceFileUpdate: null
 		}, options);
 	}
 
@@ -272,6 +284,25 @@ class Service extends PushBase {
 			typeof configObject !== 'undefined' &&
 			configObject.serviceName !== this.config.serviceName
 		);
+
+		utils.trace(
+			'Service#setConfig',
+			`Service config setting${restart ? ' (restarting service)' : ''}`
+		);
+
+		/**
+		 * Check serviceName is correct.
+		 * Done here instead of within ServiceSettings as this class knows
+		 * more about the available services.
+		 */
+		if (configObject && !this.services[configObject.serviceName]) {
+			// Service doesn't exist - return null and produce error
+			throw new PushError(i18n.t(
+				'service_name_invalid',
+				configObject.serviceName,
+				configObject.serviceFilename
+			));
+		}
 
 		this.config = Object.assign({}, config.get(), configObject);
 
@@ -364,7 +395,10 @@ class Service extends PushBase {
 
 	startServiceInstance() {
 		if (this.config.serviceName && this.config.service) {
-			console.log(`Instantiating service provider "${this.config.serviceName}"`);
+			utils.trace(
+				'Service#startServiceInstance',
+				`Instantiating service provider "${this.config.serviceName}"`
+			);
 
 			// Instantiate
 			this.activeService = new this.services[this.config.serviceName]({
