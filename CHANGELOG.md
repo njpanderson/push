@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to Push will be documented in this file.
 
+## 0.5.0
+ - Add support for environments within service configs. This is a big feature, please check the README!
+ - Add persistent watchers. Up to 50 watchers will now be retained between restarts.
+ - Add command to create a new service config, regardless of whether one exists.
+ - Add Travis integration (mainly to improve automated testing and doc generation).
+ - Fixed the default status notice colour - it should now be visible!
+ - Fixed deleted handling within the transfer logic for both File and SFTP.
+ - Modified error reporting (a lot). Errors should now be clearer and less vague.
+ - Modified on demand handling to remove uploaded files from the upload queue.
+ - Various other bugfixes and stability improvements.
+
 ## 0.4.61
  - Fix issue with service files not being read correctly. (Thanks, all those that reported.)
 
