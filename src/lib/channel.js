@@ -38,6 +38,7 @@ class Channel {
 
 		if (result.error) {
 			return this.appendError(
+				// "!" is for errors
 				`${icon}! ${srcLabel} ` +
 				`(${result.error.message})`
 			);
@@ -45,7 +46,8 @@ class Channel {
 
 		if (result.status === true || result.status === false) {
 			return this.appendLine(
-				`${icon}${(result.status ? icon : '-')} ` +
+				// The "icon" repeated is for confirmed, '~' is for skipped
+				`${(result.status ? icon + icon : '~~')} ` +
 				srcLabel
 			);
 		}
