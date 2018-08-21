@@ -75,7 +75,7 @@ describe('Push', function() {
 				'onDidSaveTextDocument',
 				{
 					uri: fixtures.mockUriFile
-				},
+				}
 			);
 
 			assert(counter.getCount('Push#queueForUpload') === 1);
