@@ -138,7 +138,7 @@ class File extends ServiceBase {
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
-							return false;
+							return new TransferResult(src, false, transferType);
 
 						case utils.collisionOpts.overwrite:
 							return this.copy(src, destPath, transferType);
