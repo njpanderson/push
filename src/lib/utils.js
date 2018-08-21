@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
+const path = require('path');
 
 const config = require('./config');
 const constants = require('./constants');
@@ -10,6 +11,7 @@ const i18n = require('../lang/i18n');
 const utils = {
 	_timeouts: {},
 	_sb: null,
+	_debug: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
 	/**
 	 * Show an informational message using the VS Code interface
@@ -290,7 +292,7 @@ const utils = {
 	},
 
 	trace(id) {
-		if (process.debugPort) {
+		if (this._debug) {
 			console.log(
 				(new Date).toLocaleTimeString() +
 				`[${id}] - "${[...arguments].slice(1).join(', ')}"`
