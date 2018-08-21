@@ -138,7 +138,9 @@ class File extends ServiceBase {
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
-							return new TransferResult(src, false, transferType);
+							return new TransferResult(src, false, transferType, {
+								srcLabel: destPath
+							});
 
 						case utils.collisionOpts.overwrite:
 							return this.copy(src, destPath, transferType);
@@ -299,13 +301,10 @@ class File extends ServiceBase {
 
 			this.writeStream.on('finish', () => {
 				resolve(new TransferResult(
-					this.paths.getNormalPath(src),
+					src,
 					true,
 					transferType, {
-						srcLabel: (
-							transferType === TRANSFER_TYPES.PUT ?
-								dest : null
-						)
+						srcLabel: dest
 					}
 				));
 			});
