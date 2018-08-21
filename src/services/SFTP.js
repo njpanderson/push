@@ -799,7 +799,9 @@ class SFTP extends ServiceBase {
 						resolve(new TransferResult(
 							local,
 							true,
-							TRANSFER_TYPES.PUT
+							TRANSFER_TYPES.PUT, {
+								srcLabel: remote
+							}
 						));
 					})
 					.catch((error) => {

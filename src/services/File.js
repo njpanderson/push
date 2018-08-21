@@ -301,7 +301,12 @@ class File extends ServiceBase {
 				resolve(new TransferResult(
 					this.paths.getNormalPath(src),
 					true,
-					transferType
+					transferType, {
+						srcLabel: (
+							transferType === TRANSFER_TYPES.PUT ?
+								dest : null
+						)
+					}
 				));
 			});
 

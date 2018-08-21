@@ -27,11 +27,18 @@ class Channel {
 	 * used throughout processes like uploading/downloading, etc.
 	 */
 	appendTransferResult(result) {
-		let icon = this.getTransferIcon(result.type);
+		let icon = this.getTransferIcon(result.type),
+			srcLabel;
+
+		if (result.options.srcLabel) {
+			srcLabel = result.options.srcLabel;
+		} else {
+			srcLabel = this.paths.getNormalPath(result.src);
+		}
 
 		if (result.error) {
 			return this.appendError(
-				`${icon}! ${this.paths.getNormalPath(result.src)} ` +
+				`${icon}! ${srcLabel} ` +
 				`(${result.error.message})`
 			);
 		}
@@ -39,7 +46,7 @@ class Channel {
 		if (result.status === true || result.status === false) {
 			return this.appendLine(
 				`${icon}${(result.status ? icon : '-')} ` +
-				this.paths.getNormalPath(result.src)
+				srcLabel
 			);
 		}
 	}
