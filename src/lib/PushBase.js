@@ -116,7 +116,6 @@ class PushBase extends Configurable {
 		} else {
 			// This is an unexpected or uncaught exception.
 			console.error(error);
-			debugger;
 			throw error;
 		}
 	}
