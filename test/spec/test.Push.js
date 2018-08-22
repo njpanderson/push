@@ -206,7 +206,7 @@ describe('Push', function() {
 
 			return push.execQueue(Push.queueDefs.default)
 				.catch((message) => {
-					assert(message === 'Queue running.');
+					assert(/already running/.test(message));
 				});
 		});
 	});

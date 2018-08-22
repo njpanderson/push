@@ -520,7 +520,9 @@ class Push extends PushBase {
 		const queue = this.getQueue(queueDef);
 
 		if (queue.running) {
-			return Promise.reject('Queue running.');
+			// Reject now - not necessarily a problem but remind functions not to
+			// start the queue while it's running
+			return Promise.reject(`The queue "${queue.id}" is already running.`);
 		}
 
 		// TODO: make channel clearing an option to turn on
