@@ -391,20 +391,25 @@ class Push extends PushBase {
 						return;
 					}
 
-					this.queue([{
-						method: 'put',
-						actionTaken: 'uploaded',
-						uriContext: uri,
-						args: [uri, remotePath],
-						id: remotePath + this.paths.getNormalPath(uri)
-					}], false, Push.queueDefs.upload, {
+					this.queue(
+						[{
+							method: 'put',
+							actionTaken: 'uploaded',
+							uriContext: uri,
+							args: [uri, remotePath],
+							id: remotePath + this.paths.getNormalPath(uri)
+						}],
+						false,
+						Push.queueDefs.upload,
+						{
 							showStatus: true,
 							statusToolTip: (num) => {
 								return i18n.t('num_to_upload', num);
 							},
 							statusCommand: 'push.uploadQueuedItems',
 							emptyOnFail: false
-						});
+						}
+					);
 				});
 		}));
 	}

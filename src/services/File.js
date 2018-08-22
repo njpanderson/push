@@ -115,8 +115,8 @@ class File extends ServiceBase {
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
 			.then(() => this.getFileStats(
-				(transferType === TRANSFER_TYPES.PUT) ? src : dest,
-				(transferType === TRANSFER_TYPES.PUT) ? dest : src,
+				(transferType === TRANSFER_TYPES.PUT ? src : dest),
+				(transferType === TRANSFER_TYPES.PUT ? dest : src)
 			))
 			.then((stats) => {
 				return super.checkCollision(
