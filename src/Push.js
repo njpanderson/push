@@ -305,8 +305,11 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
+		utils.trace('Push#queue', 'Adding {tasks.length} task(s)');
+
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
+			utils.trace('Push#queue', 'Adding initial queue task');
 			queue.addTask(new QueueTask(() => {
 				return this.service.activeService &&
 					this.service.activeService.init(queue.tasks.length);
@@ -932,6 +935,8 @@ class Push extends PushBase {
 			[uri]
 		);
 
+		utils.trace('Push#transferDirectory', `Transfering ${uri.fsPath} (${method})`);
+
 		if (method === 'put') {
 			// Recursively list local files and transfer each one
 			return this.paths.getDirectoryContentsAsFiles(
@@ -940,6 +945,11 @@ class Push extends PushBase {
 				config.service.followSymlinks
 			)
 				.then((files) => {
+					utils.trace(
+						'Push#transferDirectory',
+						'Found ${files.length} file(s) on local'
+					);
+
 					let tasks = files.map((uri) => {
 						let remotePath;
 
@@ -970,6 +980,11 @@ class Push extends PushBase {
 			// Recursively list remote files and transfer each one
 			return this.service.exec('listRecursiveFiles', config, [remoteUri, ignoreGlobs])
 				.then((files) => {
+					utils.trace(
+						'Push#transferDirectory',
+						'Found ${files.length} file(s) on remote'
+					);
+
 					let tasks = files.map((file) => {
 						let uri;
 

@@ -93,5 +93,7 @@ module.exports = {
 	'env_tooltip': 'The "${1}" environment is active for the currently open file.',
 	'select_env': 'Select an environment to activate',
 	'error_writing_json': 'There was an error writing to the service JSON file. Error: "${1}".',
-	'no_error': 'No error message.'
+	'no_error': 'No error message.',
+	'dir_read_error': 'The directory "${1}" could not be read.',
+	'dir_read_error_with_error': 'The directory "${1}" could not be read. The full error was: "${2}".'
 };

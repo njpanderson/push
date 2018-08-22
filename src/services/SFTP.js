@@ -850,7 +850,13 @@ class SFTP extends ServiceBase {
 										true,
 										TRANSFER_TYPES.GET
 									));
-								}, reject)
+								}, (error) => {
+									resolve(new TransferResult(
+										local,
+										new PushError(error),
+										TRANSFER_TYPES.GET
+									));
+								})
 						})
 						.catch((error) => {
 							throw new PushError(`${remote}: ${error && error.message}`);
@@ -909,13 +915,18 @@ class SFTP extends ServiceBase {
 		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
 			// Retrieve cached path list
 			// TODO: Allow ignoreGlobs option on this route
+			utils.trace('SFTP#list', `Using cached path for ${dir}`);
 			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
 		} else {
 			// Get path list interactively and cache
 			return this.connect()
 				.then((connection) => {
+					utils.trace('SFTP#list', `Getting path for ${dir}`);
+
 					return connection.list(dir)
 						.then((list) => {
+							utils.trace('SFTP#list', `${list.length} item(s) found`);
+
 							list.forEach((item) => {
 								let match,
 									pathName = utils.addTrailingSeperator(dir) + item.name;
@@ -968,7 +979,8 @@ class SFTP extends ServiceBase {
 						dir
 					));
 				}
-			}).catch(reject)
+			})
+			.catch(reject);
 		});
 	}
 
@@ -991,6 +1003,7 @@ class SFTP extends ServiceBase {
 			.then((dirContents) => {
 				let dirs;
 
+				// Increment counter scanned (which will eventually meet counter.total)
 				counter.scanned += 1;
 
 				if (dirContents !== null) {
@@ -1008,6 +1021,27 @@ class SFTP extends ServiceBase {
 							callback
 						);
 					});
+				}
+
+				callback(counter);
+			})
+			.catch((error) => {
+				// The directory couldn't be scanned for some reason - increment anyway...
+				counter.scanned += 1;
+
+				// ... And show an error
+				if (error instanceof Error) {
+					channel.appendError(i18n.t(
+						'dir_read_error_with_error',
+						dir,
+						error && error.message
+					));
+				} else {
+					channel.appendError(i18n.t(
+						'dir_read_error',
+						dir,
+						error && error.message
+					));
 				}
 
 				callback(counter);

@@ -176,6 +176,7 @@ class ServiceBase {
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
 	init(queueLength) {
+		utils.trace('ServiceBase#init', `Initialising`);
 		this.persistCollisionOptions = {};
 		this.queueLength = queueLength;
 		return Promise.resolve(true);

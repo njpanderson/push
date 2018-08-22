@@ -335,7 +335,7 @@ class Service extends PushBase {
 			let result = this.activeService[method].apply(
 				this.activeService,
 				args
-			)
+			);
 
 			if (!(result instanceof Promise)) {
 				throw new Error(
