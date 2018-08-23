@@ -536,6 +536,18 @@ class SFTP extends ServiceBase {
 			return this.getFileStats(remote, local);
 		})
 		.then((stats) => {
+			if (!stats.local) {
+				// No local file! return TransferResult error
+				return new TransferResult(
+					local,
+					new PushError(i18n.t(
+						'file_not_found',
+						this.paths.getBaseName(local)
+					)),
+					TRANSFER_TYPES.PUT
+				);
+			}
+
 			return super.checkCollision(
 				stats.local,
 				stats.remote,
@@ -543,6 +555,11 @@ class SFTP extends ServiceBase {
 			);
 		})
 		.then((result) => {
+			if (result instanceof TransferResult) {
+				// Pass through TransferResult results
+				return result;
+			}
+
 			// Figure out what to do based on the collision (if any)
 			if (result === false) {
 				// No collision, just keep going
@@ -579,7 +596,7 @@ class SFTP extends ServiceBase {
 		})
 		.then((result) => {
 			if ((result instanceof TransferResult) && !result.error) {
-				// Transfer occured, no errors - set the remote file mode
+				// Transfer occured with no errors - set the remote file mode
 				return this.setRemotePathMode(remote, this.config.service.fileMode)
 					.then(() => result);
 			}
