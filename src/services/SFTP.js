@@ -250,18 +250,19 @@ class SFTP extends ServiceBase {
 				// Offer to use a password
 				this.requestAuthentication()
 					.then((result) => {
-						if (result) {
+						if (typeof result !== 'undefined') {
 							// Temporarily set the password in the service config
-							this.config.service.password = result;
+							client.options.password = result;
 							resolve(this.openConnection(client, client.options));
 						} else {
+							// No password provided (escaped)
+							this.destroyClient(client);
 							reject(error);
 						}
 					});
 			} else {
 				// This likely ain't happening - let's just ditch the client and reject
 				this.destroyClient(client);
-
 				reject(error);
 			}
 		});
