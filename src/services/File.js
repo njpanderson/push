@@ -108,7 +108,6 @@ class File extends ServiceBase {
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
 			rootDir = this.paths.getNormalPath(root),
-			logPrefix = (transferType === TRANSFER_TYPES.PUT ? '>> ' : '<< '),
 			srcType = (transferType === TRANSFER_TYPES.PUT ? SRC_REMOTE : SRC_LOCAL);
 
 		this.setProgress(`${destFilename}...`);
@@ -155,10 +154,10 @@ class File extends ServiceBase {
 									);
 
 									return this.transfer(
+										transferType,
 										src,
 										destPath,
-										rootDir,
-										logPrefix
+										rootDir
 									);
 								});
 					}
