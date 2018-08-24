@@ -699,7 +699,7 @@ class SFTP extends ServiceBase {
 										);
 
 									return this.clientGetByStream(
-										vscode.Uri.path(localPath),
+										vscode.Uri.file(localPath),
 										remote
 									);
 								});
