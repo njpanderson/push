@@ -241,6 +241,16 @@ The SFTP service will upload files to remote SSH/SFTP servers.
 | `sshGateway` | | If you can't connect directly to an SSH server, and must instead connect via an intermediary server — commonly known as a Gateway host — you can enter its details in here. The properties available are detailed below. |
 | `debug` | `false` | In debug mode, extra information is sent from the underlying SSH client to the console. |
 
+#### Using password/key combinations for accounts that require it
+
+Please note that the underlying SSH library does not support configurable authentication orders, which means that it is currently fixed. An order mismatch may prevent successful connections. For reference, the order is:
+
+	- `password`
+	- `publickey`
+	- `keyboard-interactive` (not currently supported)
+
+This is the order in which authentication methods should be defined within the SSH daemon configuration, if possible.
+
 #### `fileMode` as an array
 
 The `fileMode` setting of the SFTP service can also be expressed as an array of glob strings and modes required. For instance:
