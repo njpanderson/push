@@ -37,7 +37,6 @@ This extension contributes the following settings:
 | --- | --- | --- |
 | `locale` | `en-gb` | Language to use. See "Push in your language".
 | `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
-| `debugMode` | `false` | Enable debug mode for more logging. Useful if reporting errors. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
 | `privateSSHKeyPassphrase` | (Empty) | If you're using a private key with a passphrase, enter it here. |
 | `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last upload. |

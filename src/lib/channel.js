@@ -71,10 +71,6 @@ class Channel {
 		if (error instanceof PushError) {
 			config = configService.get();
 			message = error.message;
-
-			if (config.debugMode && error.fileName && error.lineNumber) {
-				message += ` (${error.fileName}:${error.lineNumber})`;
-			}
 		} else {
 			message = error;
 		}
@@ -98,10 +94,6 @@ class Channel {
 		if (error instanceof PushError) {
 			config = config.get();
 			message = i18n.t.apply(i18n, [error.message].concat(placeHolders));
-
-			if (config.debugMode && error.fileName && error.lineNumber) {
-				message += ` (${error.fileName}:${error.lineNumber})`;
-			}
 		} else {
 			message = i18n.t.apply(i18n, [error].concat(placeHolders));
 		}

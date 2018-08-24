@@ -51,11 +51,6 @@
           "default": ".push.settings.json*",
           "description": "Defines the push settings JSON filename."
         },
-        "njpPush.debugMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enables debug mode, with more reporting."
-        },
         "njpPush.privateSSHKey": {
           "type": "string",
           "default": "",
