@@ -249,7 +249,7 @@ class ServiceBase {
 	 * collision actions.
 	 */
 	checkCollision(source, dest, defaultCollisionOption) {
-		let collisionType, timediff;
+		let collisionType, hasCollision, timediff;
 
 		if (!source) {
 			throw new Error('Source file must exist');
@@ -263,11 +263,12 @@ class ServiceBase {
 			);
 		}
 
-		if (dest &&
-			(
-				(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
-				!this.config.service.testCollisionTimeDiffs
-			)) {
+		hasCollision = (
+			(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
+			!this.config.service.testCollisionTimeDiffs
+		);
+
+		if (dest && hasCollision) {
 			// Destination file exists and difference means source file is older
 			if (dest.type === source.type) {
 				collisionType = 'normal';
@@ -292,7 +293,12 @@ class ServiceBase {
 					return utils.showFileCollisionPicker(
 						source.name,
 						this.persistCollisionOptions.normal,
-						this.queueLength
+						this.queueLength,
+						(
+							(!this.config.service.testCollisionTimeDiffs) ?
+							i18n.t('filename_exists_ignore_times', source.name) :
+							null
+						)
 					);
 				}
 			} else {

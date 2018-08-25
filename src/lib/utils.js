@@ -121,14 +121,20 @@ const utils = {
 		}
 	},
 
-	showFileCollisionPicker(name, callback, queueLength = 0) {
+	showFileCollisionPicker(
+		name,
+		callback,
+		queueLength = 0,
+		placeHolder
+	) {
 		let options = [
 				utils.collisionOpts.skip,
 				utils.collisionOpts.rename,
 				utils.collisionOpts.stop,
 				utils.collisionOpts.overwrite,
-			],
-			placeHolder = i18n.t('filename_exists', name);
+			];
+
+		placeHolder = placeHolder || i18n.t('filename_exists', name);
 
 		if (queueLength > 1) {
 			// Add "all" options if there's more than one item in the current queue
