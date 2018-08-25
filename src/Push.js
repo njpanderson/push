@@ -725,6 +725,8 @@ class Push extends PushBase {
 	 * stopping the queue.
 	 */
 	stopQueue(queueDef, force = false, silent = false) {
+		let queue = this.getQueue(queueDef);
+
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
 			title: 'Push'
@@ -734,10 +736,24 @@ class Push extends PushBase {
 					timer;
 
 				progress.report({ message: i18n.t('stopping') });
+				utils.trace('Push#stopQueue', 'Stopping queue');
 
 				if (force) {
 					// Give X seconds to stop or force by restarting the active service
+					utils.trace('Push#stopQueue', 'Starting queue force stop');
+
+					// Set up timer for force stopping the queue after x seconds
 					timer = setTimeout(() => {
+						// Force stop the queue
+						utils.trace(
+							'Push#stopQueue',
+							Push.globals.FORCE_STOP_TIMEOUT +
+								' second(s) elapsed. Force stopping queue'
+						);
+
+						// Silently force complete the queue
+						queue.stop(true, true, true);
+
 						// Force restart the active service
 						this.service.restartServiceInstance();
 
@@ -755,8 +771,10 @@ class Push extends PushBase {
 
 				// Stop the queue
 				tasks.push(
-					this.getQueue(queueDef).stop()
+					queue.stop()
 						.then((result) => {
+							utils.trace('Push#stopQueue', 'Queue stop resolve');
+
 							!silent && channel.appendLocalisedInfo(
 								'queue_cancelled',
 								queueDef.id
@@ -765,12 +783,14 @@ class Push extends PushBase {
 							return result;
 						})
 						.catch((error) => {
+							utils.trace('Push#stopQueue', 'Queue stop reject');
 							reject(error);
 						})
 				);
 
 				if (force) {
 					// Stop the service as well
+					utils.trace('Push#stopQueue', 'Adding force stop task');
 					tasks.push(
 						this.service.stop()
 					);
@@ -781,10 +801,12 @@ class Push extends PushBase {
 				// by the timeout (see above).
 				Promise.all(tasks)
 					.then((results) => {
+						utils.trace('Push#stopQueue', 'Queue stop tasks complete');
 						clearTimeout(timer);
 						resolve(results[0]);
 					})
 					.catch((error) => {
+						utils.trace('Push#stopQueue', 'Queue stop tasks failed');
 						clearTimeout(timer);
 						reject(error);
 					});
@@ -947,7 +969,7 @@ class Push extends PushBase {
 				.then((files) => {
 					utils.trace(
 						'Push#transferDirectory',
-						'Found ${files.length} file(s) on local'
+						`Found ${files.length} file(s) on local`
 					);
 
 					let tasks = files.map((uri) => {

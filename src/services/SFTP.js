@@ -322,15 +322,27 @@ class SFTP extends ServiceBase {
 	 * @param {object} client - Client connection object.
 	 */
 	destroyClient(client) {
-		if (client.sftp) {
-			client.sftp.end();
-			client.sftp = null;
+		let tasks = [];
+
+		if (client.sftp && client.sftp.end) {
+			utils.trace('SFTP#destroyClient', 'Ending client connection');
+			tasks.push(client.sftp.end());
 		}
 
-		if (client.gateway) {
-			client.gateway.end();
-			client.gateway = null;
+		if (client.gateway && client.gateway.end) {
+			utils.trace('SFTP#destroyClient', 'Ending client gateway connection');
+			tasks.push(client.gateway.end());
 		}
+
+		return Promise.all(tasks)
+			.then(() => {
+				client.sftp = null;
+				client.gateway = null;
+			})
+			.catch(() => {
+				client.sftp = null;
+				client.gateway = null;
+			});
 	}
 
 	/**
@@ -471,15 +483,22 @@ class SFTP extends ServiceBase {
 	 * @param {string} hash
 	 */
 	removeClient(hash) {
-		if (this.clients[hash] && this.clients[hash].sftp) {
+		let client;
+
+		if (!(client = this.clients[hash])) {
+			return Promise.reject(`Could not find client with supplied hash (${hash})`);
+		}
+
+		if (client && client.sftp) {
 			channel.appendLocalisedInfo(
 				'sftp_disconnected',
-				this.clients[hash].options.host,
-				this.clients[hash].options.port
+				client.options.host,
+				client.options.port
 			);
 
-			return this.clients[hash].sftp.end()
+			return this.destroyClient()
 				.then(() => {
+					// Nullify and delete the object
 					this.clients[hash] = null;
 					delete this.clients[hash];
 				});

@@ -60,7 +60,7 @@ class UI extends Push {
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => {
-					return this.transferDirectory(uri, 'put');
+					return this.transferDirectory(uri, 'put').catch(this.catchError);
 				});
 		}
 
@@ -79,7 +79,7 @@ class UI extends Push {
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => {
-					return this.transferDirectory(uri, 'get');
+					return this.transferDirectory(uri, 'get').catch(this.catchError);
 				});
 		}
 
