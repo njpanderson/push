@@ -6,7 +6,10 @@ const config = require('../config');
 const channel = require('../channel');
 const TransferResult = require('../../services/TransferResult');
 const i18n = require('../../lang/i18n');
-const { STATUS_PRIORITIES, QUEUE_LOG_TYPES } = require('../constants');
+const {
+	STATUS_PRIORITIES,
+	QUEUE_LOG_TYPES
+} = require('../constants');
 
 class Queue {
 	/**

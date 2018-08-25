@@ -113,7 +113,7 @@ class PushBase extends Configurable {
 		if (error instanceof PushError) {
 			// This is an expected exception, generated for user display.
 			channel.appendError(error);
-		} else {
+		} else if (typeof error !== 'undefined') {
 			// This is an unexpected or uncaught exception.
 			console.error(error);
 			throw error;
