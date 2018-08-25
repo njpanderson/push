@@ -496,7 +496,7 @@ class SFTP extends ServiceBase {
 				client.options.port
 			);
 
-			return this.destroyClient()
+			return this.destroyClient(client)
 				.then(() => {
 					// Nullify and delete the object
 					this.clients[hash] = null;
