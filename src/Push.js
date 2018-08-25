@@ -637,6 +637,10 @@ class Push extends PushBase {
 		});
 	}
 
+	/**
+	 * Handles a general Watch change event
+	 * @param {Uri} uri - The Uri of the changed file.
+	 */
 	onWatchChange(uri) {
 		if (this.config.queueWatchedFiles) {
 			this.queueForUpload(uri);
@@ -872,14 +876,17 @@ class Push extends PushBase {
 			}
 
 			// Filter and add to the queue
-			tasks.push(
-				this.paths.filterUriByGlobs(uri, ignoreGlobs)
+			tasks.push(((uri) => {
+				let config, remotePath;
+
+				if (!(config = this.configWithServiceSettings(uri))) {
+					return false;
+				}
+
+				return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 					.then((filteredUri) => {
-						let config, remotePath;
-
 						if (filteredUri !== false) {
-							config = this.configWithServiceSettings(filteredUri);
-
+							// Uri is not being ignored. Continue...
 							remotePath = this.service.execSync(
 								'convertUriToRemote',
 								config,
@@ -907,8 +914,8 @@ class Push extends PushBase {
 								this.paths.getBaseName(uri)
 							);
 						}
-					})
-			);
+					});
+			})(uri));
 		});
 
 		if (tasks.length) {
