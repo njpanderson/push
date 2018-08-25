@@ -62,7 +62,7 @@ module.exports = {
 	'sftp_class_description': 'SFTP / SSHファイル転送',
 	'sftp_could_not_connect_server': 'サーバーホスト${1}:${2}に接続できませんでした',
 	'sftp_client_connected': 'ホスト${1}:${2}に接続されたSFTPクライアント',
-	'sftp_missing_root': 'SFTPがルートパスを見つけられない、またはアクセスできませんでした。 "${1}"設定ファイルを確認してください。',
+	'service_missing_root': 'Pushがルートパスを見つけられない、またはアクセスできませんでした。 "${1}"設定ファイルを確認してください。',
 	'sftp_disconnected': 'ホスト${1}:${2}から切断されたSFTPクライアント',
 	'sftp_enter_ssh_pass': 'SSHパスワードを入力してください（保存されません）',
 	'stopping': '停止しています...',

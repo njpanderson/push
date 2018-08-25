@@ -281,7 +281,7 @@ class SFTP extends ServiceBase {
 			})
 			.catch(() => {
 				throw new PushError(
-					i18n.t('sftp_missing_root', this.config.settingsFilename)
+					i18n.t('service_missing_root', this.config.settingsFilename)
 				);
 			});
 	}

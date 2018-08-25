@@ -62,7 +62,7 @@ module.exports = {
 	'sftp_class_description': 'Trasferimenti di file SFTP / SSH',
 	'sftp_could_not_connect_server': 'Impossibile connettersi all’host ${1}:${2} del server',
 	'sftp_client_connected': 'Client SFTP connesso all’host ${1}:${2}',
-	'sftp_missing_root': 'SFTP non ha potuto trovare o accedere al percorso root. Controllare il file delle impostazioni "${1}".',
+	'service_missing_root': 'Push non ha potuto trovare o accedere al percorso root. Controllare il file delle impostazioni "${1}".',
 	'sftp_disconnected': 'Client SFTP disconnesso dall’host ${1}:${2}',
 	'sftp_enter_ssh_pass': 'Inserisci la password SSH (non verrà mantenuta)',
 	'stopping': 'Arresto ...',

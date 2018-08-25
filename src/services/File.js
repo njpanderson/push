@@ -22,6 +22,7 @@ class File extends ServiceBase {
 		super(options, defaults);
 
 		this.mkDir = this.mkDir.bind(this);
+		this.checkServiceRoot = this.checkServiceRoot.bind(this);
 
 		this.type = 'File';
 		this.pathCache = new PathCache();
@@ -36,9 +37,25 @@ class File extends ServiceBase {
 
 	init(queueLength) {
 		return super.init(queueLength)
+			.then(this.checkServiceRoot)
 			.then(() => {
 				return this.pathCache.clear();
 			});
+	}
+
+	/**
+	 * Attempt to list the root path to ensure it exists
+	 * @param {SFTP} client - SFTP client object.
+	 * @param {function} resolve - Promise resolver function.
+	 */
+	checkServiceRoot() {
+		if (fs.existsSync(this.config.service.root)) {
+			return true;
+		}
+
+		throw new PushError(
+			i18n.t('service_missing_root', this.config.settingsFilename)
+		);
 	}
 
 	/**
