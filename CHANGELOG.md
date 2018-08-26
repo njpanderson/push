@@ -3,6 +3,7 @@ All notable changes to Push will be documented in this file.
 
 ## 0.5.0
  - Add support for environments within service configs. This is a big feature, please check the README!
+ - Altered the settingsFile configuration somewhat. New service settings files will be named `.push.settings.jsonc` to signify that they can contain comments. Your current service files will work, but if you have customised the filename, please take note of this setting and its partner setting, `settingsFileGlob`.
  - Add persistent watchers. Up to 50 watchers will now be retained between restarts.
  - Add command to create a new service config, regardless of whether one exists.
  - Add Travis integration (mainly to improve automated testing and doc generation).
