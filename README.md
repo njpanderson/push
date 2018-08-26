@@ -36,7 +36,8 @@ This extension contributes the following settings:
 | Setting | Default | Description |
 | --- | --- | --- |
 | `locale` | `en-gb` | Language to use. See "Push in your language".
-| `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
+| `settingsFilename` | `.push.settings.jsonc` | Settings file name. Defaults to `.push.settings.jsonc`. |
+| `settingsFileGlob` | `.push.settings.json*` | A glob used to find settings files based on their potential name. Defaults to `.push.settings.json*`. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
 | `privateSSHKeyPassphrase` | (Empty) | If you're using a private key with a passphrase, enter it here. |
 | `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last upload. |

@@ -49,7 +49,7 @@ class Service extends PushBase {
 
 		// Find the nearest settings file
 		settingsFile = this.paths.findFileInAncestors(
-			this.config.settingsFilename,
+			this.config.settingsFileGlob,
 			dirName
 		);
 
@@ -94,6 +94,11 @@ class Service extends PushBase {
 		}
 	}
 
+	/**
+	 * Sets the current server config environment.
+	 * @param {Uri} uri - Contextual Uri for the related file.
+	 * @see ServiceSettings#setConfigEnv
+	 */
 	setConfigEnv(uri) {
 		return this.settings.setConfigEnv(uri, this.config.settingsFilename);
 	}

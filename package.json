@@ -44,12 +44,17 @@
         "njpPush.locale": {
           "type": "string",
           "default": "en_gb",
-          "description": "Locale to use (Only en_gb supported at the moment.)"
+          "description": "Locale to use (See supported locales in the README)."
         },
         "njpPush.settingsFilename": {
           "type": "string",
-          "default": ".push.settings.json*",
+          "default": ".push.settings.jsonc",
           "description": "Defines the push settings JSON filename."
+        },
+        "njpPush.settingsFileGlob": {
+          "type": "string",
+          "default": ".push.settings.json*",
+          "description": "Defines the glob used to find push settings JSON files."
         },
         "njpPush.privateSSHKey": {
           "type": "string",

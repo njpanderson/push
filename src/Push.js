@@ -170,7 +170,7 @@ class Push extends PushBase {
 		// Get current server settings for the editor
 		settings = this.service.settings.getServerJSON(
 			uri,
-			this.config.settingsFilename,
+			this.config.settingsFileGlob,
 			true,
 			true
 		);
@@ -253,7 +253,7 @@ class Push extends PushBase {
 	configWithServiceSettings(uriContext) {
 		const settings = this.service.settings.getServerJSON(
 			uriContext,
-			this.config.settingsFilename
+			this.config.settingsFileGlob
 		);
 
 		// Make a duplicate to avoid changing the original config
@@ -1048,7 +1048,7 @@ class Push extends PushBase {
 	ensureSingleService(uri) {
 		return new Promise((resolve, reject) => {
 			this.paths.getDirectoryContentsAsFiles(
-				`${this.paths.getNormalPath(uri)}/**/${this.config.settingsFilename}`
+				`${this.paths.getNormalPath(uri)}/**/${this.config.settingsFileGlob}`
 			)
 				.then((files) => {
 					if (files.length > 1) {
