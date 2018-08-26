@@ -53,18 +53,17 @@ class PushBase extends Configurable {
 		}
 	}
 
+	/**
+	 * Writes content to a file and then opens it for editing.
+	 * @param {string} content - Content to write to the file.
+	 * @param {string} fileName - Filename to write to.
+	 */
 	writeAndOpen(content, fileName) {
 		// Write a file then open it
 		if (typeof content !== 'string' && content.constructor === Object) {
 			// Parse pure object content to JSON string
 			content = JSON.stringify(content, null, '\t');
 		}
-
-		// Add comment to the top
-		content =
-			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) +
-			'// ' + i18n.t('comm_push_settings2') +
-			content;
 
 		this.paths.writeFile(
 			content,

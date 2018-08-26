@@ -79,14 +79,22 @@ class Service extends PushBase {
 			// Produce a prompt to create a new settings file
 			this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
 				.then((file) => {
+					let content;
+
+					// Add comment to the top, then the contents
+					content =
+						'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) +
+						'// ' + i18n.t('comm_push_settings2') +
+						(file.serviceType.label !== 'Empty' ?
+							file.serviceType.settingsPayload :
+							constants.DEFAULT_SERVICE_CONFIG
+						);
+
 					if (file.exists) {
 						this.openDoc(file.fileName);
 					} else {
 						this.writeAndOpen(
-							(file.serviceType.label !== 'Empty' ?
-								file.serviceType.settingsPayload :
-								constants.DEFAULT_SERVICE_CONFIG
-							),
+							content,
 							file.fileName
 						);
 					}
