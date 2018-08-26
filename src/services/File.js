@@ -28,11 +28,6 @@ class File extends ServiceBase {
 		this.pathCache = new PathCache();
 		this.writeStream = null;
 		this.readStream = null;
-
-		// Define File validation rules
-		this.serviceValidation = {
-			root: true
-		};
 	}
 
 	init(queueLength) {
@@ -348,6 +343,10 @@ File.description = i18n.t('file_class_description');
 
 File.defaults = {
 	root: '/'
+};
+
+File.required = {
+	root: true
 };
 
 module.exports = File;

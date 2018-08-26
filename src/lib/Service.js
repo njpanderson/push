@@ -421,11 +421,14 @@ class Service extends PushBase {
 				onDisconnect: this.options.onDisconnect
 			}, this.getServiceDefaults(this.config.serviceName));
 
-			// Invoke settings validation
-			this.activeService.validateServiceSettings(
-				this.activeService.serviceValidation,
-				this.config.service
-			);
+			if (this.services[this.config.serviceName].required) {
+				// Invoke basic settings validation on required fields
+				this.activeService.validateServiceSettings(
+					this.services[this.config.serviceName].required,
+					// this.activeService.serviceValidation,
+					this.config.service
+				);
+			}
 		}
 	}
 

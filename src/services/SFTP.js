@@ -39,13 +39,6 @@ class SFTP extends ServiceBase {
 			dot: true,
 			nocase: true
 		};
-
-		// Define SFTP validation rules
-		this.serviceValidation = {
-			host: true,
-			username: true,
-			root: true
-		};
 	}
 
 	/**
@@ -1241,6 +1234,12 @@ SFTP.defaults = {
 	debug: false,
 	fileMode: '',
 	sshGateway: null
+};
+
+SFTP.required = {
+	host: true,
+	username: true,
+	root: true
 };
 
 SFTP.gatewayDefaults = {
