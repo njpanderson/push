@@ -367,7 +367,7 @@ If you are working in a production environment or have sensitive or mission crit
 
 ## Contributing
 
-If you would like to contribute, Huzzah! Thank you, and please check out the [Contributing Guide](https://raw.github.com/njpanderson/push/master/.github/CONTRIBUTING.md) first
+If you would like to contribute, Huzzah! Thank you, and please check out the [Contributing Guide](https://github.com/njpanderson/push/blob/develop/.github/CONTRIBUTING.md) first
 
 ### Build status
 
