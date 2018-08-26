@@ -3,12 +3,11 @@
   "displayName": "Push",
   "description": "SFTP and File based uploading",
   "version": "0.5.0",
-  "preview": true,
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.22.0"
   },
-  "license": "SEE LICENSE IN <LICENSE>",
+  "license": "SEE LICENSE IN LICENSE.md",
   "icon": "img/icon.png",
   "keywords": [
     "sftp",
@@ -24,6 +23,10 @@
   "categories": [
     "Other"
   ],
+  "galleryBanner": {
+    "color": "#305875",
+    "theme": "dark"
+  },
   "activationEvents": [
     "*"
   ],
