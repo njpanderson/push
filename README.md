@@ -3,8 +3,8 @@
 [![](https://vsmarketplacebadge.apphb.com/rating-short/njp-anderson.push.svg)](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push)
 [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push)
 
-<p style="text-align: center; margin: 2em 0;">
-  <img src="https://raw.githubusercontent.com/njpanderson/push/master/img/icon-with-label.png" alt="Push - The user friendly uploader" style="width: 829px"/>
+<p align="center" vspace="20">
+  <img src="https://raw.githubusercontent.com/njpanderson/push/master/img/icon-with-label.png" alt="Push - The user friendly uploader" width="829"/>
 </p>
 
 > Push is a file transfer extension. It is inspired in part by Sublime Text's fantastic [SFTP](https://wbond.net/sublime_packages/sftp) plugin as well as the FTP workflow features from [Coda](https://panic.com/coda/), and provides you with a tool to upload and download files within a workspace.
@@ -77,13 +77,13 @@ There are a few methods you can use to transfer files on demand. Two of which ar
 
 **Command palette:**
 
-<p style="text-align: center"><img src="https://raw.github.com/njpanderson/push/master/img/command-palette-upload.png" alt="Uploading with the command Palette" width="615"></p>
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/command-palette-upload.png" alt="Uploading with the command Palette" width="615"></p>
 
 **Context menu:**
 
 Right click on a file or folder within the explorer to see the following options:
 
-<p style="text-align: center"><img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276"></p>
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276"></p>
 
 The same two methods can be used to perform downloads, as well as most of the other features of Push.
 
@@ -91,7 +91,7 @@ The same two methods can be used to perform downloads, as well as most of the ot
 
 A benefit of using the on demand transfers feature combined with environment aware service configurations is that the currently active environment will show in the status bar. For example, the following environments are configured by default with Push:
 
-<p style="text-align: center"><img src="https://raw.github.com/njpanderson/push/master/img/env-status.png" alt="Uploading with the context menu" width="251"></p>
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/env-status.png" alt="Uploading with the context menu" width="251"></p>
 
 When a file is being edited, Push will remind you of the environment to which the open file would be transferred should you use on demand transfers. **Note** - This does not affect queued uploading or file watchers. The environment they are uploaded to will be determined by the individual file during the upload process.
 
@@ -108,7 +108,7 @@ Use the above shortcut, or select **Upload queued items** in the command palette
 ### File watching
 A third method of uploading files is to use the watch tool. This can be accessed from the explorer context menu:
 
-<p style="text-align: center"><img src="https://raw.github.com/njpanderson/push/master/img/context-watch.png" width="269" alt="Explorer context menu with watch selected"/></p>
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/context-watch.png" width="269" alt="Explorer context menu with watch selected"/></p>
 
 Selecting this option will create a watcher for the file, or in the case of a folder, all of the files within it. Whenever any one of them is altered or created by either VS Code or another app, Push will attempt to upload them.
 
@@ -118,7 +118,7 @@ If `queueWatchedFiles` is set to `true`, then Push will instead queue the file f
 
 If you loose track of which files and folders are being watched, either click on the ![Watching](https://raw.github.com/njpanderson/push/master/img/watching.png) icon in the status bar, or use the explorer window to check the currently watched files as well as the current upload queue.
 
-<p style="text-align: center"><img src="https://raw.github.com/njpanderson/push/master/img/explorer-window.png" width="285" alt="Watch file list output"/></p>
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/explorer-window.png" width="285" alt="Watch file list output"/></p>
 
 
 You can also remove items from the watch list or the upload queue from within this window, or clear the upload queue entirely.
