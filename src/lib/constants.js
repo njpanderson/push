@@ -7,9 +7,12 @@ module.exports = {
 
     DEFAULT_SERVICE_CONFIG: [
         '{',
-            '\t"service": "[ServiceName]",',
-            '\t"[ServiceName]": {',
-                '\t\t\/\/ ' + i18n.t('comm_add_service_config'),
+            '\t"env": "default",',
+            '\t"default": {',
+                '\t\t"service": "[ServiceName]",',
+                '\t\t"options": {',
+                    '\t\t\t\/\/ ' + i18n.t('comm_add_service_config'),
+                '\t\t}',
             '\t}',
         '}'
     ].join('\n'),

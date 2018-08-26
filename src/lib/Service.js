@@ -258,18 +258,21 @@ class Service extends PushBase {
 	}
 
 	/**
-	 * Produce a list of the services available.
-	 * @return {array} List of the services.
+	 * Produce a list of the services available, for use within a QuickPick dialog.
+	 * @return {array} List of the services, including default settings payloads.
 	 */
 	getList() {
 		let options = [], service, settingsPayload;
 
 		for (service in this.services) {
 			settingsPayload = {
-				service
+				'env': 'default',
+				'default': {
+					service
+				}
 			};
 
-			settingsPayload[service] = this.getServiceDefaults(service);
+			settingsPayload.default.options = this.getServiceDefaults(service);
 
 			options.push({
 				label: service,
