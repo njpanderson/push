@@ -456,36 +456,39 @@ class Push extends PushBase {
 	 * @param {Uri} uri - Uri of the local file to compare.
 	 */
 	diffRemote(uri) {
-		let config, tmpFile, remotePath;
+		return new Promise((resolve, reject) => {
+			let config, tmpFile, remotePath;
 
-		tmpFile = utils.getTmpFile();
-		config = this.configWithServiceSettings(uri);
-		remotePath = this.service.execSync(
-			'convertUriToRemote',
-			config,
-			[uri]
-		);
+			tmpFile = utils.getTmpFile();
+			config = this.configWithServiceSettings(uri);
 
-		// Use the queue to get a file then diff it
-		return this.queue([{
-			method: 'get',
-			actionTaken: 'downloaded',
-			uriContext: uri,
-			args: [
-				tmpFile,
-				remotePath,
-				'overwrite'
-			],
-			id: tmpFile + remotePath,
-			onTaskComplete: () => {
-				vscode.commands.executeCommand(
-					'vscode.diff',
+			remotePath = this.service.execSync(
+				'convertUriToRemote',
+				config,
+				[uri]
+			);
+
+			// Use the queue to get a file then diff it
+			this.queue([{
+				method: 'get',
+				actionTaken: 'downloaded',
+				uriContext: uri,
+				args: [
 					tmpFile,
-					uri,
-					'Diff: ' + this.paths.getBaseName(uri)
-				);
-			}
-		}], true, Push.queueDefs.diff);
+					remotePath,
+					'overwrite'
+				],
+				id: tmpFile + remotePath,
+				onTaskComplete: () => {
+					vscode.commands.executeCommand(
+						'vscode.diff',
+						tmpFile,
+						uri,
+						'Diff: ' + this.paths.getBaseName(uri)
+					);
+				}
+			}], true, Push.queueDefs.diff).then(resolve, reject);
+		})
 	}
 
 	/**
