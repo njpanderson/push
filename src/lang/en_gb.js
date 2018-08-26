@@ -1,6 +1,6 @@
 module.exports = {
-	'comm_push_settings1': 'Push settings file - generated on ${1}\n',
-	'comm_push_settings2': 'Note: Comments are supported within Push settings files\n',
+	'comm_push_settings1': 'Push settings file - first generated on ${1}\n',
+	'comm_push_settings2': 'Note: Optional items are commented out and can be uncommented if you wish to set them\n',
 	'comm_add_service_config': 'Add service configuration here...',
 	'comm_settings_imported': 'Settings imported from ${1}\n',
 	'no_locale': 'Locale "${1}" does not exist. Has a .js file been created for it?',

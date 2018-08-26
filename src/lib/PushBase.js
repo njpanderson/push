@@ -59,20 +59,17 @@ class PushBase extends Configurable {
 	 * @param {string} fileName - Filename to write to.
 	 */
 	writeAndOpen(content, fileName) {
-		// Write a file then open it
-		if (typeof content !== 'string' && content.constructor === Object) {
-			// Parse pure object content to JSON string
-			content = JSON.stringify(content, null, '\t');
-		}
-
-		this.paths.writeFile(
+		// Write the file...
+		return this.paths.writeFile(
 			content,
 			fileName
 		)
 			.then((fileName) => {
+				// Open it
 				this.openDoc(fileName);
 			})
 			.catch((error) => {
+				// Append the error
 				channel.appendError(error);
 			});
 	}

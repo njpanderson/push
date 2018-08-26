@@ -4,11 +4,13 @@ const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
 
+const ServiceType = require('./ServiceType');
 const channel = require('../lib/channel');
 const PushError = require('../lib/PushError');
 const Paths = require('../lib/Paths');
 const utils = require('../lib/utils');
 const i18n = require('../lang/i18n');
+const constants = require('./constants');
 
 class ServiceSettings {
 	constructor(options) {
@@ -32,6 +34,92 @@ class ServiceSettings {
 	 */
 	clear() {
 		this.settingsCache = {};
+	}
+
+	/**
+	 * Creates the contents for a server settings file.
+	 * @param {ServiceType} serviceType - Service type settings instance.
+	 * @returns {string} - The file contents.
+	 */
+	createServerFileContents(serviceType) {
+		let content, serviceJSON, serviceJSONLines,
+			defaults, requiredOptions, re,
+			state, prevState;
+
+		if (!(serviceType instanceof ServiceType)) {
+			throw new Error('serviceType argument is not an instance of ServiceType');
+		}
+
+		if (serviceType.label !== 'Empty') {
+			// Get string based JSON payload from service
+			serviceJSON = JSON.stringify(serviceType.settingsPayload, null, '\t');
+
+			// Format according to service defaults
+			serviceJSONLines = serviceJSON.split('\n');
+			defaults = Object.keys(serviceType.settingsPayload.default.options);
+			requiredOptions = Object.keys(serviceType.requiredOptions);
+
+			re = {
+				indents: /\t/g,
+				indentedLine: /^([\t]+)(.*)$/,
+				optionItem: /^([\t]*)(\s*\"(.+?)\":\s[^$]*)/,
+				optionCloser: /\t{3,}(]|})/
+			};
+
+			state = prevState = {
+				line: '',
+				indentLevel: 0,
+				inOption: false,
+				optionCommented: false,
+				inCommentedOption: false
+			};
+
+			/* Find each line and figure out whether to comment out default options
+			 * This isn't the best way of doing this, as it relies heavily on indent
+			 * levels and a consistent JSON format, but it works for all of the current
+			 * use cases.
+			 * TODO: improve with a proper AST parser or the node-jsonc-parser when available.
+			 */
+			serviceJSONLines = serviceJSONLines.map((line) => {
+				let match = line.match(re.optionItem);
+
+				// Set various state options
+				state.line = line;
+				state.indentLevel = (line.match(re.indents) || []).length;
+				state.inOption = state.indentLevel >= 4;
+				state.optionCommented = false;
+
+				state.inCommentedOption = (
+					state.inOption && prevState.inCommentedOption || (
+						prevState.inCommentedOption && re.optionCloser.test(line)
+					)
+				);
+
+				if ((
+					state.indentLevel === 3 &&
+					match !== null &&
+					defaults.indexOf(match[3]) !== -1 &&
+					requiredOptions.indexOf(match[3]) === -1
+				) || state.inCommentedOption) {
+					// Option is a default and it is not required
+					line = line.replace(re.indentedLine, '$1// $2');
+					state.optionCommented = true;
+					state.inCommentedOption = true;
+				}
+
+				prevState = Object.assign({}, state);
+
+				return line;
+			});
+		}
+
+		// Add comment to the top, then the contents
+		content =
+			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) +
+			'// ' + i18n.t('comm_push_settings2') +
+		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG);
+
+		return content;
 	}
 
 	getServerFile(dir, settingsFilename) {

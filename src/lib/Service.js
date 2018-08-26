@@ -4,6 +4,7 @@ const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const ServiceSettings = require('./ServiceSettings');
+const ServiceType = require('./ServiceType');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
 const PushError = require('./PushError');
@@ -74,27 +75,19 @@ class Service extends PushBase {
 		 */
 		if (settingsFile && !forceCreate) {
 			// Edit the settings file found
-			this.openDoc(settingsFile);
+			return this.openDoc(settingsFile);
 		} else {
 			// Produce a prompt to create a new settings file
-			this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
+			return this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
 				.then((file) => {
-					let content;
-
-					// Add comment to the top, then the contents
-					content =
-						'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) +
-						'// ' + i18n.t('comm_push_settings2') +
-						(file.serviceType.label !== 'Empty' ?
-							file.serviceType.settingsPayload :
-							constants.DEFAULT_SERVICE_CONFIG
-						);
-
 					if (file.exists) {
-						this.openDoc(file.fileName);
+						return this.openDoc(file.fileName);
 					} else {
-						this.writeAndOpen(
-							content,
+						// Create the file
+						return this.writeAndOpen(
+							this.settings.createServerFileContents(
+								file.serviceType
+							),
 							file.fileName
 						);
 					}
@@ -259,7 +252,7 @@ class Service extends PushBase {
 
 	/**
 	 * Produce a list of the services available, for use within a QuickPick dialog.
-	 * @return {array} List of the services, including default settings payloads.
+	 * @return {ServiceType[]} List of the services, including default settings payloads.
 	 */
 	getList() {
 		let options = [], service, settingsPayload;
@@ -274,12 +267,13 @@ class Service extends PushBase {
 
 			settingsPayload.default.options = this.getServiceDefaults(service);
 
-			options.push({
-				label: service,
-				description: this.services[service].description,
-				detail: this.services[service].detail,
-				settingsPayload
-			});
+			options.push(new ServiceType(
+				service,
+				this.services[service].description,
+				this.services[service].detail,
+				settingsPayload,
+				this.services[service].required
+			));
 		}
 
 		return options;
