@@ -18,8 +18,8 @@ const SRC_LOCAL = PathCache.sources.LOCAL;
  * Filesystem based uploading.
  */
 class File extends ServiceBase {
-	constructor(options, defaults) {
-		super(options, defaults);
+	constructor(options, defaults, required) {
+		super(options, defaults, required);
 
 		this.mkDir = this.mkDir.bind(this);
 		this.checkServiceRoot = this.checkServiceRoot.bind(this);

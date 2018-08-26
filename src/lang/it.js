@@ -43,7 +43,7 @@ module.exports = {
 	'no_service_file': 'Non è stato possibile trovare un file di impostazioni nel tuo progetto. Hai già creato un file con il nome "${1}"?',
 	'service_not_defined': 'Un servizio di trasferimento non è stato definito all’interno del file delle impostazioni in "${1}".',
 	'multiple_service_files_no_transfer': 'Più di un file di impostazioni del servizio è stato trovato all’interno della directory selezionata. Il trasferimento non può essere completato.',
-	'service_setting_missing': 'File di impostazione del servizio per l’impostazione ${1} mancante richiesta: "${2}".',
+	'service_setting_missing': 'Il file di servizio in "${1}" per l\'ambiente "${2}" manca l\'opzione ${3} richiesta: "${4}". Push non può continuare senza questa impostazione.',
 	'cannot_action_ignored_file': 'Impossibile ${1} il file "${2}" - Corrisponde a uno dei filtri ignoreGlobs definiti.',
 	'no_import_file': 'File di configurazione non specificato. Si prega di eseguire questo comando da un file di configurazione o dal menu di scelta rapida di Explorer.',
 	'import_file_not_supported': 'Il formato del file di configurazione non è supportato. Attualmente, è supportato solo il formato SFTP Sublime.',

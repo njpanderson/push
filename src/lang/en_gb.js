@@ -48,7 +48,7 @@ module.exports = {
 	'single_env': 'The service file at "${1}" only contains one environment (${2}). It cannot be switched.',
 	'multiple_service_files_no_transfer': 'More than one service settings file was found within the selected directory. The transfer could not be completed.',
 	'service_name_invalid': 'The service name "${1}" within settings file "${2}" does not Exist. Please choose a valid service name.',
-	'service_setting_missing': 'Service setting file for type ${1} missing required setting: "${2}".',
+	'service_setting_missing': 'The service file at "${1}" for the "${2}" environment is missing the required ${3} option: "${4}". Push cannot continue without this setting.',
 	'cannot_action_ignored_file': 'Cannot ${1} file "${2}" - It matches one of the defined ignoreGlobs filters.',
 	'no_import_file': 'Config file not specified. Please either run this command from within a configuration file or from the explorer context menu.',
 	'import_file_not_supported': 'Configuration file format is not supported. Currently, only the Sublime SFTP format is supported.',

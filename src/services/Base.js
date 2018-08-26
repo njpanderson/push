@@ -5,6 +5,7 @@ const tmp = require('tmp');
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
+const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
 
 /**
@@ -13,13 +14,14 @@ const i18n = require('../lang/i18n');
  * @param {object} serviceDefaults - Default service options.
  */
 class ServiceBase {
-	constructor(options, serviceDefaults) {
+	constructor(options, serviceDefaults, serviceRequired) {
 		this.setOptions(options);
 
 		this.type = '';
 		this.queueLength = 0;
 		this.progress = null;
 		this.serviceDefaults = serviceDefaults;
+		this.serviceRequired = serviceRequired;
 		this.config = {};
 		this.persistCollisionOptions = {};
 		this.channel = channel;
@@ -52,6 +54,8 @@ class ServiceBase {
 	 * @param {object} config
 	 */
 	setConfig(config) {
+		let validation;
+
 		this.config = config;
 
 		if (this.config.service) {
@@ -59,6 +63,22 @@ class ServiceBase {
 			this.config.service = this.mergeWithDefaults(
 				this.config.service
 			);
+
+			if (this.serviceRequired) {
+				// Invoke basic settings validation on required fields
+				if ((validation = this.validateServiceSettings(
+					this.serviceRequired,
+					this.config.service
+				)) !== true) {
+					throw new PushError(i18n.t(
+						'service_setting_missing',
+						this.config.serviceFilename,
+						this.config.env,
+						this.type,
+						validation
+					));
+				};
+			}
 		}
 	}
 
@@ -82,13 +102,7 @@ class ServiceBase {
 		for (key in spec) {
 			if (spec.hasOwnProperty(key)) {
 				if (!settings[key]) {
-					channel.appendLocalisedError(
-						'service_setting_missing',
-						this.type,
-						key
-					);
-
-					return false;
+					return key;
 				}
 			}
 		}
@@ -179,6 +193,7 @@ class ServiceBase {
 		utils.trace('ServiceBase#init', `Initialising`);
 		this.persistCollisionOptions = {};
 		this.queueLength = queueLength;
+
 		return Promise.resolve(true);
 	}
 

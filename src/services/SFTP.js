@@ -22,8 +22,8 @@ const SRC_REMOTE = PathCache.sources.REMOTE;
  * SFTP transfers.
  */
 class SFTP extends ServiceBase {
-	constructor(options, defaults) {
-		super(options, defaults);
+	constructor(options, defaults, required) {
+		super(options, defaults, required);
 
 		this.mkDir = this.mkDir.bind(this);
 

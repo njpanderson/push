@@ -416,19 +416,14 @@ class Service extends PushBase {
 				`Instantiating service provider "${this.config.serviceName}"`
 			);
 
-			// Instantiate
-			this.activeService = new this.services[this.config.serviceName]({
-				onDisconnect: this.options.onDisconnect
-			}, this.getServiceDefaults(this.config.serviceName));
-
-			if (this.services[this.config.serviceName].required) {
-				// Invoke basic settings validation on required fields
-				this.activeService.validateServiceSettings(
-					this.services[this.config.serviceName].required,
-					// this.activeService.serviceValidation,
-					this.config.service
-				);
-			}
+			// Instantiate service
+			this.activeService = new this.services[this.config.serviceName](
+				{
+					onDisconnect: this.options.onDisconnect
+				},
+				this.getServiceDefaults(this.config.serviceName),
+				this.services[this.config.serviceName].required
+			);
 		}
 	}
 
