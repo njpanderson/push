@@ -4,7 +4,7 @@
 [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push)
 
 <p align="center" vspace="20">
-  <img src="https://raw.githubusercontent.com/njpanderson/push/master/img/icon-with-label.png" alt="Push - The user friendly uploader" width="829"/>
+  <img src="img/icon-with-label.png" alt="Push - The user friendly uploader" width="829"/>
 </p>
 
 > Push is a file transfer extension. It is inspired in part by Sublime Text's fantastic [SFTP](https://wbond.net/sublime_packages/sftp) plugin as well as the FTP workflow features from [Coda](https://panic.com/coda/), and provides you with a tool to upload and download files within a workspace.
