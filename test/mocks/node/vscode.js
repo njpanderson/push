@@ -52,7 +52,10 @@ module.exports = {
 				});
 			},
 			this
-		)
+		),
+		showInformationMessage: () => {
+			return Promise.resolve('');
+		}
 	},
 
 	workspace: {
