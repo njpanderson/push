@@ -1,0 +1,2 @@
+Debugging file flag for development.
+Placing this file in the root of the repository will activate "debug" logging in Push.

@@ -4,6 +4,7 @@ const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const ServiceSettings = require('./ServiceSettings');
+const ServiceType = require('./ServiceType');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
 const PushError = require('./PushError');
@@ -49,7 +50,7 @@ class Service extends PushBase {
 
 		// Find the nearest settings file
 		settingsFile = this.paths.findFileInAncestors(
-			this.config.settingsFilename,
+			this.config.settingsFileGlob,
 			dirName
 		);
 
@@ -74,18 +75,18 @@ class Service extends PushBase {
 		 */
 		if (settingsFile && !forceCreate) {
 			// Edit the settings file found
-			this.openDoc(settingsFile);
+			return this.openDoc(settingsFile);
 		} else {
 			// Produce a prompt to create a new settings file
-			this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
+			return this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
 				.then((file) => {
 					if (file.exists) {
-						this.openDoc(file.fileName);
+						return this.openDoc(file.fileName);
 					} else {
-						this.writeAndOpen(
-							(file.serviceType.label !== 'Empty' ?
-								file.serviceType.settingsPayload :
-								constants.DEFAULT_SERVICE_CONFIG
+						// Create the file
+						return this.writeAndOpen(
+							this.settings.createServerFileContents(
+								file.serviceType
 							),
 							file.fileName
 						);
@@ -94,6 +95,11 @@ class Service extends PushBase {
 		}
 	}
 
+	/**
+	 * Sets the current server config environment.
+	 * @param {Uri} uri - Contextual Uri for the related file.
+	 * @see ServiceSettings#setConfigEnv
+	 */
 	setConfigEnv(uri) {
 		return this.settings.setConfigEnv(uri, this.config.settingsFilename);
 	}
@@ -245,25 +251,29 @@ class Service extends PushBase {
 	}
 
 	/**
-	 * Produce a list of the services available.
-	 * @return {array} List of the services.
+	 * Produce a list of the services available, for use within a QuickPick dialog.
+	 * @return {ServiceType[]} List of the services, including default settings payloads.
 	 */
 	getList() {
 		let options = [], service, settingsPayload;
 
 		for (service in this.services) {
 			settingsPayload = {
-				service
+				'env': 'default',
+				'default': {
+					service
+				}
 			};
 
-			settingsPayload[service] = this.getServiceDefaults(service);
+			settingsPayload.default.options = this.getServiceDefaults(service);
 
-			options.push({
-				label: service,
-				description: this.services[service].description,
-				detail: this.services[service].detail,
-				settingsPayload
-			});
+			options.push(new ServiceType(
+				service,
+				this.services[service].description,
+				this.services[service].detail,
+				settingsPayload,
+				this.services[service].required
+			));
 		}
 
 		return options;
@@ -335,7 +345,7 @@ class Service extends PushBase {
 			let result = this.activeService[method].apply(
 				this.activeService,
 				args
-			)
+			);
 
 			if (!(result instanceof Promise)) {
 				throw new Error(
@@ -400,15 +410,13 @@ class Service extends PushBase {
 				`Instantiating service provider "${this.config.serviceName}"`
 			);
 
-			// Instantiate
-			this.activeService = new this.services[this.config.serviceName]({
-				onDisconnect: this.options.onDisconnect
-			}, this.getServiceDefaults(this.config.serviceName));
-
-			// Invoke settings validation
-			this.activeService.validateServiceSettings(
-				this.activeService.serviceValidation,
-				this.config.service
+			// Instantiate service
+			this.activeService = new this.services[this.config.serviceName](
+				{
+					onDisconnect: this.options.onDisconnect
+				},
+				this.getServiceDefaults(this.config.serviceName),
+				this.services[this.config.serviceName].required
 			);
 		}
 	}

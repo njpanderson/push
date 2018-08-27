@@ -287,8 +287,9 @@ class Paths {
 	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
 	 * the root of the active workspace is reached.
-	 * @param {string} file - The filename to look for.
+	 * @param {string} file - The filename to look for. Supports globs.
 	 * @param {string} startDir - The directory to start looking in.
+	 * @returns {string|null} - Either the matched filename, or `null`.
 	 */
 	findFileInAncestors(file, startDir) {
 		let matches,

@@ -1,6 +1,13 @@
-# Push [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push)
+[![](https://vsmarketplacebadge.apphb.com/version-short/njp-anderson.push.svg)](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push)
+[![](https://vsmarketplacebadge.apphb.com/installs-short/njp-anderson.push.svg)](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push)
+[![](https://vsmarketplacebadge.apphb.com/rating-short/njp-anderson.push.svg)](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push)
+[![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push)
 
-Push is a file transfer extension. It is inspired in part by Sublime Text's fantastic [SFTP](https://wbond.net/sublime_packages/sftp) plugin as well as the FTP workflow features from [Coda](https://panic.com/coda/), and provides you with a tool to upload and download files within a workspace.
+<p align="center" vspace="20">
+  <img src="https://raw.github.com/njpanderson/push/master/img/icon-with-label.png" alt="Push - The user friendly uploader" width="829"/>
+</p>
+
+> Push is a file transfer extension built with with the goal of being both easy to use and reliable, providing developers with features they need.
 
 ## Features
 
@@ -12,11 +19,7 @@ It currently provides:
  - Watching of files within the project.
  - SFTP gateway support - connect via an SSH gateway/bastion to your SFTP server.
 
-## Build status
-
-| `master` | `develop`
-| --- | --- |
-| [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push) | [![develop build Status](https://travis-ci.org/njpanderson/push.svg?branch=develop)](https://travis-ci.org/njpanderson/push) |
+<div style="border: 3px double orange; background-color: #fff7ec; padding: 0 1em; margin: 2em 0">
 
 ## ⚡️ Quick setup
 
@@ -24,10 +27,11 @@ Push supports many options and configuration modes. The most common of which is 
 
  1. Install Push from the [VS Code extension marketplace](https://marketplace.visualstudio.com/items?itemName=njp-anderson.push).
  2. In the command palette, choose **Create/Edit Push configuration** and confirm the location (usually your workspace root), then choose the **SFTP** template.
- 3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, a `password` if not using keys, and the `root` path which will contain the workspace files, starting at the root defined by the location of the `push.settings.json` file.
+ 3. Fill in the missing details within the settings file. At minimum, you will need a `host`, `username`, a `password` if not using keys, and the `root` path which will contain the workspace files, starting at the root defined by the location of the `push.settings.jsonc` file.
  4. You should then be able to upload files within the workspace by using the explorer menu, title bars, or command palette.
 
 For more complete setup and configuration details, feel free to read on.
+</div>
 
 ## Extension Settings
 
@@ -36,8 +40,8 @@ This extension contributes the following settings:
 | Setting | Default | Description |
 | --- | --- | --- |
 | `locale` | `en-gb` | Language to use. See "Push in your language".
-| `settingsFilename` | `.push.settings.json` | Settings file name. Defaults to `.push.settings.json`. |
-| `debugMode` | `false` | Enable debug mode for more logging. Useful if reporting errors. |
+| `settingsFilename` | `.push.settings.jsonc` | Settings file name. Defaults to `.push.settings.jsonc`. |
+| `settingsFileGlob` | `.push.settings.json*` | A glob used to find settings files based on their potential name. Defaults to `.push.settings.json*`. This glob *must* match files named with `settingsFilename`. |
 | `privateSSHKey` | (Empty) | Set the location of your private .ssh key. Will attempt to locate within the local .ssh folder by default. |
 | `privateSSHKeyPassphrase` | (Empty) | If you're using a private key with a passphrase, enter it here. |
 | `uploadQueue` | `true` | If enabled, uses an upload queue, allowing you to upload all saved files since the last upload. |
@@ -56,7 +60,7 @@ Push has three main modes of operation: 1) As a standard, on-demand uploader, 2)
 ### How does Push transfer files?
 When Push transfers a file within the workspace, it does a few things to make sure the file gets into the right place — regardless of which service is used:
 
- 1. Find the nearest `.push.settings.json` (or equivalent) to the file being transferred. Push will look upwards along the ancestor tree of the file to find this.
+ 1. Find the nearest `.push.settings.jsonc` (or equivalent) to the file being transferred. Push will look upwards along the ancestor tree of the file to find this.
  2. Connect to the service required and find the root path as defined.
  3. Use the root path as a basis for transferring the file at its own path, relative to the workspace.
  4. Transfer the file, optionally presenting overwrite options to the user.
@@ -64,22 +68,22 @@ When Push transfers a file within the workspace, it does a few things to make su
 #### Root path resolving
 Root path resolving can be a tricky concept if you've not used it before. Simply put, it is a method by which Push figures out where the files should go, relative to where they are in your project.
 
-For example: an SFTP connection has been defined in the `.push.settings.json` file for your workspace folder, and it has a `root` setting of `/home/myaccount/public`.
+For example: an SFTP connection has been defined in the `.push.settings.jsonc` file for your workspace folder, and it has a `root` setting of `/home/myaccount/public`.
 
-If your **workspace** root was `/Users/myusername/Projects/myproject/`, the `push.settings.json` file was directly within `myproject/`, and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
+If your **workspace** root was `/Users/myusername/Projects/myproject/`, the `push.settings.jsonc` file was directly within `myproject/`, and the file you uploaded was at `<workspace>/contact/index.php`, then it would end up being uploaded to `/home/myaccount/public/contact/index.php`.
 
 ### On demand transfers
 There are a few methods you can use to transfer files on demand. Two of which are the command palette, and the context menu in the file explorer, seen below:
 
 **Command palette:**
 
-![Uploading with the command Palette](https://raw.github.com/njpanderson/push/master/img/command-palette-upload.png)
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/command-palette-upload.png" alt="Uploading with the command Palette" width="615"></p>
 
 **Context menu:**
 
 Right click on a file or folder within the explorer to see the following options:
 
-<img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276">
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/context-upload.png" alt="Uploading with the context menu" width="276"></p>
 
 The same two methods can be used to perform downloads, as well as most of the other features of Push.
 
@@ -87,7 +91,7 @@ The same two methods can be used to perform downloads, as well as most of the ot
 
 A benefit of using the on demand transfers feature combined with environment aware service configurations is that the currently active environment will show in the status bar. For example, the following environments are configured by default with Push:
 
-<img src="https://raw.github.com/njpanderson/push/master/img/env-status.png" alt="Uploading with the context menu" width="251">
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/env-status.png" alt="Uploading with the context menu" width="251"></p>
 
 When a file is being edited, Push will remind you of the environment to which the open file would be transferred should you use on demand transfers. **Note** - This does not affect queued uploading or file watchers. The environment they are uploaded to will be determined by the individual file during the upload process.
 
@@ -104,7 +108,7 @@ Use the above shortcut, or select **Upload queued items** in the command palette
 ### File watching
 A third method of uploading files is to use the watch tool. This can be accessed from the explorer context menu:
 
-<img src="https://raw.github.com/njpanderson/push/master/img/context-watch.png" width="269" alt="Explorer context menu with watch selected"/>
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/context-watch.png" width="269" alt="Explorer context menu with watch selected"/></p>
 
 Selecting this option will create a watcher for the file, or in the case of a folder, all of the files within it. Whenever any one of them is altered or created by either VS Code or another app, Push will attempt to upload them.
 
@@ -114,7 +118,8 @@ If `queueWatchedFiles` is set to `true`, then Push will instead queue the file f
 
 If you loose track of which files and folders are being watched, either click on the ![Watching](https://raw.github.com/njpanderson/push/master/img/watching.png) icon in the status bar, or use the explorer window to check the currently watched files as well as the current upload queue.
 
-![Watch file list output](https://raw.github.com/njpanderson/push/master/img/explorer-window.png)
+<p align="center"><img src="https://raw.github.com/njpanderson/push/master/img/explorer-window.png" width="285" alt="Watch file list output"/></p>
+
 
 You can also remove items from the watch list or the upload queue from within this window, or clear the upload queue entirely.
 
@@ -220,7 +225,7 @@ This is a very powerful feature which means multiple settings files can be defin
 
 In the scenario above, if `filename.txt` and `filename2.txt` were both edited, the upload queue would have 2 items in it, and both would be uploaded using their individual settings files.
 
-**Note:**  While this is a very useful feature, it does have one drawback - you cannot upload a path containing more than one settings file at a time. I.e. if a folder `base` has two subfolders, each with their own `.push.settings.json` file, the `base` folder cannot not be uploaded via the context menus.
+**Note:**  While this is a very useful feature, it does have one drawback - you cannot upload a path containing more than one settings file at a time. I.e. if a folder `base` has two subfolders, each with their own `.push.settings.jsonc` file, the `base` folder cannot not be uploaded via the context menus.
 
 ## Available services
 
@@ -240,6 +245,16 @@ The SFTP service will upload files to remote SSH/SFTP servers.
 | `fileMode` | | If required, a [mode](https://en.wikipedia.org/wiki/File_system_permissions#Numeric_notation) can be applied to files when they are uploaded. Numeric modes are accepted. E.g: `"700"` to give all access to the owner only. An array of modes is also supported. (See below.) |
 | `sshGateway` | | If you can't connect directly to an SSH server, and must instead connect via an intermediary server — commonly known as a Gateway host — you can enter its details in here. The properties available are detailed below. |
 | `debug` | `false` | In debug mode, extra information is sent from the underlying SSH client to the console. |
+
+#### Using password/key combinations for accounts that require it
+
+Please note that the underlying SSH library does not support configurable authentication orders, which means that it is currently fixed. An order mismatch may prevent successful connections. For reference, the order is:
+
+	- `password`
+	- `publickey`
+	- `keyboard-interactive` (not currently supported)
+
+This is the order in which authentication methods should be defined within the SSH daemon configuration, if possible.
 
 #### `fileMode` as an array
 
@@ -339,13 +354,26 @@ The following options are available to all services:
 
 Found a bug? Great! Let me know about it in the [Github issue tracker](https://github.com/njpanderson/push/issues) and I'll try to get back to you within a few days. It's a personal project of mine so I can't always reply quickly, but I'll do my best.
 
-### Help! Push deleted all my files, wiped my server and/or made my wife leave me!
+<div style="border: 3px double red; padding: 0 1em; background-color: #ffe5e0">
 
-First of all, that's terrible and of course I wouldn’t wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features. Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which could potentially cause data loss.
+### **Help! Push deleted all my files, wiped my server and/or made my wife leave me!**
+
+First of all, that's terrible and of course I wouldn’t wish this on anyone. Secondly, if you do have a method by which I can replicate the problem, do let me know in a bug report and I will give it priority over any new features.
+
+Thirdly, please understand that I am not liable for any potential data loss on your server should you use this plugin. Push is not designed or coded to perform deletions of files (except for when it overwrites a file with a new one), and I have tested this plugin constantly during development, but there may still be bugs which could potentially cause data loss.
+
+If you are working in a production environment or have sensitive or mission critical files, it is *always* recommended to either use a dedicated file transfer application or a fixed, peer reviewed deployment process.
+</div>
 
 ## Contributing
 
 If you would like to contribute, Huzzah! Thank you, and please check out the [Contributing Guide](https://github.com/njpanderson/push/blob/develop/.github/CONTRIBUTING.md) first
+
+### Build status
+
+| `master` | `develop`
+| --- | --- |
+| [![master build Status](https://travis-ci.org/njpanderson/push.svg?branch=master)](https://travis-ci.org/njpanderson/push) | [![develop build Status](https://travis-ci.org/njpanderson/push.svg?branch=develop)](https://travis-ci.org/njpanderson/push) |
 
 ## Push in your language
 

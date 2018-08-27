@@ -6,7 +6,10 @@ const config = require('../config');
 const channel = require('../channel');
 const TransferResult = require('../../services/TransferResult');
 const i18n = require('../../lang/i18n');
-const { STATUS_PRIORITIES, QUEUE_LOG_TYPES } = require('../constants');
+const {
+	STATUS_PRIORITIES,
+	QUEUE_LOG_TYPES
+} = require('../constants');
 
 class Queue {
 	/**
@@ -291,15 +294,15 @@ class Queue {
 
 					// Stop queue
 					this.stop(true, this.options.emptyOnFail)
-						.then(() => {
-							this.complete(fnCallback);
-						});
+						.then(() => this.complete())
+						.then(fnCallback);
 
 					throw error;
 				});
 		} else {
 			// Complete queue
-			this.complete(fnCallback);
+			this.complete()
+				.then(fnCallback);
 			this.reportQueueResults();
 		}
 	}
@@ -317,47 +320,65 @@ class Queue {
 
 	/**
 	 * Stops a queue by removing all items from it.
+	 * @param {boolean} [silent=false] - Use to prevent messaging channel.
+	 * @param {boolean} [clearQueue=true] - Empty the queue of all its tasks.
+	 * @param {boolean} [force=false] - Force stop, instead of waiting for a currently running task.
 	 * @returns {promise} - A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
-	stop(silent = false, clearQueue = true) {
+	stop(silent = false, clearQueue = true, force = false) {
 		if (this.running) {
+			utils.trace('Queue#stop', `Stopping queue (silent: ${silent}, clear: ${clearQueue})`);
+
 			if (!silent) {
-				// If this stop isn't an intentional use action, let's allow
-				// for silence here.
 				channel.appendInfo(i18n.t('stopping_queue'));
 			}
 
 			if (clearQueue) {
 				// Remove all pending tasks from this queue
+				utils.trace('Queue#stop', 'Emptying tasks');
 				this.empty();
 			}
 
 			if (this.progressInterval) {
 				// Stop the status progress monitor timer
+				utils.trace('Queue#stop', 'Stopping progress monitor timer');
 				clearInterval(this.progressInterval);
 			}
 
 			if (this.execProgressReject) {
 				// Reject the globally assigned progress promise (if set)
+				utils.trace('Queue#stop', 'Rejecting global progress promise');
 				this.execProgressReject();
 			}
 		}
 
-		return this.currentTask || Promise.resolve();
+		if (force) {
+			return this.complete();
+		}
+
+		if (this.currentTask && this.currentTask instanceof Promise) {
+			utils.trace('Queue#stop', 'Returning current task promise');
+			return this.currentTask;
+		}
+
+		utils.trace('Queue#stop', 'Returning immediately resolving promise');
+		return Promise.resolve();
 	}
 
 	/**
 	 * Invoked on queue completion (regardless of success).
-	 * @param {function} fnCallback - Callback function to invoke
+	 * @returns {Promise} - Resolved on completion.
 	 */
-	complete(fnCallback) {
-		this.running = false;
-		this._setContext(Queue.contexts.running, false);
+	complete() {
+		return new Promise((resolve) => {
+			utils.trace('Queue#complete', 'Queue completion');
 
-		if (typeof fnCallback === 'function') {
-			fnCallback(this.results);
-		}
+			this.running = false;
+			this._setContext(Queue.contexts.running, false);
+
+			resolve(this.results);
+		});
 	}
 
 	/**

@@ -27,19 +27,28 @@ class Channel {
 	 * used throughout processes like uploading/downloading, etc.
 	 */
 	appendTransferResult(result) {
-		let icon = this.getTransferIcon(result.type);
+		let icon = this.getTransferIcon(result.type),
+			srcLabel;
+
+		if (result.options.srcLabel) {
+			srcLabel = result.options.srcLabel;
+		} else {
+			srcLabel = this.paths.getNormalPath(result.src);
+		}
 
 		if (result.error) {
 			return this.appendError(
-				`${icon}! ${this.paths.getNormalPath(result.src)} ` +
+				// "!" is for errors
+				`${icon}! ${srcLabel} ` +
 				`(${result.error.message})`
 			);
 		}
 
 		if (result.status === true || result.status === false) {
 			return this.appendLine(
-				`${icon}${(result.status ? icon : '-')} ` +
-				this.paths.getNormalPath(result.src)
+				// The "icon" repeated is for confirmed, '~' is for skipped
+				`${(result.status ? icon + icon : '~~')} ` +
+				srcLabel
 			);
 		}
 	}
@@ -62,10 +71,6 @@ class Channel {
 		if (error instanceof PushError) {
 			config = configService.get();
 			message = error.message;
-
-			if (config.debugMode && error.fileName && error.lineNumber) {
-				message += ` (${error.fileName}:${error.lineNumber})`;
-			}
 		} else {
 			message = error;
 		}
@@ -89,10 +94,6 @@ class Channel {
 		if (error instanceof PushError) {
 			config = config.get();
 			message = i18n.t.apply(i18n, [error.message].concat(placeHolders));
-
-			if (config.debugMode && error.fileName && error.lineNumber) {
-				message += ` (${error.fileName}:${error.lineNumber})`;
-			}
 		} else {
 			message = i18n.t.apply(i18n, [error].concat(placeHolders));
 		}

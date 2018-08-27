@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
+const path = require('path');
 
 const config = require('./config');
 const constants = require('./constants');
@@ -10,6 +11,7 @@ const i18n = require('../lang/i18n');
 const utils = {
 	_timeouts: {},
 	_sb: null,
+	_debug: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
 	/**
 	 * Show an informational message using the VS Code interface
@@ -119,14 +121,20 @@ const utils = {
 		}
 	},
 
-	showFileCollisionPicker(name, callback, queueLength = 0) {
+	showFileCollisionPicker(
+		name,
+		callback,
+		queueLength = 0,
+		placeHolder
+	) {
 		let options = [
 				utils.collisionOpts.skip,
 				utils.collisionOpts.rename,
 				utils.collisionOpts.stop,
 				utils.collisionOpts.overwrite,
-			],
-			placeHolder = i18n.t('filename_exists', name);
+			];
+
+		placeHolder = placeHolder || i18n.t('filename_exists', name);
 
 		if (queueLength > 1) {
 			// Add "all" options if there's more than one item in the current queue
@@ -290,7 +298,7 @@ const utils = {
 	},
 
 	trace(id) {
-		if (process.debugPort) {
+		if (this._debug) {
 			console.log(
 				(new Date).toLocaleTimeString() +
 				`[${id}] - "${[...arguments].slice(1).join(', ')}"`

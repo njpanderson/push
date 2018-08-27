@@ -18,27 +18,39 @@ const SRC_LOCAL = PathCache.sources.LOCAL;
  * Filesystem based uploading.
  */
 class File extends ServiceBase {
-	constructor(options, defaults) {
-		super(options, defaults);
+	constructor(options, defaults, required) {
+		super(options, defaults, required);
 
 		this.mkDir = this.mkDir.bind(this);
+		this.checkServiceRoot = this.checkServiceRoot.bind(this);
 
 		this.type = 'File';
 		this.pathCache = new PathCache();
 		this.writeStream = null;
 		this.readStream = null;
-
-		// Define File validation rules
-		this.serviceValidation = {
-			root: true
-		};
 	}
 
 	init(queueLength) {
 		return super.init(queueLength)
+			.then(this.checkServiceRoot)
 			.then(() => {
 				return this.pathCache.clear();
 			});
+	}
+
+	/**
+	 * Attempt to list the root path to ensure it exists
+	 * @param {SFTP} client - SFTP client object.
+	 * @param {function} resolve - Promise resolver function.
+	 */
+	checkServiceRoot() {
+		if (fs.existsSync(this.config.service.root)) {
+			return true;
+		}
+
+		throw new PushError(
+			i18n.t('service_missing_root', this.config.settingsFilename)
+		);
 	}
 
 	/**
@@ -108,15 +120,14 @@ class File extends ServiceBase {
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
 			rootDir = this.paths.getNormalPath(root),
-			logPrefix = (transferType === TRANSFER_TYPES.PUT ? '>> ' : '<< '),
 			srcType = (transferType === TRANSFER_TYPES.PUT ? SRC_REMOTE : SRC_LOCAL);
 
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
 			.then(() => this.getFileStats(
-				(transferType === TRANSFER_TYPES.PUT) ? src : dest,
-				(transferType === TRANSFER_TYPES.PUT) ? dest : src,
+				(transferType === TRANSFER_TYPES.PUT ? src : dest),
+				(transferType === TRANSFER_TYPES.PUT ? dest : src)
 			))
 			.then((stats) => {
 				return super.checkCollision(
@@ -138,7 +149,9 @@ class File extends ServiceBase {
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
-							return false;
+							return new TransferResult(src, false, transferType, {
+								srcLabel: destPath
+							});
 
 						case utils.collisionOpts.overwrite:
 							return this.copy(src, destPath, transferType);
@@ -153,10 +166,10 @@ class File extends ServiceBase {
 									);
 
 									return this.transfer(
+										transferType,
 										src,
 										destPath,
-										rootDir,
-										logPrefix
+										rootDir
 									);
 								});
 					}
@@ -299,9 +312,11 @@ class File extends ServiceBase {
 
 			this.writeStream.on('finish', () => {
 				resolve(new TransferResult(
-					this.paths.getNormalPath(src),
+					src,
 					true,
-					transferType
+					transferType, {
+						srcLabel: dest
+					}
 				));
 			});
 
@@ -328,6 +343,10 @@ File.description = i18n.t('file_class_description');
 
 File.defaults = {
 	root: '/'
+};
+
+File.required = {
+	root: true
 };
 
 module.exports = File;

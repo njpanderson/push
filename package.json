@@ -2,13 +2,12 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.4.61",
-  "preview": true,
+  "version": "0.5.0",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.22.0"
   },
-  "license": "SEE LICENSE IN <LICENSE>",
+  "license": "SEE LICENSE IN LICENSE",
   "icon": "img/icon.png",
   "keywords": [
     "sftp",
@@ -24,6 +23,10 @@
   "categories": [
     "Other"
   ],
+  "galleryBanner": {
+    "color": "#305875",
+    "theme": "dark"
+  },
   "activationEvents": [
     "*"
   ],
@@ -44,17 +47,17 @@
         "njpPush.locale": {
           "type": "string",
           "default": "en_gb",
-          "description": "Locale to use (Only en_gb supported at the moment.)"
+          "description": "Locale to use (See supported locales in the README)."
         },
         "njpPush.settingsFilename": {
           "type": "string",
-          "default": ".push.settings.json*",
+          "default": ".push.settings.jsonc",
           "description": "Defines the push settings JSON filename."
         },
-        "njpPush.debugMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enables debug mode, with more reporting."
+        "njpPush.settingsFileGlob": {
+          "type": "string",
+          "default": ".push.settings.json*",
+          "description": "Defines the glob used to find push settings JSON files."
         },
         "njpPush.privateSSHKey": {
           "type": "string",
@@ -120,6 +123,11 @@
             "prod": "#f7ed00"
           },
           "description": "Defines the colours for specific environment names within the service settings file. The colour names as well as their values can be customised, and matching names will be coloured accordingly."
+        },
+        "njpPush.showChangelog": {
+          "type": "boolean",
+          "default": true,
+          "description": "Shows a changelog if Push upgrades either its minor or major version."
         }
       }
     },
@@ -499,7 +507,8 @@
     "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
     "test": "mocha",
     "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
-    "publish": "npm run t && vsce package"
+    "publish": "npm run t && vsce publish",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
