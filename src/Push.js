@@ -1,5 +1,7 @@
 const vscode = require('vscode');
+const semver = require('semver');
 
+const packageJson = require('../package.json');
 const Service = require('./lib/Service');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
@@ -47,7 +49,7 @@ class Push extends PushBase {
 		this.scm = new SCM();
 
 		// Create watch class and set initial watchers
-		this.watch = new Watch(context.globalState);
+		this.watch = new Watch(this.context.globalState);
 		this.watch.onWatchUpdate = this.onWatchUpdate;
 		this.watch.onChange = this.onWatchChange;
 		this.watch.recallByWorkspaceFolders(vscode.workspace.workspaceFolders);
@@ -67,8 +69,68 @@ class Push extends PushBase {
 		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
 			this.event('onDidChangeActiveTextEditor', textEditor);
 		});
+
+		// Once initialised, do the new version check
+		this.checkNewVersion();
 	}
 
+	/**
+	 * @description
+	 * Checks for a major/minor version, and if found, loads the changelog,
+	 * based on the users preferences.
+	 */
+	checkNewVersion() {
+		const currentVersion = this.context.globalState.get(
+			Push.globals.VERSION_STORE,
+			'0.0.0'
+		);
+
+		if (
+			['major', 'minor'].indexOf(
+				semver.diff(currentVersion, packageJson.version)
+			) !== -1
+		) {
+			// Major or minor version mismatch
+			if (this.config.showChangelog) {
+				// Load the changelog
+				this.showChangelog();
+			}
+
+			// Display a small notice
+			vscode.window.showInformationMessage(
+				i18n.t('push_upgraded', packageJson.version),
+				(!this.config.showChangelog ? {
+					isCloseAffordance: true,
+					id: 'show_changelog',
+					title: i18n.t('show_changelog')
+				} : null)
+			).then((option) => {
+				if (option && option.id === 'show_changelog') {
+					this.showChangelog();
+				}
+			});
+		}
+
+		// Retain next version
+		this.context.globalState.update(
+			Push.globals.VERSION_STORE,
+			packageJson.version
+		);
+	}
+
+	/**
+	 * Shows the Push changelog in a markdown preview.
+	 */
+	showChangelog() {
+		vscode.commands.executeCommand(
+			'markdown.showPreview',
+			vscode.Uri.file(this.context.extensionPath + '/CHANGELOG.md')
+		);
+	}
+
+	/**
+	 * Handle global/workspace configuration changes.
+	 */
 	onDidChangeConfiguration() {
 		if (this.setContexts) {
 			this.setContexts();
@@ -1108,7 +1170,8 @@ Push.queueDefs = {
 
 Push.globals = {
 	FORCE_STOP_TIMEOUT: 5, // In seconds
-	ENV_TIMER_ID: 'env-switch'
+	ENV_TIMER_ID: 'env-switch',
+	VERSION_STORE: 'Push:version'
 };
 
 Push.contexts = {

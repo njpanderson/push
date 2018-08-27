@@ -1,5 +1,5 @@
-# Change Log
-All notable changes to Push will be documented in this file.
+# Push Changelog
+All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
 ## 0.5.0
  - Add support for environments within service configs. This is a big feature, please check the README!
@@ -12,6 +12,7 @@ All notable changes to Push will be documented in this file.
  - Modified error reporting (a lot). Errors should now be clearer and less vague.
  - Modified on demand handling to remove uploaded files from the upload queue.
  - Altered service settings files to comment out optional items by default.
+ - Added an option to show this changelog when minor or major releases occur.
  - Various other bugfixes and stability improvements.
 
 ## 0.4.61

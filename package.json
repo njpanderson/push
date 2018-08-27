@@ -123,6 +123,11 @@
             "prod": "#f7ed00"
           },
           "description": "Defines the colours for specific environment names within the service settings file. The colour names as well as their values can be customised, and matching names will be coloured accordingly."
+        },
+        "njpPush.showChangelog": {
+          "type": "boolean",
+          "default": true,
+          "description": "Shows a changelog if Push upgrades either its minor or major version."
         }
       }
     },

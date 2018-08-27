@@ -95,5 +95,7 @@ module.exports = {
 	'error_writing_json': 'There was an error writing to the service JSON file. Error: "${1}".',
 	'no_error': 'No error message.',
 	'dir_read_error': 'The directory "${1}" could not be read.',
-	'dir_read_error_with_error': 'The directory "${1}" could not be read. The full error was: "${2}".'
+	'dir_read_error_with_error': 'The directory "${1}" could not be read. The full error was: "${2}".',
+	'push_upgraded': 'Push has been upgraded to version ${1}.',
+	'show_changelog': 'Show Changelog'
 };
