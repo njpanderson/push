@@ -1,14 +1,17 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
+const path = require('path');
 
 const config = require('./config');
 const constants = require('./constants');
+const PushError = require('./PushError');
 const i18n = require('../lang/i18n');
 
 const utils = {
 	_timeouts: {},
 	_sb: null,
+	_debug: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
 	/**
 	 * Show an informational message using the VS Code interface
@@ -70,7 +73,8 @@ const utils = {
 		}
 
 		this._sb = new vscode.window.createStatusBarItem(
-			vscode.StatusBarAlignment.left
+			vscode.StatusBarAlignment.left,
+			1
 		);
 
 		this._sb.text = message;
@@ -83,7 +87,7 @@ const utils = {
 			}
 
 			this._timeouts.sb = setTimeout(() => {
-				this._sb.hide();
+				this.hideStatusMessage();
 				this._timeouts.sb = null;
 			}, (removeAfter * 1000));
 		}
@@ -96,7 +100,7 @@ const utils = {
 	 */
 	hideStatusMessage() {
 		if (this._sb) {
-			this._sb.hide();
+			this._sb.dispose();
 		}
 	},
 
@@ -117,14 +121,20 @@ const utils = {
 		}
 	},
 
-	showFileCollisionPicker(name, callback, queueLength = 0) {
+	showFileCollisionPicker(
+		name,
+		callback,
+		queueLength = 0,
+		placeHolder
+	) {
 		let options = [
 				utils.collisionOpts.skip,
 				utils.collisionOpts.rename,
 				utils.collisionOpts.stop,
 				utils.collisionOpts.overwrite,
-			],
-			placeHolder = i18n.t('filename_exists', name);
+			];
+
+		placeHolder = placeHolder || i18n.t('filename_exists', name);
 
 		if (queueLength > 1) {
 			// Add "all" options if there's more than one item in the current queue
@@ -285,6 +295,15 @@ const utils = {
 		}
 
 		return tmpobj.name;
+	},
+
+	trace(id) {
+		if (this._debug) {
+			console.log(
+				(new Date).toLocaleTimeString() +
+				`[${id}] - "${[...arguments].slice(1).join(', ')}"`
+			);
+		}
 	}
 };
 
@@ -317,7 +336,7 @@ utils.collisionOptsAll = {
 };
 
 utils.errors = {
-	stop: new Error(i18n.t('transfer_cancelled'))
+	stop: new PushError(i18n.t('transfer_cancelled'))
 };
 
 module.exports = utils;

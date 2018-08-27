@@ -20,9 +20,8 @@ module.exports = {
 
 		// Augment configuration with computed settings
 		if ((!item || item === 'ignoreGlobs') && Array.isArray(config.ignoreGlobs)) {
-			settingsGlob = `**/${config.settingsFilename}`;
+			settingsGlob = `**/${config.settingsFileGlob}`;
 			config.ignoreGlobs.push(settingsGlob);
-
 			// Ensure glob list only contains unique values
 			config.ignoreGlobs = tools.uniqArray(config.ignoreGlobs);
 		}

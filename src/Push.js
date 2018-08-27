@@ -1,6 +1,7 @@
 const vscode = require('vscode');
+const semver = require('semver');
 
-const ServiceSettings = require('./lib/ServiceSettings');
+const packageJson = require('../package.json');
 const Service = require('./lib/Service');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
@@ -12,15 +13,34 @@ const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
 const i18n = require('./lang/i18n');
+const {
+	STATUS_PRIORITIES,
+	QUEUE_LOG_TYPES,
+	ENV_DEFAULT_STATUS_COLOR
+} = require('./lib/constants');
 
+/**
+ * Provides the main controller for Push.
+ */
 class Push extends PushBase {
-	constructor() {
+	constructor(context) {
 		super();
+
+		this.context = context;
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
-		this.setEditorState = this.setEditorState.bind(this);
-		this.refreshExplorerWatchList = this.refreshExplorerWatchList.bind(this);
+		this.didChangeActiveTextEditor = this.didChangeActiveTextEditor.bind(this);
+		this.onWatchUpdate = this.onWatchUpdate.bind(this);
+		this.onWatchChange = this.onWatchChange.bind(this);
+
+		// Rate limit functions
+		this.setEnvStatus = this.rateLimit(
+			Push.globals.ENV_TIMER_ID,
+			500,
+			this.setEnvStatus,
+			this
+		);
 
 		this.initService();
 
@@ -28,34 +48,92 @@ class Push extends PushBase {
 		this.explorer = new Explorer(this.config);
 		this.scm = new SCM();
 
-		this.watch = new Watch();
-		this.watch.onWatchUpdate = this.refreshExplorerWatchList;
+		// Create watch class and set initial watchers
+		this.watch = new Watch(this.context.globalState);
+		this.watch.onWatchUpdate = this.onWatchUpdate;
+		this.watch.onChange = this.onWatchChange;
+		this.watch.recallByWorkspaceFolders(vscode.workspace.workspaceFolders);
 
 		this.queues = {};
 
 		// Set initial contexts
 		this.setContexts(true);
-		this.setEditorState(vscode.window.activeTextEditor);
+
+		this.event('onDidChangeActiveTextEditor', vscode.window.activeTextEditor);
 
 		// Create event handlers
-		vscode.workspace.onDidSaveTextDocument(this.didSaveTextDocument);
-		vscode.workspace.onDidChangeConfiguration(this.setContexts);
-		vscode.window.onDidChangeActiveTextEditor(this.setEditorState);
+		vscode.workspace.onDidSaveTextDocument((textDocument) => {
+			this.event('onDidSaveTextDocument', textDocument);
+		});
+
+		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
+			this.event('onDidChangeActiveTextEditor', textEditor);
+		});
+
+		// Once initialised, do the new version check
+		this.checkNewVersion();
 	}
 
 	/**
-	 * Localised setConfig, also sets context and explorer config
+	 * @description
+	 * Checks for a major/minor version, and if found, loads the changelog,
+	 * based on the users preferences.
 	 */
-	setConfig() {
-		super.setConfig();
+	checkNewVersion() {
+		const currentVersion = this.context.globalState.get(
+			Push.globals.VERSION_STORE,
+			'0.0.0'
+		);
 
-		if (this.setContexts) {
-			this.setContexts();
+		if (
+			['major', 'minor'].indexOf(
+				semver.diff(currentVersion, packageJson.version)
+			) !== -1
+		) {
+			// Major or minor version mismatch
+			if (this.config.showChangelog) {
+				// Load the changelog
+				this.showChangelog();
+			}
+
+			// Display a small notice
+			vscode.window.showInformationMessage(
+				i18n.t('push_upgraded', packageJson.version),
+				(!this.config.showChangelog ? {
+					isCloseAffordance: true,
+					id: 'show_changelog',
+					title: i18n.t('show_changelog')
+				} : null)
+			).then((option) => {
+				if (option && option.id === 'show_changelog') {
+					this.showChangelog();
+				}
+			});
 		}
 
-		if (this.explorer) {
-			this.explorer.setConfig(this.config);
-			this.explorer.refresh();
+		// Retain next version
+		this.context.globalState.update(
+			Push.globals.VERSION_STORE,
+			packageJson.version
+		);
+	}
+
+	/**
+	 * Shows the Push changelog in a markdown preview.
+	 */
+	showChangelog() {
+		vscode.commands.executeCommand(
+			'markdown.showPreview',
+			vscode.Uri.file(this.context.extensionPath + '/CHANGELOG.md')
+		);
+	}
+
+	/**
+	 * Handle global/workspace configuration changes.
+	 */
+	onDidChangeConfiguration() {
+		if (this.setContexts) {
+			this.setContexts();
 		}
 	}
 
@@ -67,6 +145,7 @@ class Push extends PushBase {
 
 		if (initial === true) {
 			this.setContext(Push.contexts.initialised, true);
+			this.setContext(Push.contexts.hasServiceContext, false);
 		}
 	}
 
@@ -74,10 +153,12 @@ class Push extends PushBase {
 	 * Initialises the service class.
 	 */
 	initService() {
-		this.settings = new ServiceSettings();
 		this.service = new Service({
 			onDisconnect: (hadError) => {
 				this.stopCancellableQueues(!!hadError, !!hadError);
+			},
+			onServiceFileUpdate: (uri) => {
+				this.event('onServiceFileUpdate', uri);
 			}
 		});
 	}
@@ -107,31 +188,88 @@ class Push extends PushBase {
 	}
 
 	/**
+	 * Handle generic events (with a uri) and return settings.
+	 * @param {string} eventType - Type of event, mainly for logging.
+	 * @param {*} data
+	 * @returns {object} settings object, obtained from the uri.
+	 */
+	event(eventType, data) {
+		let uri, method, args, settings;
+
+		switch (eventType) {
+			case 'onDidSaveTextDocument':
+				uri = data && data.uri;
+				method = 'didSaveTextDocument';
+				args = [data];
+				break;
+
+			case 'onDidChangeActiveTextEditor':
+				if (!data) {
+					data = vscode.window.activeTextEditor;
+				}
+
+				uri = (data && data.document && data.document.uri);
+				method = 'didChangeActiveTextEditor'
+				args = [data];
+				break;
+
+			case 'onServiceFileUpdate':
+				uri = data;
+				break;
+
+			default:
+				throw new Error('Unrecognised event type');
+		}
+
+		utils.trace('Push#event', eventType);
+
+		if (!uri) {
+			// Bail if there's no uri
+			this.setEnvStatus(false);
+			return;
+		}
+
+		// Get current server settings for the editor
+		settings = this.service.settings.getServerJSON(
+			uri,
+			this.config.settingsFileGlob,
+			true,
+			true
+		);
+
+		if (this.config.useEnvLabel && settings && settings.data.env) {
+			// Check env state and add to status
+			this.setEnvStatus(settings.data.env);
+		} else {
+			this.setEnvStatus(false);
+		}
+
+		if (method) {
+			this[method].apply(this, args.concat([settings]));
+		}
+	}
+
+	/**
 	 * Handle text document save events
 	 * @param {textDocument} textDocument
 	 */
-	didSaveTextDocument(textDocument) {
-		let settings;
-
+	didSaveTextDocument(textDocument, settings) {
 		if (!textDocument.uri || !this.paths.isValidScheme(textDocument.uri)) {
 			// Empty or invalid URI
 			return false;
 		}
 
-		this.settings.clear();
-
-		settings = this.settings.getServerJSON(
-			textDocument.uri,
-			this.config.settingsFilename,
-			true
+		utils.trace(
+			'Push#didSaveTextDocument',
+			`Text document saved at ${textDocument.uri.fsPath}`
 		);
+
+		this.service.settings.clear();
 
 		if (this.config.uploadQueue && settings) {
 			// File being changed is within a service context - queue for uploading
 			this.queueForUpload(textDocument.uri)
 				.then(() => {
-					this.setEditorState();
-
 					if (this.config.autoUploadQueue) {
 						this.execUploadQueue();
 					}
@@ -139,18 +277,23 @@ class Push extends PushBase {
 		}
 	}
 
-	setEditorState(textEditor) {
+	didChangeActiveTextEditor(textEditor, settings) {
 		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
-
-		if (!textEditor) {
-			// Ensure textEditor defaults
-			textEditor = vscode.window.activeTextEditor;
-		}
 
 		if (!textEditor || !textEditor.document) {
 			// Bail if there's still no editor, or no document
 			return;
 		}
+
+		utils.trace(
+			'Push#didChangeActiveTextEditor',
+			`Editor switched to ${textEditor.document.uri.fsPath}`
+		);
+
+		this.setContext(
+			Push.contexts.hasServiceContext,
+			!!settings
+		);
 
 		if (
 			uploadQueue &&
@@ -170,9 +313,9 @@ class Push extends PushBase {
 	 * @param {uri} uriContext
 	 */
 	configWithServiceSettings(uriContext) {
-		const settings = this.settings.getServerJSON(
+		const settings = this.service.settings.getServerJSON(
 			uriContext,
-			this.config.settingsFilename
+			this.config.settingsFileGlob
 		);
 
 		// Make a duplicate to avoid changing the original config
@@ -180,26 +323,7 @@ class Push extends PushBase {
 
 		if (settings) {
 			// Settings retrieved from JSON file within context
-			if (!settings.data.service) {
-				// No service defined
-				channel.appendLocalisedError(
-					'service_not_defined',
-					this.config.settingsFilename
-				);
-
-				return false;
-			}
-
-			if (!settings.data[settings.data.service]) {
-				// Service defined but no config object found
-				channel.appendLocalisedError(
-					'service_defined_but_no_config_exists',
-					this.config.settingsFilename
-				);
-
-				return false;
-			}
-
+			newConfig.env = settings.data.env;
 			newConfig.serviceName = settings.data.service;
 			newConfig.serviceFilename = settings.file,
 				newConfig.service = settings.data[newConfig.serviceName];
@@ -212,8 +336,7 @@ class Push extends PushBase {
 
 			return newConfig;
 		} else {
-			// No settings for this context - show an error
-			channel.appendLocalisedError('no_service_file', this.config.settingsFilename);
+			// No settings for this context
 			return false;
 		}
 	}
@@ -244,8 +367,11 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
+		utils.trace('Push#queue', 'Adding {tasks.length} task(s)');
+
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
+			utils.trace('Push#queue', 'Adding initial queue task');
 			queue.addTask(new QueueTask(() => {
 				return this.service.activeService &&
 					this.service.activeService.init(queue.tasks.length);
@@ -278,6 +404,8 @@ class Push extends PushBase {
 									if (typeof task.onTaskComplete === 'function') {
 										task.onTaskComplete.call(this, result);
 									}
+
+									return result;
 								});
 						}
 					}),
@@ -316,7 +444,7 @@ class Push extends PushBase {
 		return Promise.all(uris.map(uri => {
 			let remotePath;
 
-			remotePath = this.service.exec(
+			remotePath = this.service.execSync(
 				'convertUriToRemote',
 				this.configWithServiceSettings(uri),
 				[uri]
@@ -328,20 +456,25 @@ class Push extends PushBase {
 						return;
 					}
 
-					this.queue([{
-						method: 'put',
-						actionTaken: 'uploaded',
-						uriContext: uri,
-						args: [uri, remotePath],
-						id: remotePath + this.paths.getNormalPath(uri)
-					}], false, Push.queueDefs.upload, {
+					this.queue(
+						[{
+							method: 'put',
+							actionTaken: 'uploaded',
+							uriContext: uri,
+							args: [uri, remotePath],
+							id: remotePath + this.paths.getNormalPath(uri)
+						}],
+						false,
+						Push.queueDefs.upload,
+						{
 							showStatus: true,
 							statusToolTip: (num) => {
 								return i18n.t('num_to_upload', num);
 							},
 							statusCommand: 'push.uploadQueuedItems',
 							emptyOnFail: false
-						});
+						}
+					);
 				});
 		}));
 	}
@@ -385,36 +518,39 @@ class Push extends PushBase {
 	 * @param {Uri} uri - Uri of the local file to compare.
 	 */
 	diffRemote(uri) {
-		let config, tmpFile, remotePath;
+		return new Promise((resolve, reject) => {
+			let config, tmpFile, remotePath;
 
-		tmpFile = utils.getTmpFile();
-		config = this.configWithServiceSettings(uri);
-		remotePath = this.service.exec(
-			'convertUriToRemote',
-			config,
-			[uri]
-		);
+			tmpFile = utils.getTmpFile();
+			config = this.configWithServiceSettings(uri);
 
-		// Use the queue to get a file then diff it
-		return this.queue([{
-			method: 'get',
-			actionTaken: 'downloaded',
-			uriContext: uri,
-			args: [
-				tmpFile,
-				remotePath,
-				'overwrite'
-			],
-			id: tmpFile + remotePath,
-			onTaskComplete: () => {
-				vscode.commands.executeCommand(
-					'vscode.diff',
+			remotePath = this.service.execSync(
+				'convertUriToRemote',
+				config,
+				[uri]
+			);
+
+			// Use the queue to get a file then diff it
+			this.queue([{
+				method: 'get',
+				actionTaken: 'downloaded',
+				uriContext: uri,
+				args: [
 					tmpFile,
-					uri,
-					'Diff: ' + this.paths.getBaseName(uri)
-				);
-			}
-		}], true, Push.queueDefs.diff);
+					remotePath,
+					'overwrite'
+				],
+				id: tmpFile + remotePath,
+				onTaskComplete: () => {
+					vscode.commands.executeCommand(
+						'vscode.diff',
+						tmpFile,
+						uri,
+						'Diff: ' + this.paths.getBaseName(uri)
+					);
+				}
+			}], true, Push.queueDefs.diff).then(resolve, reject);
+		})
 	}
 
 	/**
@@ -452,7 +588,9 @@ class Push extends PushBase {
 		const queue = this.getQueue(queueDef);
 
 		if (queue.running) {
-			return Promise.reject('Queue running.');
+			// Reject now - not necessarily a problem but remind functions not to
+			// start the queue while it's running
+			return Promise.reject(`The queue "${queue.id}" is already running.`);
 		}
 
 		// TODO: make channel clearing an option to turn on
@@ -461,8 +599,24 @@ class Push extends PushBase {
 		// Fetch and execute queue
 		return queue
 			.exec(this.service.getStateProgress)
-			.then(() => {
-				this.refreshExplorerQueues();
+			.then((result) => {
+				let log;
+
+				if (
+					result &&
+					(log = result[QUEUE_LOG_TYPES.success]) &&
+					(log.uploaded && log.uploaded.length)
+				) {
+					// Clear result items from "upload" queue
+					this.remoteQueuedItemsByTransfer(
+						Push.queueDefs.upload,
+						log.uploaded
+					);
+				} else {
+					this.refreshExplorerQueues();
+				}
+
+				return result;
 			})
 			.catch((error) => {
 				this.refreshExplorerQueues();
@@ -488,14 +642,29 @@ class Push extends PushBase {
 		} else {
 			channel.appendLocalisedInfo('no_current_upload_queue');
 		}
+
+	}
+
+	/**
+	 * Removes items from a queue matching the TransferResult paths.
+	 * @param {object} queueDef - One of the Push.queueDefs items.
+	 * @param {TransferResult[]} transferResults - Results to draw Uris from.
+	 */
+	remoteQueuedItemsByTransfer(queueDef, transferResults) {
+		let queue = this.getQueue(queueDef, false);
+
+		if (queue) {
+			transferResults.forEach(result => queue.removeTaskByUri(result.src));
+			this.refreshExplorerQueues();
+		}
 	}
 
 	/**
 	 * Removes a single item from a queue by its Uri.
 	 * @param {object} queueDef - One of the Push.queueDefs items.
-	 * @param {*} uri - Uri of the item to remove.
+	 * @param {uri} uri - Uri of the item to remove.
 	 */
-	removeQueuedItem(queueDef, uri) {
+	removeQueuedUri(queueDef, uri) {
 		let queue = this.getQueue(queueDef, false);
 
 		if (queue) {
@@ -527,10 +696,22 @@ class Push extends PushBase {
 	/**
 	 * Refresh the Push explorer watch list data.
 	 */
-	refreshExplorerWatchList(watchList) {
+	onWatchUpdate(watchList) {
 		this.explorer.refresh({
 			watchList: watchList
 		});
+	}
+
+	/**
+	 * Handles a general Watch change event
+	 * @param {Uri} uri - The Uri of the changed file.
+	 */
+	onWatchChange(uri) {
+		if (this.config.queueWatchedFiles) {
+			this.queueForUpload(uri);
+		} else {
+			this.upload(uri);
+		}
 	}
 
 	/**
@@ -539,8 +720,45 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
+		utils.trace('Push#setContext', context, value);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
+	}
+
+	/**
+	 * Set the environment status message in the status bar
+	 * @param {*} env
+	 */
+	setEnvStatus(env = '') {
+		utils.trace('Push#setEnvStatus', `Setting environment label to ${env}`);
+
+		this.clearTimedExecution(Push.globals.ENV_TIMER_ID);
+
+		if (env) {
+			if (!this.statusEnv) {
+				// Create status for active environment
+				this.statusEnv = vscode.window.createStatusBarItem(
+					vscode.StatusBarAlignment.Left,
+					STATUS_PRIORITIES.ENV
+				);
+			}
+
+			this.statusEnv.text = '$(versions) ' + env;
+			this.statusEnv.tooltip = i18n.t('env_tooltip', env);
+
+			if (this.config.envColours[env]) {
+				this.statusEnv.color = this.config.envColours[env];
+			} else {
+				this.statusEnv.color = ENV_DEFAULT_STATUS_COLOR;
+			}
+
+			this.statusEnv.show();
+		} else {
+			if (this.statusEnv) {
+				// Hide the env status label, if it's been created
+				this.statusEnv.hide();
+			}
+		}
 	}
 
 	/**
@@ -576,6 +794,8 @@ class Push extends PushBase {
 	 * stopping the queue.
 	 */
 	stopQueue(queueDef, force = false, silent = false) {
+		let queue = this.getQueue(queueDef);
+
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
 			title: 'Push'
@@ -585,10 +805,24 @@ class Push extends PushBase {
 					timer;
 
 				progress.report({ message: i18n.t('stopping') });
+				utils.trace('Push#stopQueue', 'Stopping queue');
 
 				if (force) {
 					// Give X seconds to stop or force by restarting the active service
+					utils.trace('Push#stopQueue', 'Starting queue force stop');
+
+					// Set up timer for force stopping the queue after x seconds
 					timer = setTimeout(() => {
+						// Force stop the queue
+						utils.trace(
+							'Push#stopQueue',
+							Push.globals.FORCE_STOP_TIMEOUT +
+								' second(s) elapsed. Force stopping queue'
+						);
+
+						// Silently force complete the queue
+						queue.stop(true, true, true);
+
 						// Force restart the active service
 						this.service.restartServiceInstance();
 
@@ -606,8 +840,10 @@ class Push extends PushBase {
 
 				// Stop the queue
 				tasks.push(
-					this.getQueue(queueDef).stop()
+					queue.stop()
 						.then((result) => {
+							utils.trace('Push#stopQueue', 'Queue stop resolve');
+
 							!silent && channel.appendLocalisedInfo(
 								'queue_cancelled',
 								queueDef.id
@@ -616,12 +852,14 @@ class Push extends PushBase {
 							return result;
 						})
 						.catch((error) => {
+							utils.trace('Push#stopQueue', 'Queue stop reject');
 							reject(error);
 						})
 				);
 
 				if (force) {
 					// Stop the service as well
+					utils.trace('Push#stopQueue', 'Adding force stop task');
 					tasks.push(
 						this.service.stop()
 					);
@@ -632,10 +870,12 @@ class Push extends PushBase {
 				// by the timeout (see above).
 				Promise.all(tasks)
 					.then((results) => {
+						utils.trace('Push#stopQueue', 'Queue stop tasks complete');
 						clearTimeout(timer);
 						resolve(results[0]);
 					})
 					.catch((error) => {
+						utils.trace('Push#stopQueue', 'Queue stop tasks failed');
 						clearTimeout(timer);
 						reject(error);
 					});
@@ -654,7 +894,7 @@ class Push extends PushBase {
 			tasks = [],
 			action, actionTaken;
 
-		this.settings.clear();
+		this.service.settings.clear();
 
 		if (typeof uris === 'undefined') {
 			throw new Error('No files defined.');
@@ -701,15 +941,18 @@ class Push extends PushBase {
 			}
 
 			// Filter and add to the queue
-			tasks.push(
-				this.paths.filterUriByGlobs(uri, ignoreGlobs)
+			tasks.push(((uri) => {
+				let config, remotePath;
+
+				if (!(config = this.configWithServiceSettings(uri))) {
+					return false;
+				}
+
+				return this.paths.filterUriByGlobs(uri, ignoreGlobs)
 					.then((filteredUri) => {
-						let config, remotePath;
-
 						if (filteredUri !== false) {
-							config = this.configWithServiceSettings(filteredUri);
-
-							remotePath = this.service.exec(
+							// Uri is not being ignored. Continue...
+							remotePath = this.service.execSync(
 								'convertUriToRemote',
 								config,
 								[filteredUri]
@@ -736,8 +979,8 @@ class Push extends PushBase {
 								this.paths.getBaseName(uri)
 							);
 						}
-					})
-			);
+					});
+			})(uri));
 		});
 
 		if (tasks.length) {
@@ -780,11 +1023,13 @@ class Push extends PushBase {
 		ignoreGlobs = this.config.ignoreGlobs;
 		config = this.configWithServiceSettings(uri);
 
-		remoteUri = this.service.exec(
+		remoteUri = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
 		);
+
+		utils.trace('Push#transferDirectory', `Transfering ${uri.fsPath} (${method})`);
 
 		if (method === 'put') {
 			// Recursively list local files and transfer each one
@@ -794,12 +1039,17 @@ class Push extends PushBase {
 				config.service.followSymlinks
 			)
 				.then((files) => {
+					utils.trace(
+						'Push#transferDirectory',
+						`Found ${files.length} file(s) on local`
+					);
+
 					let tasks = files.map((uri) => {
 						let remotePath;
 
 						uri = vscode.Uri.file(uri);
 
-						remotePath = this.service.exec(
+						remotePath = this.service.execSync(
 							'convertUriToRemote',
 							config,
 							[uri]
@@ -824,11 +1074,16 @@ class Push extends PushBase {
 			// Recursively list remote files and transfer each one
 			return this.service.exec('listRecursiveFiles', config, [remoteUri, ignoreGlobs])
 				.then((files) => {
+					utils.trace(
+						'Push#transferDirectory',
+						'Found ${files.length} file(s) on remote'
+					);
+
 					let tasks = files.map((file) => {
 						let uri;
 
 						file = file.pathName || file;
-						uri = this.service.exec(
+						uri = this.service.execSync(
 							'convertRemoteToUri',
 							config,
 							[file]
@@ -858,7 +1113,7 @@ class Push extends PushBase {
 	ensureSingleService(uri) {
 		return new Promise((resolve, reject) => {
 			this.paths.getDirectoryContentsAsFiles(
-				`${this.paths.getNormalPath(uri)}/**/${this.config.settingsFilename}`
+				`${this.paths.getNormalPath(uri)}/**/${this.config.settingsFileGlob}`
 			)
 				.then((files) => {
 					if (files.length > 1) {
@@ -914,13 +1169,16 @@ Push.queueDefs = {
 };
 
 Push.globals = {
-	FORCE_STOP_TIMEOUT: 5 // In seconds
+	FORCE_STOP_TIMEOUT: 5, // In seconds
+	ENV_TIMER_ID: 'env-switch',
+	VERSION_STORE: 'Push:version'
 };
 
 Push.contexts = {
 	hasUploadQueue: 'hasUploadQueue',
 	initialised: 'initialised',
-	activeEditorInUploadQueue: 'activeEditorInUploadQueue'
+	activeEditorInUploadQueue: 'activeEditorInUploadQueue',
+	hasServiceContext: 'hasServiceContext'
 };
 
 module.exports = Push;

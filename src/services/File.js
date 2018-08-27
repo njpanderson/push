@@ -3,36 +3,54 @@ const fs = require('fs');
 const path = require('path');
 
 const ServiceBase = require('./Base');
+const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
 const PathCache = require('../lib/PathCache');
+const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
+const { TRANSFER_TYPES } = require('../lib/constants');
 
 const SRC_REMOTE = PathCache.sources.REMOTE;
 const SRC_LOCAL = PathCache.sources.LOCAL;
 
+/**
+ * Filesystem based uploading.
+ */
 class File extends ServiceBase {
-	constructor(options, defaults) {
-		super(options, defaults);
+	constructor(options, defaults, required) {
+		super(options, defaults, required);
 
 		this.mkDir = this.mkDir.bind(this);
+		this.checkServiceRoot = this.checkServiceRoot.bind(this);
 
 		this.type = 'File';
 		this.pathCache = new PathCache();
 		this.writeStream = null;
 		this.readStream = null;
-
-		// Define File validation rules
-		this.serviceValidation = {
-			root: true
-		};
 	}
 
 	init(queueLength) {
 		return super.init(queueLength)
+			.then(this.checkServiceRoot)
 			.then(() => {
 				return this.pathCache.clear();
 			});
+	}
+
+	/**
+	 * Attempt to list the root path to ensure it exists
+	 * @param {SFTP} client - SFTP client object.
+	 * @param {function} resolve - Promise resolver function.
+	 */
+	checkServiceRoot() {
+		if (fs.existsSync(this.config.service.root)) {
+			return true;
+		}
+
+		throw new PushError(
+			i18n.t('service_missing_root', this.config.settingsFilename)
+		);
 	}
 
 	/**
@@ -41,9 +59,18 @@ class File extends ServiceBase {
 	 * @param {uri} remote - Remote Uri.
 	 */
 	put(local, remote) {
+		if (!this.paths.fileExists(local)) {
+			// Local file doesn't exist. Immediately resolve with failing TransferResult
+			return Promise.resolve(new TransferResult(
+				local,
+				new PushError(i18n.t('file_not_found', this.paths.getBaseName(local))),
+				TRANSFER_TYPES.PUT
+			));
+		}
+
 		// Perform transfer from local to remote, setting root as defined by service
 		return this.transfer(
-			File.transferTypes.PUT,
+			TRANSFER_TYPES.PUT,
 			local,
 			vscode.Uri.file(remote),
 			vscode.Uri.file(this.config.service.root),
@@ -62,9 +89,18 @@ class File extends ServiceBase {
 		collisionAction = collisionAction ||
 			this.config.service.collisionDownloadAction;
 
+		if (!this.paths.fileExists(remote)) {
+			// Remote file doesn't exist. Immediately resolve with failing TransferResult
+			return Promise.resolve(new TransferResult(
+				remote,
+				new PushError(i18n.t('file_not_found', this.paths.getBaseName(remote))),
+				TRANSFER_TYPES.PUT
+			));
+		}
+
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
-			File.transferTypes.GET,
+			TRANSFER_TYPES.GET,
 			vscode.Uri.file(remote),
 			local,
 			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
@@ -74,7 +110,7 @@ class File extends ServiceBase {
 
 	/**
 	 * Transfers a single file from location to another.
-	 * @param {number} transferType - One of the {@link File.transferTypes} types.
+	 * @param {number} transferType - One of the {@link TRANSFER_TYPES} types.
 	 * @param {Uri} src - Source Uri.
 	 * @param {Uri} dest - Destination Uri.
 	 * @param {Uri} root - Root directory. Used for validation.
@@ -84,40 +120,41 @@ class File extends ServiceBase {
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
 			rootDir = this.paths.getNormalPath(root),
-			logPrefix = (transferType === File.transferTypes.PUT ? '>> ' : '<< '),
-			srcType = (transferType === File.transferTypes.PUT ? SRC_REMOTE : SRC_LOCAL);
+			srcType = (transferType === TRANSFER_TYPES.PUT ? SRC_REMOTE : SRC_LOCAL);
 
 		this.setProgress(`${destFilename}...`);
 
 		return this.mkDirRecursive(destDir, rootDir, this.mkDir, ServiceBase.pathSep)
 			.then(() => this.getFileStats(
-				(transferType === File.transferTypes.PUT) ? src : dest,
-				(transferType === File.transferTypes.PUT) ? dest : src,
+				(transferType === TRANSFER_TYPES.PUT ? src : dest),
+				(transferType === TRANSFER_TYPES.PUT ? dest : src)
 			))
-			.then((stats) => super.checkCollision(
-				(transferType === File.transferTypes.PUT) ? stats.local : stats.remote,
-				(transferType === File.transferTypes.PUT) ? stats.remote : stats.local,
-				collisionAction
-			))
-			.then((result) => {
+			.then((stats) => {
+				return super.checkCollision(
+					(transferType === TRANSFER_TYPES.PUT) ? stats.local : stats.remote,
+					(transferType === TRANSFER_TYPES.PUT) ? stats.remote : stats.local,
+					collisionAction
+				);
+			})
+			.then((collision) => {
 				// Figure out what to do based on the collision (if any)
-				if (result === false) {
+				if (collision === false) {
 					// No collision, just keep going
-					this.channel.appendLine(`${logPrefix}${destPath}`);
-					return this.copy(src, destPath);
+					return this.copy(src, destPath, transferType);
 				} else {
-					this.setCollisionOption(result);
+					this.setCollisionOption(collision);
 
-					switch (result.option) {
+					switch (collision.option) {
 						case utils.collisionOpts.stop:
 							throw utils.errors.stop;
 
 						case utils.collisionOpts.skip:
-							return false;
+							return new TransferResult(src, false, transferType, {
+								srcLabel: destPath
+							});
 
 						case utils.collisionOpts.overwrite:
-							this.channel.appendLine(`${logPrefix}${destPath}`);
-							return this.copy(src, destPath);
+							return this.copy(src, destPath, transferType);
 
 						case utils.collisionOpts.rename:
 							return this.list(destDir, srcType)
@@ -129,10 +166,10 @@ class File extends ServiceBase {
 									);
 
 									return this.transfer(
+										transferType,
 										src,
 										destPath,
-										rootDir,
-										logPrefix
+										rootDir
 									);
 								});
 					}
@@ -199,7 +236,7 @@ class File extends ServiceBase {
 						});
 					});
 				} else if (existing.type === 'f') {
-					return Promise.reject(new Error(
+					return Promise.reject(new PushError(
 						i18n.t('directory_not_created_remote_mismatch', dir)
 					));
 				}
@@ -209,10 +246,10 @@ class File extends ServiceBase {
 	/**
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
-	 * @param {string} srcType - One of the {@link PathCache.sources} types.
+	 * @param {string} loc - One of the {@link PathCache.sources} types.
 	 */
-	list(dir, srcType = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, srcType, this.pathCache);
+	list(dir, loc = SRC_REMOTE) {
+		return this.paths.listDirectory(dir, loc, this.pathCache);
 	}
 
 	/**
@@ -260,8 +297,9 @@ class File extends ServiceBase {
 	 * Copies a file or stream from one location to another.
 	 * @param {*} src - Either a source Uri or a readable stream.
 	 * @param {string} dest - Destination filename.
+	 * @param {number} transferType - One of the TRANSFER_TYPES types.
 	 */
-	copy(src, dest) {
+	copy(src, dest, transferType) {
 		return new Promise((resolve, reject) => {
 			function fnError(error) {
 				this.stop(() => reject(error));
@@ -269,8 +307,18 @@ class File extends ServiceBase {
 
 			// Create write stream & attach events
 			this.writeStream = fs.createWriteStream(dest);
+
 			this.writeStream.on('error', fnError.bind(this));
-			this.writeStream.on('finish', resolve);
+
+			this.writeStream.on('finish', () => {
+				resolve(new TransferResult(
+					src,
+					true,
+					transferType, {
+						srcLabel: dest
+					}
+				));
+			});
 
 			if (src instanceof vscode.Uri || typeof src === 'string') {
 				// Source is a VSCode Uri - create a read stream
@@ -297,9 +345,8 @@ File.defaults = {
 	root: '/'
 };
 
-File.transferTypes = {
-	PUT: 0,
-	GET: 1
+File.required = {
+	root: true
 };
 
 module.exports = File;

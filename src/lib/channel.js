@@ -1,12 +1,15 @@
 const vscode = require('vscode');
 
-const utils = require('./utils');
 const configService = require('./config');
 const i18n = require('../lang/i18n');
+const { TRANSFER_TYPES } = require('./constants');
+const Paths = require('./Paths');
+const PushError = require('./PushError');
 
 class Channel {
 	constructor(name) {
 		this.channel = vscode.window.createOutputChannel(name);
+		this.paths = new Paths();
 	}
 
 	/**
@@ -18,19 +21,56 @@ class Channel {
 	}
 
 	/**
+	 * @param {TransferResult} result - TransferResult instance.
+	 * @description
+	 * Produces a channel line to update users on the status of a single file.
+	 * used throughout processes like uploading/downloading, etc.
+	 */
+	appendTransferResult(result) {
+		let icon = this.getTransferIcon(result.type),
+			srcLabel;
+
+		if (result.options.srcLabel) {
+			srcLabel = result.options.srcLabel;
+		} else {
+			srcLabel = this.paths.getNormalPath(result.src);
+		}
+
+		if (result.error) {
+			return this.appendError(
+				// "!" is for errors
+				`${icon}! ${srcLabel} ` +
+				`(${result.error.message})`
+			);
+		}
+
+		if (result.status === true || result.status === false) {
+			return this.appendLine(
+				// The "icon" repeated is for confirmed, '~' is for skipped
+				`${(result.status ? icon + icon : '~~')} ` +
+				srcLabel
+			);
+		}
+	}
+
+	/**
+	 * Returns an "icon" given one of the TRANSFER_TYPES types.
+	 * @param {number} type - One of the {@link TRANSFER_TYPES} types.
+	 */
+	getTransferIcon(type) {
+		return Channel.transferTypesMap[type] || '';
+	}
+
+	/**
 	 * Produces a line formatted as an error (and also shows the output window).
-	 * @param {string} error - Error or string to show.
+	 * @param {string|PushError} error - PushError or string to show.
 	 */
 	appendError(error) {
 		let message, config;
 
-		if (error instanceof Error) {
+		if (error instanceof PushError) {
 			config = configService.get();
 			message = error.message;
-
-			if (config.debugMode && error.fileName && error.lineNumber) {
-				message += ` (${error.fileName}:${error.lineNumber})`;
-			}
 		} else {
 			message = error;
 		}
@@ -44,20 +84,16 @@ class Channel {
 	 * @description
 	 * Produces a line formatted as an error (and also shows the output window).
 	 * Uses localisation.
-	 * @param {string} error - Localised string key to show.
+	 * @param {string|PushError} error - Localised string or PushError key to show.
 	 * @param {...mixed} $2 - Replacement arguments as needed.
 	 */
 	appendLocalisedError(error) {
 		let message, config,
 			placeHolders = [...arguments].slice(1);
 
-		if (error instanceof Error) {
+		if (error instanceof PushError) {
 			config = config.get();
 			message = i18n.t.apply(i18n, [error.message].concat(placeHolders));
-
-			if (config.debugMode && error.fileName && error.lineNumber) {
-				message += ` (${error.fileName}:${error.lineNumber})`;
-			}
 		} else {
 			message = i18n.t.apply(i18n, [error].concat(placeHolders));
 		}
@@ -98,5 +134,10 @@ class Channel {
 		return this.channel.clear.apply(this.channel, arguments);
 	}
 }
+
+Channel.transferTypesMap = {
+	[TRANSFER_TYPES.PUT]: '>',
+	[TRANSFER_TYPES.GET]: '<'
+};
 
 module.exports = new Channel('Push');

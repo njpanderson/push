@@ -6,10 +6,11 @@ const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
+const PushError = require('../lib/PushError');
 
 class Paths {
 	fileExists(file) {
-		file = this.getNormalPath(file);
+		file = this.getNormalPath(file, 'file');
 		return fs.existsSync(file);
 	}
 
@@ -19,6 +20,19 @@ class Paths {
 		}
 
 		return this.pathCache;
+	}
+
+	/**
+	 * Tests whether the first Uri or path is within the second.
+	 * @param {Uri|string} path - Uri/Path to find.
+	 * @param {Uri|string} rootUri - Uri/Path to find within.
+	 */
+	pathInUri(path, rootUri) {
+		if (!path || !rootUri) {
+			return false;
+		}
+
+		return this.getNormalPath(path).startsWith(this.getNormalPath(rootUri));
 	}
 
 	/**
@@ -137,12 +151,27 @@ class Paths {
 		}, extend);
 	}
 
-	listDirectory(dir, src = PathCache.sources.LOCAL, cache) {
+	/**
+	 * @description
+	 * List the contents of a single filesystem-accessible directory.
+	 *
+	 * `loc` provides a mechanism for distinguishing between multiple "sets" of
+	 * caches. The distinction is arbitrary but generally recommended to use one
+	 * of the `PathCache.sources` options for consistent recall.
+	 *
+	 * An existing `cache` instance (of PathCache) may be supplied. Otherwise,
+	 * an instance specific to the Paths class is created.
+	 * @param {string} dir - Directory to list
+	 * @param {number} [loc=PathCache.sources.LOCAL] - `PathCache.sources` locations.
+	 * @param {class} [cache] - Cache class instance
+	 */
+	listDirectory(dir, loc = PathCache.sources.LOCAL, cache) {
 		// Use supplied cache or fall back to class instance
+		dir = this.stripTrailingSlash(dir);
 		cache = cache || this.getPathCache();
 
-		if (cache.dirIsCached(src, dir)) {
-			return Promise.resolve(cache.getDir(src, dir));
+		if (cache.dirIsCached(loc, dir)) {
+			return Promise.resolve(cache.getDir(loc, dir));
 		} else {
 			return new Promise((resolve, reject) => {
 				fs.readdir(dir, (error, list) => {
@@ -155,14 +184,14 @@ class Paths {
 							stats = fs.statSync(pathname);
 
 						cache.addCachedFile(
-							src,
+							loc,
 							pathname,
 							(stats.mtime.getTime() / 1000),
 							(stats.isDirectory() ? 'd' : 'f')
 						);
 					});
 
-					resolve(cache.getDir(src, dir));
+					resolve(cache.getDir(loc, dir));
 				});
 			});
 		}
@@ -258,24 +287,34 @@ class Paths {
 	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
 	 * the root of the active workspace is reached.
-	 * @param {string} file - The filename to look for.
+	 * @param {string} file - The filename to look for. Supports globs.
 	 * @param {string} startDir - The directory to start looking in.
+	 * @returns {string|null} - Either the matched filename, or `null`.
 	 */
 	findFileInAncestors(file, startDir) {
-		let loop = 0,
-			rootPaths = this.getWorkspaceRootPaths();
+		let matches,
+			loop = 0,
+			rootPaths = this.getWorkspaceRootPaths(),
+			globOptions = {
+				matchBase: true,
+				follow: false,
+				nosort: true
+			};
 
-		while (!fs.existsSync(startDir + path.sep + file)) {
+		// while (!fs.existsSync(startDir + path.sep + file)) {
+		while (!(matches = (glob.sync(startDir + path.sep + file, globOptions))).length) {
+			// console.log(glob.sync(startDir + path.sep + file));
 			if (rootPaths.indexOf(startDir) !== -1 || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
+			// Strip off directory basename
 			startDir = startDir.substring(0, startDir.lastIndexOf(path.sep));
 			loop += 1;
 		}
 
-		return path.join(startDir + path.sep + file);
+		return matches[0];
 	}
 
 	/**

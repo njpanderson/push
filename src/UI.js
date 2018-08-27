@@ -29,7 +29,7 @@ class UI extends Push {
 			uri = this.paths.getFileSrc(context);
 		}
 
-		super.removeQueuedItem(Push.queueDefs.upload, uri);
+		super.removeQueuedUri(Push.queueDefs.upload, uri);
 	}
 
 	queueGitChangedFiles() {
@@ -60,11 +60,11 @@ class UI extends Push {
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => {
-					return this.transferDirectory(uri, 'put');
+					return this.transferDirectory(uri, 'put').catch(this.catchError);
 				});
 		}
 
-		return this.transfer(uri, 'put');
+		return this.transfer(uri, 'put').catch(this.catchError);
 	}
 
 	/**
@@ -79,11 +79,11 @@ class UI extends Push {
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => {
-					return this.transferDirectory(uri, 'get');
+					return this.transferDirectory(uri, 'get').catch(this.catchError);
 				});
 		}
 
-		return this.transfer(uri, 'get');
+		return this.transfer(uri, 'get').catch(this.catchError);
 	}
 
 	/**
@@ -94,7 +94,7 @@ class UI extends Push {
 	 */
 	diff(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			this.diffRemote(uri);
+			return this.diffRemote(uri).catch(this.catchError);
 		}
 	}
 
@@ -109,13 +109,7 @@ class UI extends Push {
 			return false;
 		}
 
-		this.watch.add(uri, (uri) => {
-			if (this.config.queueWatchedFiles) {
-				this.queueForUpload(uri);
-			} else {
-				this.upload(uri);
-			}
-		});
+		this.watch.add(uri);
 	}
 
 	/**
@@ -162,6 +156,13 @@ class UI extends Push {
 		this.watch.clear();
 	}
 
+	/**
+	 * Purges all stored watchers within the contextual storage
+	 */
+	purgeStoredWatchers() {
+		this.watch.purge();
+	}
+
 	cancelQueues() {
 		this.stopCancellableQueues();
 	}
@@ -171,11 +172,30 @@ class UI extends Push {
 	}
 
 	/**
+	 * @see Service#createServiceConfig
+	 */
+	createServiceConfig(uri) {
+		if ((uri = this.getValidUri(uri))) {
+			this.service.editServiceConfig(uri, true);
+		} else {
+			utils.showLocalisedWarning('no_servicefile_context');
+		}
+	}
+
+	/**
 	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			this.service.editServiceConfig(uri);
+			return this.service.editServiceConfig(uri);
+		} else {
+			utils.showLocalisedWarning('no_servicefile_context');
+		}
+	}
+
+	setServiceEnv(uri) {
+		if ((uri = this.getValidUri(uri))) {
+			return this.service.setConfigEnv(uri).catch(this.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}

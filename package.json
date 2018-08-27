@@ -2,13 +2,12 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.4.61",
-  "preview": true,
+  "version": "0.5.0",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.22.0"
   },
-  "license": "SEE LICENSE IN <LICENSE>",
+  "license": "SEE LICENSE IN LICENSE",
   "icon": "img/icon.png",
   "keywords": [
     "sftp",
@@ -24,6 +23,10 @@
   "categories": [
     "Other"
   ],
+  "galleryBanner": {
+    "color": "#305875",
+    "theme": "dark"
+  },
   "activationEvents": [
     "*"
   ],
@@ -44,17 +47,17 @@
         "njpPush.locale": {
           "type": "string",
           "default": "en_gb",
-          "description": "Locale to use (Only en_gb supported at the moment.)"
+          "description": "Locale to use (See supported locales in the README)."
         },
         "njpPush.settingsFilename": {
           "type": "string",
-          "default": ".push.settings.json",
+          "default": ".push.settings.jsonc",
           "description": "Defines the push settings JSON filename."
         },
-        "njpPush.debugMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enables debug mode, with more reporting."
+        "njpPush.settingsFileGlob": {
+          "type": "string",
+          "default": ".push.settings.json*",
+          "description": "Defines the glob used to find push settings JSON files."
         },
         "njpPush.privateSSHKey": {
           "type": "string",
@@ -89,7 +92,7 @@
         },
         "njpPush.statusMessageColor": {
           "type": "string",
-          "default": "notification.infoBackground",
+          "default": "statusBar.foreground",
           "description": "Set the colour of a status message (except progress). See https://code.visualstudio.com/docs/getstarted/theme-color-reference"
         },
         "njpPush.queueWatchedFiles": {
@@ -97,22 +100,56 @@
           "default": false,
           "description": "Set true to queue watched files on change instead of uploading them."
         },
+        "njpPush.persistWatchers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set true to persist watchers across sessions of vscode."
+        },
         "njpPush.autoUploadQueue": {
           "type": "boolean",
           "default": false,
           "description": "Set true to automatically upload files that enter the queue. This allows for changes within VS Code to be upload on save, while not uploading changes from outside VS Code (like a watcher would)."
+        },
+        "njpPush.useEnvLabel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Set true to show the currently active environment for the opened editor in the status bar."
+        },
+        "njpPush.envColours": {
+          "type": "object",
+          "default": {
+            "dev": "#62defd",
+            "stage": "#ffd08a",
+            "prod": "#f7ed00"
+          },
+          "description": "Defines the colours for specific environment names within the service settings file. The colour names as well as their values can be customised, and matching names will be coloured accordingly."
+        },
+        "njpPush.showChangelog": {
+          "type": "boolean",
+          "default": true,
+          "description": "Shows a changelog if Push upgrades either its minor or major version."
         }
       }
     },
     "commands": [
       {
+        "command": "push.createServiceConfig",
+        "title": "Create Push service configuration",
+        "category": "Push"
+      },
+      {
         "command": "push.editServiceConfig",
-        "title": "Create/edit Push configuration",
+        "title": "Edit Push service configuration",
         "category": "Push"
       },
       {
         "command": "push.importConfig",
-        "title": "Import Push configuration",
+        "title": "Import Push service configuration",
+        "category": "Push"
+      },
+      {
+        "command": "push.setServiceEnv",
+        "title": "Set service environment for current file",
         "category": "Push"
       },
       {
@@ -230,6 +267,11 @@
         "command": "push.clearWatchers",
         "title": "Clear all Push watchers",
         "category": "Push"
+      },
+      {
+        "command": "push.purgeStoredWatchers",
+        "title": "Purge all stored watchers (and clear current list)",
+        "category": "Push"
       }
     ],
     "menus": {
@@ -346,6 +388,10 @@
       ],
       "commandPalette": [
         {
+          "command": "push.setServiceEnv",
+          "when": "editorIsOpen && push:hasServiceContext"
+        },
+        {
           "command": "push.uploadFolder",
           "when": "false"
         },
@@ -459,19 +505,24 @@
     "postinstall": "node ./node_modules/vscode/bin/install",
     "t": "mocha --reporter dot",
     "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
-    "test": "mocha"
+    "test": "mocha",
+    "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
+    "publish": "npm run t && vsce publish",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
     "@types/node": "^6.0.106",
+    "chai": "^4.1.2",
     "eslint": "^4.19.1",
     "glob": "^7.1.2",
     "istanbul": "^0.4.5",
-    "typescript": "^2.8.3",
-    "mocha": "^5.2.0"
+    "jsdoc": "^3.5.5",
+    "mocha": "^5.2.0",
+    "typescript": "^2.8.3"
   },
   "dependencies": {
-    "jsonc-parser": "^1.0.3",
+    "jsonc-parser": "^2.0.1",
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "mockery": "^2.1.0",
@@ -479,6 +530,7 @@
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",
     "url-parse": "^1.4.1",
+    "vsce": "^1.46.0",
     "vscode": "^1.1.18"
   }
 }

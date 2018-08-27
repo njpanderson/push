@@ -4,7 +4,14 @@ const Paths = require('./Paths');
 
 const paths = new Paths();
 
-const WatchListItem = function (uri, callback) {
+/**
+ * Creates a new WatchListItem item.
+ * @param {Uri} uri - Uri to watch. Can be either a file or directory.
+ * @param {function} callback - Callback function to run on file change.
+ * @param {boolean} enable - `true` to enable immediately, `false` otherwise.
+ * @constructor
+ */
+const WatchListItem = function (uri, callback, enable = true) {
 	this.uri = uri;
 	this.path = paths.getNormalPath(uri);
 	this.glob = this._createWatchGlob(uri);
@@ -13,9 +20,12 @@ const WatchListItem = function (uri, callback) {
 	};
 	this.callback = callback;
 
-	this.initWatcher();
+	enable && this.initWatcher();
 }
 
+/**
+ * Starts the internal watch process for this item.
+ */
 WatchListItem.prototype.initWatcher = function () {
 	this.watcher = vscode.workspace.createFileSystemWatcher(
 		this.glob,
@@ -37,6 +47,9 @@ WatchListItem.prototype._watcherChangeApplied = function (uri) {
 	this.callback(uri);
 }
 
+/**
+ * Removes the internal watch process
+ */
 WatchListItem.prototype.removeWatcher = function () {
 	if (this.watcher) {
 		this.watcher.dispose();
@@ -44,6 +57,10 @@ WatchListItem.prototype.removeWatcher = function () {
 	}
 }
 
+/**
+ * Creates a watch glob given the provided Uri.
+ * @param {Uri} uri - Uri to parse.
+ */
 WatchListItem.prototype._createWatchGlob = function (uri) {
 	if (paths.isDirectory(uri)) {
 		return paths.stripTrailingSlash(paths.getNormalPath(uri)) +

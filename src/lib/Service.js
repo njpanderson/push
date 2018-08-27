@@ -3,11 +3,15 @@ const vscode = require('vscode');
 const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
+const ServiceSettings = require('./ServiceSettings');
+const ServiceType = require('./ServiceType');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
+const PushError = require('./PushError');
 const config = require('./config');
 const channel = require('./channel');
 const constants = require('./constants');
+const utils = require('./utils');
 const i18n = require('../lang/i18n');
 
 class Service extends PushBase {
@@ -15,6 +19,11 @@ class Service extends PushBase {
 		super();
 
 		this.setOptions(options);
+
+		// Create ServiceSettings instance for managing the files
+		this.settings = new ServiceSettings({
+			onServiceFileUpdate: this.options.onServiceFileUpdate
+		});
 
 		this.getStateProgress = this.getStateProgress.bind(this);
 
@@ -29,18 +38,19 @@ class Service extends PushBase {
 
 	/**
 	 * Edits (or creates) a server configuration file
-	 * @param {Uri} uri - Uri to start looking for a configuration file
+	 * @param {Uri} uri - Uri to start looking for a configuration file.
+	 * @param {boolean} forceCreate - Force servicefile creation. Has no effect
+	 * if the service file is level with the contextual file.
 	 */
-	editServiceConfig(uri) {
-		let rootPaths, dirName, settingsFile,
-			settingsFilename = this.config.settingsFilename;
+	editServiceConfig(uri, forceCreate) {
+		let rootPaths, dirName, settingsFile;
 
 		uri = this.paths.getFileSrc(uri);
 		dirName = this.paths.getDirName(uri, true);
 
 		// Find the nearest settings file
 		settingsFile = this.paths.findFileInAncestors(
-			settingsFilename,
+			this.config.settingsFileGlob,
 			dirName
 		);
 
@@ -53,26 +63,45 @@ class Service extends PushBase {
 			rootPaths = this.paths.getWorkspaceRootPaths();
 		}
 
-		if (settingsFile) {
+		/**
+		 * If a settings file is found but forceCreate is true, then the file name
+		 * prompt path is chosen.
+		 *
+		 * In the case that a service file exists in the _same_ location as the
+		 * contextual file, it will still be edited (due to the logic within
+		 * getFileNamePromp() based on resolving immediately unless `forceDialog`
+		 * is true. This is intended behaviour as two service files should not
+		 * exist within the same folder.
+		 */
+		if (settingsFile && !forceCreate) {
 			// Edit the settings file found
-			this.openDoc(settingsFile);
+			return this.openDoc(settingsFile);
 		} else {
 			// Produce a prompt to create a new settings file
-			this.getFileNamePrompt(settingsFilename, rootPaths)
+			return this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
 				.then((file) => {
 					if (file.exists) {
-						this.openDoc(file.fileName);
+						return this.openDoc(file.fileName);
 					} else {
-						this.writeAndOpen(
-							(file.serviceType.label !== 'Empty' ?
-								file.serviceType.settingsPayload :
-								constants.DEFAULT_SERVICE_CONFIG
+						// Create the file
+						return this.writeAndOpen(
+							this.settings.createServerFileContents(
+								file.serviceType
 							),
 							file.fileName
 						);
 					}
 				});
 		}
+	}
+
+	/**
+	 * Sets the current server config environment.
+	 * @param {Uri} uri - Contextual Uri for the related file.
+	 * @see ServiceSettings#setConfigEnv
+	 */
+	setConfigEnv(uri) {
+		return this.settings.setConfigEnv(uri, this.config.settingsFilename);
 	}
 
 	/**
@@ -216,30 +245,35 @@ class Service extends PushBase {
 	 */
 	setOptions(options) {
 		this.options = Object.assign({}, {
-			onDisconnect: null
+			onDisconnect: null,
+			onServiceFileUpdate: null
 		}, options);
 	}
 
 	/**
-	 * Produce a list of the services available.
-	 * @return {array} List of the services.
+	 * Produce a list of the services available, for use within a QuickPick dialog.
+	 * @return {ServiceType[]} List of the services, including default settings payloads.
 	 */
 	getList() {
 		let options = [], service, settingsPayload;
 
 		for (service in this.services) {
 			settingsPayload = {
-				service
+				'env': 'default',
+				'default': {
+					service
+				}
 			};
 
-			settingsPayload[service] = this.getServiceDefaults(service);
+			settingsPayload.default.options = this.getServiceDefaults(service);
 
-			options.push({
-				label: service,
-				description: this.services[service].description,
-				detail: this.services[service].detail,
-				settingsPayload
-			});
+			options.push(new ServiceType(
+				service,
+				this.services[service].description,
+				this.services[service].detail,
+				settingsPayload,
+				this.services[service].required
+			));
 		}
 
 		return options;
@@ -260,6 +294,25 @@ class Service extends PushBase {
 			typeof configObject !== 'undefined' &&
 			configObject.serviceName !== this.config.serviceName
 		);
+
+		utils.trace(
+			'Service#setConfig',
+			`Service config setting${restart ? ' (restarting service)' : ''}`
+		);
+
+		/**
+		 * Check serviceName is correct.
+		 * Done here instead of within ServiceSettings as this class knows
+		 * more about the available services.
+		 */
+		if (configObject && !this.services[configObject.serviceName]) {
+			// Service doesn't exist - return null and produce error
+			throw new PushError(i18n.t(
+				'service_name_invalid',
+				configObject.serviceName,
+				configObject.serviceFilename
+			));
+		}
 
 		this.config = Object.assign({}, config.get(), configObject);
 
@@ -289,10 +342,35 @@ class Service extends PushBase {
 			this.activeService.setConfig(this.config);
 
 			// Run the service method with supplied arguments
-			return this.activeService[method].apply(
+			let result = this.activeService[method].apply(
 				this.activeService,
 				args
 			);
+
+			if (!(result instanceof Promise)) {
+				throw new Error(
+					`Method ${method} does not return a Promise. This method cannot ` +
+					`be used with exec(). Try execSync()?`
+				);
+			}
+
+			return result;
+		}
+	}
+
+	execSync(method, config, args = []) {
+		// Set the current service configuration
+		this.setConfig(config);
+
+		if (this.activeService) {
+			// Set the active service's config
+			this.activeService.setConfig(this.config);
+
+			// Run the service method with supplied arguments
+			return this.activeService[method].apply(
+				this.activeService,
+				args
+			)
 		}
 	}
 
@@ -327,17 +405,18 @@ class Service extends PushBase {
 
 	startServiceInstance() {
 		if (this.config.serviceName && this.config.service) {
-			console.log(`Instantiating service provider "${this.config.serviceName}"`);
+			utils.trace(
+				'Service#startServiceInstance',
+				`Instantiating service provider "${this.config.serviceName}"`
+			);
 
-			// Instantiate
-			this.activeService = new this.services[this.config.serviceName]({
-				onDisconnect: this.options.onDisconnect
-			}, this.getServiceDefaults(this.config.serviceName));
-
-			// Invoke settings validation
-			this.activeService.validateServiceSettings(
-				this.activeService.serviceValidation,
-				this.config.service
+			// Instantiate service
+			this.activeService = new this.services[this.config.serviceName](
+				{
+					onDisconnect: this.options.onDisconnect
+				},
+				this.getServiceDefaults(this.config.serviceName),
+				this.services[this.config.serviceName].required
 			);
 		}
 	}

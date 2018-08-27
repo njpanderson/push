@@ -12,6 +12,26 @@ Uri.file = (uri) => {
 	return new Uri('file', '', uri);
 }
 
+class ExtensionContext {
+	constructor() {
+		this.globalState = new StateMachine();
+	}
+}
+
+class StateMachine {
+	constructor() {
+		this.store = {};
+	}
+
+	get(key, defaultValue = undefined) {
+		return this.store[key] || defaultValue;
+	}
+
+	update(key, value) {
+		this.store[key] = value;
+	}
+}
+
 module.exports = {
 	commands: {
 		executeCommand: counter.attach('vscode.commands.executeCommand')
@@ -32,7 +52,10 @@ module.exports = {
 				});
 			},
 			this
-		)
+		),
+		showInformationMessage: () => {
+			return Promise.resolve('');
+		}
 	},
 
 	workspace: {
@@ -44,5 +67,6 @@ module.exports = {
 		window: 0
 	},
 
-	Uri
+	Uri,
+	ExtensionContext
 };

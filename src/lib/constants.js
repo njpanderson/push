@@ -7,17 +7,34 @@ module.exports = {
 
     DEFAULT_SERVICE_CONFIG: [
         '{',
-            '\t"service": "[ServiceName]",',
-            '\t"[ServiceName]": {',
-                '\t\t\/\/ ' + i18n.t('comm_add_service_config'),
+            '\t"env": "default",',
+            '\t"default": {',
+                '\t\t"service": "[ServiceName]",',
+                '\t\t"options": {',
+                    '\t\t\t\/\/ ' + i18n.t('comm_add_service_config'),
+                '\t\t}',
             '\t}',
         '}'
     ].join('\n'),
 
     STATUS_PRIORITIES: {
-        UPLOAD_QUEUE: 1,
-        WATCH: 2,
-        UPLOAD_STATUS: 3
+        ENV: 1,
+        UPLOAD_QUEUE: 2,
+        WATCH: 3,
+        UPLOAD_STATUS: 4
+    },
+
+    ENV_DEFAULT_STATUS_COLOR: 'statusBar.foreground',
+
+    TRANSFER_TYPES: {
+        PUT: 0,
+        GET: 1
+    },
+
+    QUEUE_LOG_TYPES: {
+        success: 0,
+        fail: 1,
+        skip: 2
     },
 
     TMP_FILE_PREFIX: 'vscode-push-tmp-'

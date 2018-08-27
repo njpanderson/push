@@ -21,7 +21,7 @@ let ui;
 exports.activate = (context) => {
 	let subscriptions, sub;
 
-	ui = new UI();
+	ui = new UI(context);
 
 	subscriptions = {
 		'push.upload': 'upload',
@@ -44,7 +44,10 @@ exports.activate = (context) => {
 		'push.startWatch': 'startWatch',
 		'push.stopWatch': 'stopWatch',
 		'push.clearWatchers': 'clearWatchers',
+		'push.purgeStoredWatchers': 'purgeStoredWatchers',
 		'push.editServiceConfig': 'editServiceConfig',
+		'push.createServiceConfig': 'createServiceConfig',
+		'push.setServiceEnv': 'setServiceEnv',
 		'push.importConfig': 'importConfig'
 	};
 

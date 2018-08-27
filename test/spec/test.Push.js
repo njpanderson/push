@@ -7,6 +7,7 @@
 
 // The module 'assert' provides assertion methods from node
 const assert = require('assert');
+const expect = require('chai').expect;
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
@@ -14,7 +15,9 @@ const useMockery = require('../helpers/mockery');
 const counter = require('../helpers/counter');
 const fixtures = require('../fixtures/general');
 
+// Mocks
 const Queue = require('../mocks/lib/Queue');
+const vscode = require('../mocks/node/vscode');
 
 // Defines a Mocha test suite to group tests of similar kind together
 describe('Push', function() {
@@ -23,8 +26,7 @@ describe('Push', function() {
 	useMockery(() => {
 		useMockery
 			.registerMultiple({
-				'vscode': require('../mocks/node/vscode'),
-				'./lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
+				'vscode': vscode,
 				'./lib/Service': require('../mocks/lib/Service'),
 				'./lib/explorer/Explorer': require('../mocks/lib/Explorer'),
 				// './lib/Paths': require('../mocks/lib/Paths'),
@@ -35,7 +37,8 @@ describe('Push', function() {
 				'./lib/channel': require('../mocks/lib/channel'),
 				'./lib/utils': require('../mocks/lib/utils'),
 				'./lib/PushBase': require('../mocks/lib/PushBase'),
-				'./lang/i18n': require('../mocks/lib/i18n')
+				'./lang/i18n': require('../mocks/lib/i18n'),
+				'../lang/i18n': require('../mocks/lib/i18n')
 			});
 	});
 
@@ -45,7 +48,7 @@ describe('Push', function() {
 	});
 
 	beforeEach(() => {
-		push = new Push();
+		push = new Push(new vscode.ExtensionContext);
 		counter.reset();
 	});
 
@@ -68,9 +71,12 @@ describe('Push', function() {
 				() => Promise.resolve()
 			);
 
-			push.didSaveTextDocument({
-				uri: fixtures.mockUriFile
-			});
+			push.event(
+				'onDidSaveTextDocument',
+				{
+					uri: fixtures.mockUriFile
+				}
+			);
 
 			assert(counter.getCount('Push#queueForUpload') === 1);
 		});
@@ -200,7 +206,7 @@ describe('Push', function() {
 
 			return push.execQueue(Push.queueDefs.default)
 				.catch((message) => {
-					assert(message === 'Queue running.');
+					assert(/already running/.test(message));
 				});
 		});
 	});
@@ -305,18 +311,18 @@ describe('Push', function() {
 						if (Array.isArray(test.files)) {
 							let args = counter.getArgs('Push#queue');
 
-							assert(counter.getCount('Push#queue') === test.files.length);
+							expect(counter.getCount('Push#queue')).to.equal(test.files.length);
 
 							test.files.forEach((file, index) => {
-								assert(args[index][0][0].method === test.method);
-								assert.deepEqual(args[index][0][0].uriContext, file);
+								expect(args[index][0][0].method).to.equal(test.method);
+								expect(args[index][0][0].uriContext).to.eql(file);
 							});
 						} else {
 							args = counter.getArgs('Push#queue', 1, 0);
 
-							assert(counter.getCount('Push#queue') === 1);
-							assert(args[0].method === test.method);
-							assert.deepEqual(args[0].uriContext, test.files);
+							expect(counter.getCount('Push#queue')).to.be.equal(1);
+							expect(args[0].method).to.equal(test.method);
+							expect(args[0].uriContext).to.eql(test.files);
 						}
 					});
 			});
@@ -408,6 +414,10 @@ describe('Push', function() {
 			) === false);
 		});
 
-		it('throws if the path is not a directory');
+		it('throws if the path is not a directory', () => {
+			assert.throws(() => push.transferDirectory(
+				fixtures.mockUriFile
+			), /Path is a single file/);
+		});
 	})
 });

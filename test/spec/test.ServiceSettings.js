@@ -18,24 +18,15 @@ const fixtures = require('../fixtures/general');
 describe('ServiceSettings', function() {
     let ServiceSettings;
 
-    // useMockery(() => {
-    //     useMockery
-    //         .registerMultiple({
-    //             'vscode': require('../mocks/node/vscode'),
-    //             './lib/ServiceSettings': require('../mocks/lib/ServiceSettings').sftp,
-    //             './lib/Service': require('../mocks/lib/Service'),
-    //             './lib/explorer/Explorer': require('../mocks/lib/Explorer'),
-    //             // './lib/Paths': require('../mocks/lib/Paths'),
-    //             './lib/queue/Queue': {},
-    //             './lib/queue/QueueTask': {},
-    //             './lib/Watch': require('../mocks/lib/Watch'),
-    //             './lib/SCM': require('../mocks/lib/SCM'),
-    //             './lib/channel': {},
-    //             './lib/utils': {},
-    //             './lib/PushBase': require('../mocks/lib/PushBase'),
-    //             './lang/i18n': require('../mocks/lib/i18n')
-    //         });
-    // });
+    useMockery(() => {
+        useMockery
+            .registerMultiple({
+                'vscode': require('../mocks/node/vscode'),
+                '../lib/channel': {},
+                '../lib/utils': {},
+                '../lang/i18n': require('../mocks/lib/i18n')
+            });
+    });
 
     before(() => {
         ServiceSettings = require('../../src/lib/ServiceSettings');
