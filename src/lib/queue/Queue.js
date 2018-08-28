@@ -436,10 +436,6 @@ class Queue {
 
 		for (log in QUEUE_LOG_TYPES) {
 			for (actionTaken in this.results[QUEUE_LOG_TYPES[log]]) {
-				if (this.results[QUEUE_LOG_TYPES[log]][actionTaken].length) {
-					channel.show(true);
-				}
-
 				extra.push(i18n.t(
 					'queue_items_' + log,
 					this.results[QUEUE_LOG_TYPES[log]][actionTaken].length,
@@ -448,9 +444,11 @@ class Queue {
 			}
 		}
 
+
 		if ((Object.keys(this.results[QUEUE_LOG_TYPES.fail])).length) {
 			// Show a warning in a message window
 			utils.showWarning(extra.join(' '));
+			channel.show(true);
 		} else {
 			if (config.get('queueCompleteMessageType') === 'status') {
 				// Show completion in the status bar
