@@ -6,7 +6,6 @@ const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
-const PushError = require('../lib/PushError');
 
 class Paths {
 	fileExists(file) {
@@ -204,8 +203,6 @@ class Paths {
 	 * @param {array} [ignoreGlobs] - List of globs to ignore.
 	 */
 	getDirectoryContentsAsFiles(include, ignoreGlobs = [], followSymlinks = false) {
-		let parsed;
-
 		if (include instanceof vscode.Uri) {
 			// Create path out of Uri
 			include = `${this.getNormalPath(include)}${path.sep}**`;
@@ -216,14 +213,9 @@ class Paths {
 			include = path.join.apply(path, include);
 		}
 
-		include = (include.split(path.sep)).join('/');
-		parsed = path.parse(include);
-
-		include = include.replace(parsed.root, '/');
-
 		return new Promise((resolve, reject) => {
 			new glob.Glob(
-				include,
+				this.ensureGlobPath(include),
 				this.getGlobOptions({
 					ignore: ignoreGlobs,
 					follow: followSymlinks
@@ -246,7 +238,7 @@ class Paths {
 			}
 
 			new glob.Glob(
-				`${this.getNormalPath(uri)}`,
+				`${this.ensureGlobPath(uri)}`,
 				this.getGlobOptions({
 					ignore: ignoreGlobs
 				}),
@@ -289,7 +281,7 @@ class Paths {
 	 * the root of the active workspace is reached.
 	 * @param {string} file - The filename to look for. Supports globs.
 	 * @param {string} startDir - The directory to start looking in.
-	 * @returns {string|null} - Either the matched filename, or `null`.
+	 * @returns {Uri|null} - Either the matched Uri, or `null`.
 	 */
 	findFileInAncestors(file, startDir) {
 		let matches,
@@ -302,19 +294,22 @@ class Paths {
 			};
 
 		// while (!fs.existsSync(startDir + path.sep + file)) {
-		while (!(matches = (glob.sync(startDir + path.sep + file, globOptions))).length) {
-			// console.log(glob.sync(startDir + path.sep + file));
+		while (!(matches = (glob.sync(
+				this.ensureGlobPath(startDir + path.sep + file),
+				globOptions
+			))).length) {
 			if (rootPaths.indexOf(startDir) !== -1 || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
 			// Strip off directory basename
-			startDir = startDir.substring(0, startDir.lastIndexOf(path.sep));
+			startDir = path.dirname(startDir);
+			// startDir = startDir.substring(0, startDir.lastIndexOf('/'));
 			loop += 1;
 		}
 
-		return matches[0];
+		return vscode.Uri.file(matches[0]);
 	}
 
 	/**
@@ -464,6 +459,16 @@ class Paths {
 				resolve(result);
 			});
 		});
+	}
+
+	/**
+	 * Ensures a path can be used with glob (even on windows)
+	 * @param {string} pathName - The path to make glob 'friendly'
+	 */
+	ensureGlobPath(pathName) {
+		pathName = this.getNormalPath(pathName);
+		pathName = pathName.replace(/\\/g, '/');
+		return pathName;
 	}
 }
 
