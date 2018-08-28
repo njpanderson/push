@@ -101,7 +101,7 @@ class Service extends PushBase {
 	 * @see ServiceSettings#setConfigEnv
 	 */
 	setConfigEnv(uri) {
-		return this.settings.setConfigEnv(uri, this.config.settingsFilename);
+		return this.settings.setConfigEnv(uri, this.config.settingsFileGlob);
 	}
 
 	/**

@@ -50,6 +50,19 @@ class Paths {
 	}
 
 	/**
+	 *
+	 * @param {*} dir
+	 * @param {*} workspaceFolders
+	 */
+	isWorkspaceFolderRoot(dir, workspaceFolders = []) {
+		dir = this.getNormalPath(dir);
+
+		return (workspaceFolders.findIndex((folder) => {
+			return folder.uri.fsPath === dir;
+		}) !== -1);
+	}
+
+	/**
 	 * Finds the current workspace path, based on the Uri of a passed item.
 	 * @param {Uri} uri - Uri of the contextual item
 	 * @param {*} normalise - `true` to normalise (i.e. stringify) the return Uri.
@@ -66,7 +79,9 @@ class Paths {
 	}
 
 	getNormalPath(uri, requiredScheme) {
-		if (typeof uri === 'string') {
+		if (typeof uri === 'string' ||
+			uri === null ||
+			uri === undefined) {
 			return uri;
 		}
 
@@ -286,6 +301,7 @@ class Paths {
 	findFileInAncestors(file, startDir) {
 		let matches,
 			loop = 0,
+			prevDir = '',
 			folders = this.getWorkspaceFolders(),
 			globOptions = {
 				matchBase: true,
@@ -298,13 +314,19 @@ class Paths {
 				this.ensureGlobPath(startDir + path.sep + file),
 				globOptions
 			))).length) {
-			if (rootPaths.indexOf(startDir) !== -1 || loop === 50) {
+			if (this.isWorkspaceFolderRoot(startDir, folders) || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
 			// Strip off directory basename
+			prevDir = startDir;
 			startDir = path.dirname(startDir);
+
+			if (startDir === prevDir) {
+				return null;
+			}
+
 			// startDir = startDir.substring(0, startDir.lastIndexOf('/'));
 			loop += 1;
 		}
