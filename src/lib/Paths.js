@@ -35,9 +35,9 @@ class Paths {
 	}
 
 	/**
-	 * Retrieves the current workspace root path from the active workspace.
+	 * Retrieves the active workspace folders.
 	 */
-	getWorkspaceRootPaths() {
+	getWorkspaceFolders() {
 		if (
 			vscode.workspace &&
 			vscode.workspace.workspaceFolders &&
@@ -286,7 +286,7 @@ class Paths {
 	findFileInAncestors(file, startDir) {
 		let matches,
 			loop = 0,
-			rootPaths = this.getWorkspaceRootPaths(),
+			folders = this.getWorkspaceFolders(),
 			globOptions = {
 				matchBase: true,
 				follow: false,
@@ -317,7 +317,7 @@ class Paths {
 	 * @param {object} [uri] - Source file Uri.
 	 */
 	getFileSrc(uri) {
-		let roots;
+		let folders;
 
 		if (uri && uri instanceof vscode.Uri) {
 			return uri;
@@ -327,8 +327,8 @@ class Paths {
 		if (vscode.window.activeTextEditor) {
 			return vscode.window.activeTextEditor &&
 				vscode.window.activeTextEditor.document.uri;
-		} else if ((roots = this.getWorkspaceRootPaths()).length) {
-			return roots[0].uri;
+		} else if ((folders = this.getWorkspaceFolders()).length) {
+			return folders[0].uri;
 		}
 
 		return '';

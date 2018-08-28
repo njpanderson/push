@@ -43,7 +43,7 @@ class Service extends PushBase {
 	 * if the service file is level with the contextual file.
 	 */
 	editServiceConfig(uri, forceCreate) {
-		let rootPaths, dirName, settingsFile;
+		let folders, dirName, settingsFile;
 
 		uri = this.paths.getFileSrc(uri);
 		dirName = this.paths.getDirName(uri, true);
@@ -55,12 +55,12 @@ class Service extends PushBase {
 		);
 
 		if (dirName !== ".") {
-			// If a directory is defined, use it as the root path
-			rootPaths = [{
+			// If a directory is defined, use it as the workspace folder
+			folders = [{
 				uri: vscode.Uri.file(dirName)
 			}]
 		} else {
-			rootPaths = this.paths.getWorkspaceRootPaths();
+			folders = this.paths.getWorkspaceFolders();
 		}
 
 		/**
@@ -78,7 +78,7 @@ class Service extends PushBase {
 			return this.openDoc(settingsFile);
 		} else {
 			// Produce a prompt to create a new settings file
-			return this.getFileNamePrompt(this.config.settingsFilename, rootPaths)
+			return this.getFileNamePrompt(this.config.settingsFilename, folders)
 				.then((file) => {
 					if (file.exists) {
 						return this.openDoc(file.fileName);
@@ -181,16 +181,17 @@ class Service extends PushBase {
 	/**
 	 * Produce a settings filename prompt.
 	 * @param {string} exampleFileName - Filename example to start with.
-	 * @param {vscode.WorkspaceFolder[]} rootPaths - A list of root paths to choose from.
+	 * @param {vscode.WorkspaceFolder[]} folders - A list of workspace folders to
+	 * choose from.
 	 * @param {boolean} forceDialog - Force a name prompt if the file exists already.
 	 * If `false`, will not display a dialog even if the file exists.
 	 * @param {boolean} fromTemplate - Produce a list of service templates with which
 	 * to fill the file.
 	 */
-	getFileNamePrompt(exampleFileName, rootPaths, forceDialog = false, fromTemplate = true) {
+	getFileNamePrompt(exampleFileName, folders, forceDialog = false, fromTemplate = true) {
 		return new Promise((resolve, reject) => {
 			// Produce a filename prompt
-			this.getRootPathPrompt(rootPaths)
+			this.getRootPathPrompt(folders)
 				.then((rootPath) => {
 					let fileName = rootPath + Paths.sep + exampleFileName;
 
