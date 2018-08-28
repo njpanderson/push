@@ -1,6 +1,12 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.5.2
+ - Fixed issue where the output panel would open regardless of whether there was an error during transfers.
+ - Fixed issue with messaging when selecting a service environment on files outside of a workspace root.
+ - Altered behaviour of CHANGELOG opening to not bother new users.
+ - A few other minor fixes.
+
 ## 0.5.1
  - Fixed path detection and handling for certain cases in Windows. Sorry, Windows users! (Thanks, Matt!)
 

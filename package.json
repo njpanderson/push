@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.22.0"
@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/njpanderson/push.git"
+    "url": "https://github.com/njpanderson/push.git"
   },
   "categories": [
     "Other"

@@ -76,27 +76,27 @@ class PushBase extends Configurable {
 
 	/**
 	 * Will either prompt the user to select a root path, or in the case that
-	 * only one `rootPaths` element exists, will resolve to that path.
-	 * @param {vscode.WorkspaceFolder[]} rootPaths
+	 * only one `folders` element exists, will resolve to its path Uri.
+	 * @param {vscode.WorkspaceFolder[]} folders
 	 * @returns {promise} A promise eventually resolving to a single Uri.
 	 */
-	getRootPathPrompt(rootPaths) {
+	getRootPathPrompt(folders) {
 		return new Promise((resolve) => {
-			if (typeof rootPaths === 'string') {
-				resolve(rootPaths);
+			if (typeof folders === 'string') {
+				resolve(folders);
 				return;
 			}
 
-			if (rootPaths.length > 1) {
+			if (folders.length > 1) {
 				// First, select a root path
 				vscode.window.showQuickPick(
-					rootPaths.map((item) => this.paths.getNormalPath(item.uri)),
+					folders.map((item) => this.paths.getNormalPath(item.uri)),
 					{
 						placeHolder: i18n.t('select_workspace_root')
 					}
 				).then(resolve);
 			} else {
-				resolve(this.paths.getNormalPath(rootPaths[0].uri));
+				resolve(this.paths.getNormalPath(folders[0].uri));
 			}
 		});
 	}

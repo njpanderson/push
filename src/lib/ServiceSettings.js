@@ -122,10 +122,10 @@ class ServiceSettings {
 		return content;
 	}
 
-	getServerFile(dir, settingsFilename) {
+	getServerFile(dir, settingsFileGlob) {
 		// Find the settings file
 		let file = this.paths.getNormalPath(this.paths.findFileInAncestors(
-			settingsFilename,
+			settingsFileGlob,
 			dir
 		));
 
@@ -208,7 +208,7 @@ class ServiceSettings {
 		return null;
 	}
 
-	setConfigEnv(uri, settingsFilename) {
+	setConfigEnv(uri, settingsFileGlob) {
 		return new Promise((resolve, reject) => {
 			let uriPath = this.paths.getNormalPath(uri),
 				environments, settings, jsonData;
@@ -219,85 +219,88 @@ class ServiceSettings {
 			}
 
 			// Find the nearest settings file
-			if (settings = this.getServerFile(uriPath, settingsFilename)) {
-				// Get JSON from file (as the actual JSON is required, not the computed settings)
-				jsonData = jsonc.parse(settings.contents);
+			if (!(settings = this.getServerFile(uriPath, settingsFileGlob))) {
+				channel.appendLocalisedError('no_service_file', settingsFileGlob);
+				return reject();
+			}
 
-				if (!jsonData.env) {
-					channel.appendLocalisedError('no_service_env', settings.file);
-					reject();
+			// Get JSON from file (as the actual JSON is required, not the computed settings)
+			jsonData = jsonc.parse(settings.contents);
+
+			if (!jsonData.env) {
+				channel.appendLocalisedError('no_service_env', settings.file);
+				return reject();
+			}
+
+			// Produce prompt for new env
+			environments = Object.keys(jsonData).filter(
+				(key) => (key !== 'env')
+			).map((key) => {
+				return {
+					label: key,
+					description: (key === jsonData.env ? '(selected)' : ''),
+					detail: this.getServerEnvDetail(jsonData, key)
+				};
+			});
+
+			if (!environments.length) {
+				channel.appendLocalisedError('no_service_env', settings.file);
+				return reject();
+			}
+
+			if (environments.length === 1) {
+				channel.appendLocalisedError(
+					'single_env',
+					settings.file,
+					environments[0]
+				);
+
+				return reject();
+			}
+
+			return vscode.window.showQuickPick(
+				environments,
+				{
+					placeHolder: i18n.t('select_env')
+				}
+			).then((env) => {
+				if (env === undefined || env.label === '') {
+					return;
 				}
 
-				// Produce prompt for new env
-				environments = Object.keys(jsonData).filter(
-					(key) => (key !== 'env')
-				).map((key) => {
-					return {
-						label: key,
-						description: (key === jsonData.env ? '(selected)' : ''),
-						detail: this.getServerEnvDetail(jsonData, key)
-					};
-				});
-
-				if (!environments.length) {
-					channel.appendLocalisedError('no_service_env', settings.file);
-					return reject();
-				}
-
-				if (environments.length === 1) {
-					channel.appendLocalisedError(
-						'single_env',
-						settings.file,
-						environments[0]
+				try {
+					// Modify JSON document & Write changes
+					settings.newContents = jsonc.applyEdits(
+						settings.contents,
+						jsonc.modify(
+							settings.contents,
+							['env'],
+							env.label,
+							{
+								formattingOptions: {
+									tabSize: 4
+								}
+							}
+						)
 					);
 
-					return reject();
+					// Write back to the file
+					fs.writeFileSync(
+						settings.file,
+						settings.newContents,
+						'UTF-8'
+					);
+
+					if (this.options.onServiceFileUpdate) {
+						this.options.onServiceFileUpdate(vscode.Uri.file(settings.file))
+					}
+				} catch(error) {
+					throw new PushError(i18n.t(
+						'error_writing_json',
+						(error && error.message) || i18n.t('no_error')
+					))
 				}
-
-				return vscode.window.showQuickPick(
-					environments,
-					{
-						placeHolder: i18n.t('select_env')
-					}
-				).then((env) => {
-					if (env === undefined || env.label === '') {
-						return;
-					}
-
-					try {
-						// Modify JSON document & Write changes
-						settings.newContents = jsonc.applyEdits(
-							settings.contents,
-							jsonc.modify(
-								settings.contents,
-								['env'],
-								env.label,
-								{
-									formattingOptions: {
-										tabSize: 4
-									}
-								}
-							)
-						);
-
-						// Write back to the file
-						fs.writeFileSync(
-							settings.file,
-							settings.newContents,
-							'UTF-8'
-						);
-
-						if (this.options.onServiceFileUpdate) {
-							this.options.onServiceFileUpdate(vscode.Uri.file(settings.file))
-						}
-					} catch(error) {
-						throw new PushError(i18n.t(
-							'error_writing_json',
-							(error && error.message) || i18n.t('no_error')
-						))
-					}
-				});
-			}
+			});
 		});
 	}
 
