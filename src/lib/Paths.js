@@ -231,6 +231,13 @@ class Paths {
 		});
 	}
 
+	/**
+	 * Filters a Uri by the array of ignoreGlobs globs.
+	 * @param {Uri} uri - The Uri to check.
+	 * @param {string[]} [ignoreGlobs] - An array of globs to match against.
+	 * @returns {Promise} - resolving to either the original Uri, or `false` in
+	 * the case that one of the ignoreGlobs globs matched.
+	 */
 	filterUriByGlobs(uri, ignoreGlobs = []) {
 		return new Promise((resolve, reject) => {
 			if (!Array.isArray(ignoreGlobs) || !ignoreGlobs.length) {
