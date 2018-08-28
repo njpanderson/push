@@ -35,9 +35,9 @@ class Paths {
 	}
 
 	/**
-	 * Retrieves the current workspace root path from the active workspace.
+	 * Retrieves the active workspace folders.
 	 */
-	getWorkspaceRootPaths() {
+	getWorkspaceFolders() {
 		if (
 			vscode.workspace &&
 			vscode.workspace.workspaceFolders &&
@@ -47,6 +47,19 @@ class Paths {
 		}
 
 		return [];
+	}
+
+	/**
+	 *
+	 * @param {*} dir
+	 * @param {*} workspaceFolders
+	 */
+	isWorkspaceFolderRoot(dir, workspaceFolders = []) {
+		dir = this.getNormalPath(dir);
+
+		return (workspaceFolders.findIndex((folder) => {
+			return folder.uri.fsPath === dir;
+		}) !== -1);
 	}
 
 	/**
@@ -66,7 +79,9 @@ class Paths {
 	}
 
 	getNormalPath(uri, requiredScheme) {
-		if (typeof uri === 'string') {
+		if (typeof uri === 'string' ||
+			uri === null ||
+			uri === undefined) {
 			return uri;
 		}
 
@@ -293,7 +308,8 @@ class Paths {
 	findFileInAncestors(file, startDir) {
 		let matches,
 			loop = 0,
-			rootPaths = this.getWorkspaceRootPaths(),
+			prevDir = '',
+			folders = this.getWorkspaceFolders(),
 			globOptions = {
 				matchBase: true,
 				follow: false,
@@ -305,13 +321,19 @@ class Paths {
 				this.ensureGlobPath(startDir + path.sep + file),
 				globOptions
 			))).length) {
-			if (rootPaths.indexOf(startDir) !== -1 || loop === 50) {
+			if (this.isWorkspaceFolderRoot(startDir, folders) || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
 			// Strip off directory basename
+			prevDir = startDir;
 			startDir = path.dirname(startDir);
+
+			if (startDir === prevDir) {
+				return null;
+			}
+
 			// startDir = startDir.substring(0, startDir.lastIndexOf('/'));
 			loop += 1;
 		}
@@ -324,7 +346,7 @@ class Paths {
 	 * @param {object} [uri] - Source file Uri.
 	 */
 	getFileSrc(uri) {
-		let roots;
+		let folders;
 
 		if (uri && uri instanceof vscode.Uri) {
 			return uri;
@@ -334,8 +356,8 @@ class Paths {
 		if (vscode.window.activeTextEditor) {
 			return vscode.window.activeTextEditor &&
 				vscode.window.activeTextEditor.document.uri;
-		} else if ((roots = this.getWorkspaceRootPaths()).length) {
-			return roots[0].uri;
+		} else if ((folders = this.getWorkspaceFolders()).length) {
+			return folders[0].uri;
 		}
 
 		return '';

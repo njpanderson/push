@@ -81,9 +81,13 @@ class Push extends PushBase {
 	 */
 	checkNewVersion() {
 		const currentVersion = this.context.globalState.get(
-			Push.globals.VERSION_STORE,
-			'0.0.0'
+			Push.globals.VERSION_STORE
 		);
+
+		if (typeof currentVersion === 'undefined') {
+			// Let's do nothing for new installs
+			return;
+		}
 
 		if (
 			['major', 'minor'].indexOf(

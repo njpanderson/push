@@ -66,10 +66,9 @@ class Channel {
 	 * @param {string|PushError} error - PushError or string to show.
 	 */
 	appendError(error) {
-		let message, config;
+		let message;
 
 		if (error instanceof PushError) {
-			config = configService.get();
 			message = error.message;
 		} else {
 			message = error;
