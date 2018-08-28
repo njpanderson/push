@@ -124,10 +124,10 @@ class ServiceSettings {
 
 	getServerFile(dir, settingsFilename) {
 		// Find the settings file
-		let file = this.paths.findFileInAncestors(
+		let file = this.paths.getNormalPath(this.paths.findFileInAncestors(
 			settingsFilename,
 			dir
-		);
+		));
 
 		if (file !== '' && fs.existsSync(file)) {
 			// File isn't empty and exists - read and set into cache
@@ -187,6 +187,7 @@ class ServiceSettings {
 				// Cache entry
 				this.settingsCache[uriPath] = {
 					file: settings.file,
+					uri: vscode.Uri.file(settings.file),
 					fileContents: settings.contents,
 					newFile,
 					data,

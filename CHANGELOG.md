@@ -1,6 +1,9 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.5.1
+ - Fixed path detection and handling for certain cases in Windows. Sorry, Windows users! (Thanks, Matt!)
+
 ## 0.5.0
  - Add support for environments within service configs. This is a big feature, please check the README!
  - Altered the settingsFile configuration somewhat. New service settings files will be named `.push.settings.jsonc` to signify that they can contain comments. Your current service files will still work with the old filename, but if you have customised the filename, please take note of this setting and its partner setting, `settingsFileGlob`.

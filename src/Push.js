@@ -325,8 +325,9 @@ class Push extends PushBase {
 			// Settings retrieved from JSON file within context
 			newConfig.env = settings.data.env;
 			newConfig.serviceName = settings.data.service;
-			newConfig.serviceFilename = settings.file,
-				newConfig.service = settings.data[newConfig.serviceName];
+			newConfig.serviceFilename = settings.file;
+			newConfig.serviceUri = settings.uri;
+			newConfig.service = settings.data[newConfig.serviceName];
 			newConfig.serviceSettingsHash = settings.hash;
 
 			// Expand environment variables
