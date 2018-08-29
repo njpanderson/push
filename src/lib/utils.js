@@ -304,6 +304,15 @@ const utils = {
 				`[${id}] - "${[...arguments].slice(1).join(', ')}"`
 			);
 		}
+	},
+
+	assertFnArgs() {
+		[...arguments].forEach((assert) => {
+			if (!assert[1]) {
+				debugger;
+				throw new Error(`Argument type mismatch for argument ${assert[0]}`);
+			}
+		});
 	}
 };
 

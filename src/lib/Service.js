@@ -192,12 +192,14 @@ class Service extends PushBase {
 		return new Promise((resolve, reject) => {
 			// Produce a filename prompt
 			this.getRootPathPrompt(folders)
-				.then((rootPath) => {
-					let fileName = rootPath + Paths.sep + exampleFileName;
+				.then((rootUri) => {
+					let fileName;
 
-					if (!rootPath) {
+					if (!rootUri) {
 						return reject();
 					}
+
+					fileName = this.paths.join(rootUri, exampleFileName);
 
 					// File exists but forceDialog is false - just keep going
 					if (this.paths.fileExists(fileName) && !forceDialog) {
@@ -207,8 +209,10 @@ class Service extends PushBase {
 					// Produce a file prompt
 					vscode.window.showInputBox({
 						prompt: i18n.t('enter_service_settings_filename'),
-						value: fileName
+						value: fileName.fsPath
 					}).then((fileName) => {
+						fileName = vscode.Uri.file(fileName);
+
 						// Show a service type picker (unless fromTemplate is false)
 						if (!fromTemplate) {
 							return { fileName };
@@ -219,10 +223,10 @@ class Service extends PushBase {
 						}
 
 						return vscode.window.showQuickPick(
-							[{
-								'label': i18n.t('empty'),
-								'description': i18n.t('empty_template')
-							}].concat(this.getList()),
+							[new ServiceType(
+								i18n.t('empty'),
+								i18n.t('empty_template')
+							)].concat(this.getList()),
 							{
 								placeHolder: i18n.t('select_service_type_template')
 							}
@@ -236,7 +240,8 @@ class Service extends PushBase {
 							serviceType
 						});
 					});
-				});
+				})
+				.catch(reject);
 		});
 	}
 

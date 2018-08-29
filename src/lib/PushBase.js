@@ -23,7 +23,7 @@ class PushBase extends Configurable {
 
 		// Shows the document as an editor tab
 		function show(document) {
-			vscode.window.showTextDocument(
+			return vscode.window.showTextDocument(
 				document,
 				{
 					preview: true,
@@ -42,14 +42,14 @@ class PushBase extends Configurable {
 
 		if (document instanceof Promise) {
 			// Document is opening, wait and display
-			document.then(show)
+			return document.then(show)
 				.catch((error) => {
 					channel.appendError(error);
 					throw error;
 				});
 		} else {
 			// Display immediately
-			show(document);
+			return show(document);
 		}
 	}
 
@@ -90,13 +90,13 @@ class PushBase extends Configurable {
 			if (folders.length > 1) {
 				// First, select a root path
 				vscode.window.showQuickPick(
-					folders.map((item) => this.paths.getNormalPath(item.uri)),
+					folders.map((item) => item.uri),
 					{
 						placeHolder: i18n.t('select_workspace_root')
 					}
 				).then(resolve);
 			} else {
-				resolve(this.paths.getNormalPath(folders[0].uri));
+				resolve(folders[0].uri);
 			}
 		});
 	}

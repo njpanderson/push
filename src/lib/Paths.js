@@ -6,13 +6,22 @@ const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
+const utils = require('../lib/utils');
 
 class Paths {
-	fileExists(file) {
-		file = this.getNormalPath(file, 'file');
-		return fs.existsSync(file);
+	/**
+	 * Checks if a Uri exists on the filesystem.
+	 * @param {Uri} uri - Uri to check.
+	 */
+	fileExists(uri) {
+		utils.assertFnArgs(['uri', (uri instanceof vscode.Uri)]);
+		return fs.existsSync(this.getNormalPath(uri, 'file'));
 	}
 
+	/**
+	 * Returns a current or new instance of PathCache.
+	 * @returns {PathCache} - An instance of PathCache.
+	 */
 	getPathCache() {
 		if (!this.pathCache) {
 			this.pathCache = new PathCache();
@@ -73,8 +82,8 @@ class Paths {
 
 		return (
 			normalise ?
-			this.getNormalPath(workspaceFolder.uri) :
-			workspaceFolder.uri
+				this.getNormalPath(workspaceFolder.uri) :
+				workspaceFolder.uri
 		);
 	}
 
@@ -99,7 +108,7 @@ class Paths {
 			return pathName.replace(
 				workspace.rootPath,
 				''
-			)
+			);
 		}
 
 		return pathName;
@@ -131,6 +140,19 @@ class Paths {
 	 */
 	addTrailingSlash(dir) {
 		return this.stripTrailingSlash(dir) + '/';
+	}
+
+	/**
+	 * Joins a path using the built in node Path method, returns a Uri.
+	 * @param {...Uri|string} - Path components to join.
+	 * @returns {Uri} - The resulting Uri.
+	 */
+	join() {
+		let parts = [...arguments].map((item) =>
+			(item instanceof vscode.Uri ? this.getNormalPath(item) : item)
+		);
+
+		return vscode.Uri.file(path.join.apply(path, parts));
 	}
 
 	/**
@@ -275,7 +297,7 @@ class Paths {
 						resolve(false);
 					}
 				}
-			)
+			);
 		});
 	}
 
@@ -289,7 +311,7 @@ class Paths {
 		let segment_dir = '';
 
 		dir = path.dirname(dir);
-		dir = dir.replace(/^\//, '')
+		dir = dir.replace(/^\//, '');
 		dir = dir.split('/');
 
 		dir.forEach((segment) => {
@@ -318,9 +340,9 @@ class Paths {
 
 		// while (!fs.existsSync(startDir + path.sep + file)) {
 		while (!(matches = (glob.sync(
-				this.ensureGlobPath(startDir + path.sep + file),
-				globOptions
-			))).length) {
+			this.ensureGlobPath(startDir + path.sep + file),
+			globOptions
+		))).length) {
 			if (this.isWorkspaceFolderRoot(startDir, folders) || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
@@ -432,10 +454,15 @@ class Paths {
 		});
 	}
 
-	writeFile(contents, fileName) {
+	/**
+	 * Writes a file to disk using UTF8 encoding.
+	 * @param {string} contents - File contents.
+	 * @param {Uri} uri - Filename Uri.
+	 */
+	writeFile(contents, uri) {
 		return new Promise((resolve, reject) => {
 			fs.writeFile(
-				fileName,
+				this.getNormalPath(uri),
 				contents,
 				{
 					encoding: 'utf8'
@@ -444,7 +471,7 @@ class Paths {
 					if (error) {
 						reject(error);
 					} else {
-						resolve(fileName);
+						resolve(uri);
 					}
 				}
 			);
