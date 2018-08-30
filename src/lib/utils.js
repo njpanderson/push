@@ -306,11 +306,32 @@ const utils = {
 		}
 	},
 
-	assertFnArgs() {
-		[...arguments].forEach((assert) => {
-			if (!assert[1]) {
+	/**
+	 * @param {string} fnName - Identifiable name of the Class#function calling this method.
+	 * @param {*} args - The arguments as provided to the function.
+	 * @param {*[]} asserts - Array of objects to compare to the arguments.
+	 * @description
+	 * Asserts that a function's arguments are of a specific type. Typescript on
+	 * a budget :D Supply an arguments object as the second argument, and an array
+	 * of Objects, Classes or strings as the third. The nth element in the third array
+	 * will be used to compare to the second. In the case that a string is supplied,
+	 * it will be passed to the `typeof` operator. Use `null` to ignore that index
+	 * of argument.
+	 * @example
+	 * utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
+	 * // Assert File#put has two args of type: vscode.Uri and typeof 'string'.
+	 * @returns {undefined} - Returns nothing, but throws on assertion errors.
+	 */
+	assertFnArgs(fnName, args, asserts) {
+		asserts.forEach((assertable, index) => {
+			if (
+				(typeof assertable === 'string' && (typeof args[index] !== assertable)) ||
+				(typeof assertable !== 'string' && (
+					assertable !== null && !(args[index] instanceof assertable)
+				))
+			) {
 				debugger;
-				throw new Error(`Argument type mismatch for argument ${assert[0]}`);
+				throw new Error(`${fnName}: Argument ${index} type mismatch.`);
 			}
 		});
 	}

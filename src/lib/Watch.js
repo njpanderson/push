@@ -77,7 +77,7 @@ class Watch extends Configurable {
 				// Filter watch list by Uris in folder root then add watches
 				watchList
 					.filter(item => this.paths.pathInUri(
-						item.path,
+						vscode.Uri.file(item.path),
 						folder.uri
 					))
 					.forEach(item => this[action].apply(this, [

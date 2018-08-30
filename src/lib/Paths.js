@@ -14,7 +14,7 @@ class Paths {
 	 * @param {Uri} uri - Uri to check.
 	 */
 	fileExists(uri) {
-		utils.assertFnArgs(['uri', (uri instanceof vscode.Uri)]);
+		utils.assertFnArgs('Paths#fileExists', arguments, [vscode.Uri]);
 		return fs.existsSync(this.getNormalPath(uri, 'file'));
 	}
 
@@ -31,11 +31,13 @@ class Paths {
 	}
 
 	/**
-	 * Tests whether the first Uri or path is within the second.
-	 * @param {Uri|string} path - Uri/Path to find.
-	 * @param {Uri|string} rootUri - Uri/Path to find within.
+	 * Tests whether the first Uri is within the second.
+	 * @param {Uri} path - Uri to find.
+	 * @param {Uri} rootUri - Uri to find within.
 	 */
 	pathInUri(path, rootUri) {
+		utils.assertFnArgs('Paths#pathInUri', arguments, [vscode.Uri, vscode.Uri]);
+
 		if (!path || !rootUri) {
 			return false;
 		}

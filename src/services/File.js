@@ -59,8 +59,7 @@ class File extends ServiceBase {
 	 * @param {string} remote - Remote path.
 	 */
 	put(local, remote) {
-		utils.assertFnArgs(['local', (local instanceof vscode.Uri)]);
-		utils.assertFnArgs(['remote', (typeof remote === 'string')]);
+		utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
 
 		if (!this.paths.fileExists(local)) {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
@@ -89,8 +88,7 @@ class File extends ServiceBase {
 	 * of the utils.collisionOpts collision actions.
 	 */
 	get(local, remote, collisionAction) {
-		utils.assertFnArgs(['local', (local instanceof vscode.Uri)]);
-		utils.assertFnArgs(['remote', (typeof remote === 'string')]);
+		utils.assertFnArgs('File#get', arguments, [vscode.Uri, 'string']);
 
 		remote = vscode.Uri.file(remote);
 
