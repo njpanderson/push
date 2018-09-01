@@ -8,6 +8,9 @@ const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('../lib/PathCache');
 const utils = require('../lib/utils');
 
+/**
+ * Provides Path utilities within the VSCode environment.
+ */
 class Paths {
 	/**
 	 * Checks if a Uri exists on the filesystem.
@@ -47,13 +50,20 @@ class Paths {
 
 	/**
 	 * Retrieves the active workspace folders.
+	 * @param {boolean} [urisOnly=false] - Only return Uris, not full folder objects.
+	 * @returns {array} Either an array of Uris, folders, or an empty array if nothing
+	 * was found.
 	 */
-	getWorkspaceFolders() {
+	getWorkspaceFolders(urisOnly = false) {
 		if (
 			vscode.workspace &&
 			vscode.workspace.workspaceFolders &&
 			vscode.workspace.workspaceFolders.length
 		) {
+			if (urisOnly) {
+				return vscode.workspace.workspaceFolders.map((folder) => folder.uri);
+			}
+
 			return vscode.workspace.workspaceFolders;
 		}
 
@@ -61,11 +71,13 @@ class Paths {
 	}
 
 	/**
-	 *
-	 * @param {*} dir
-	 * @param {*} workspaceFolders
+	 * Checks if the supplied folder Uri is within one of the supplied workspace roots.
+	 * @param {Uri} dir
+	 * @param {WorkspaceFolder[]} workspaceFolders
 	 */
 	isWorkspaceFolderRoot(dir, workspaceFolders = []) {
+		utils.assertFnArgs('Paths#isWorkspaceFolderRoot', arguments, [vscode.Uri]);
+
 		dir = this.getNormalPath(dir);
 
 		return (workspaceFolders.findIndex((folder) => {
@@ -80,6 +92,8 @@ class Paths {
 	 * @returns {mixed} Either a Uri or a string path of the workspace root.
 	 */
 	getCurrentWorkspaceRootPath(uri, normalise = false) {
+		utils.assertFnArgs('Paths#getCurrentWorkspaceRootPath', arguments, [vscode.Uri]);
+
 		let workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
 
 		return (
@@ -89,6 +103,12 @@ class Paths {
 		);
 	}
 
+	/**
+	 * Gets a string representation of a Uri.
+	 * @param {string|Uri} uri - The Uri to parse.
+	 * @param {string} requiredScheme - If required, the scheme the supplied Uri
+	 * must follow.
+	 */
 	getNormalPath(uri, requiredScheme) {
 		if (typeof uri === 'string' ||
 			uri === null ||
@@ -103,17 +123,26 @@ class Paths {
 		return uri.fsPath || uri.path;
 	}
 
+	/**
+	 * Gets a path (Uri) without the workspace root.
+	 * @param {Uri} uri - The path to strip from.
+	 * @param {Workspace} workspace - The workspace to strip.
+	 * @param {string} [requiredScheme] - The required scheme of the path.
+	 * @returns {Uri} The path without the workspace
+	 */
 	getPathWithoutWorkspace(uri, workspace, requiredScheme) {
-		let pathName = this.getNormalPath(uri, requiredScheme);
+		utils.assertFnArgs('Paths#getPathWithoutWorkspace', arguments, [vscode.Uri]);
 
 		if (workspace) {
-			return pathName.replace(
-				workspace.rootPath,
-				''
+			return vscode.Uri.file(
+				this.getNormalPath(uri, requiredScheme).replace(
+					workspace.rootPath,
+					''
+				)
 			);
 		}
 
-		return pathName;
+		return uri;
 	}
 
 	getPathFromStreamOrUri(src) {
@@ -325,14 +354,14 @@ class Paths {
 	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
 	 * the root of the active workspace is reached.
-	 * @param {string} file - The filename to look for. Supports globs.
-	 * @param {string} startDir - The directory to start looking in.
+	 * @param {string} fileName - The filename to look for. Supports globs.
+	 * @param {Uri} start - The directory to start looking in.
 	 * @returns {Uri|null} - Either the matched Uri, or `null`.
 	 */
-	findFileInAncestors(file, startDir) {
+	findFileInAncestors(fileName, start) {
 		let matches,
 			loop = 0,
-			prevDir = '',
+			prev = '',
 			folders = this.getWorkspaceFolders(),
 			globOptions = {
 				matchBase: true,
@@ -340,21 +369,24 @@ class Paths {
 				nosort: true
 			};
 
-		// while (!fs.existsSync(startDir + path.sep + file)) {
+		utils.assertFnArgs('Paths#findFileInAncestors', arguments, ['string', vscode.Uri]);
+
+		start = this.getDirName(start);
+
 		while (!(matches = (glob.sync(
-			this.ensureGlobPath(startDir + path.sep + file),
+			this.ensureGlobPath(start, fileName),
 			globOptions
 		))).length) {
-			if (this.isWorkspaceFolderRoot(startDir, folders) || loop === 50) {
+			if (this.isWorkspaceFolderRoot(start, folders) || loop === 50) {
 				// dir matches any root paths or hard loop limit reached
 				return null;
 			}
 
 			// Strip off directory basename
-			prevDir = startDir;
-			startDir = path.dirname(startDir);
+			prev = start;
+			start = this.getDirName(start);
 
-			if (startDir === prevDir) {
+			if (start.fsPath === prev.fsPath) {
 				return null;
 			}
 
@@ -431,10 +463,10 @@ class Paths {
 	 */
 	getDirName(uri, returnIfDirectory = false) {
 		if (returnIfDirectory && this.isDirectory(uri)) {
-			return this.getNormalPath(uri);
+			return uri;
 		}
 
-		return path.dirname(this.getNormalPath(uri));
+		return vscode.Uri.file(path.dirname(this.getNormalPath(uri)));
 	}
 
 	ensureDirExists(dir) {
@@ -480,9 +512,15 @@ class Paths {
 		});
 	}
 
-	readFile(fileName) {
+	/**
+	 * Reads a file and returns its contents
+	 * @param {Uri} uri - Uri of the file to read.
+	 */
+	readFile(uri) {
+		utils.assertFnArgs('Paths#readFile', arguments, [vscode.Uri]);
+
 		return new Promise((resolve, reject) => {
-			fs.readFile(fileName, (error, data) => {
+			fs.readFile(this.getNormalPath(uri), (error, data) => {
 				if (error) {
 					reject(error);
 				} else {
@@ -520,13 +558,19 @@ class Paths {
 	}
 
 	/**
-	 * Ensures a path can be used with glob (even on windows)
-	 * @param {string} pathName - The path to make glob 'friendly'
+	 * @param {...Uri|string} pathName - The path to make glob 'friendly'
+	 * @description
+	 * Ensures a path can be used with glob (even on windows). Each argument is
+	 * joined by a glob compatible separator (/).
 	 */
-	ensureGlobPath(pathName) {
-		pathName = this.getNormalPath(pathName);
-		pathName = pathName.replace(/\\/g, '/');
-		return pathName;
+	ensureGlobPath() {
+		return [...arguments].reduce(
+			(acc, part) => acc + '/' + this
+				.getNormalPath(part)
+				.replace(/\\/g, '/')
+				.replace(/^\//, ''),
+			''
+		);
 	}
 }
 

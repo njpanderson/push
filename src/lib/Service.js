@@ -43,21 +43,21 @@ class Service extends PushBase {
 	 * if the service file is level with the contextual file.
 	 */
 	editServiceConfig(uri, forceCreate) {
-		let folders, dirName, settingsFile;
+		let folders, dir, settingsFile;
 
 		uri = this.paths.getFileSrc(uri);
-		dirName = this.paths.getDirName(uri, true);
+		dir = this.paths.getDirName(uri, true);
 
 		// Find the nearest settings file
 		settingsFile = this.paths.findFileInAncestors(
 			this.config.settingsFileGlob,
-			dirName
+			dir
 		);
 
-		if (dirName !== ".") {
+		if (dir !== ".") {
 			// If a directory is defined, use it as the workspace folder
 			folders = [{
-				uri: vscode.Uri.file(dirName)
+				uri: dir
 			}]
 		} else {
 			folders = this.paths.getWorkspaceFolders();
@@ -111,12 +111,12 @@ class Service extends PushBase {
 	 * is supported.
 	 */
 	importConfig(uri) {
-		let className, pathName, basename, instance, settings,
+		let className, basename, instance, settings,
 			settingsFilename = this.config.settingsFilename;
 
-		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
+		uri = this.paths.getFileSrc(uri);
 
-		if (!(basename = this.paths.getBaseName(pathName))) {
+		if (!(basename = this.paths.getBaseName(uri))) {
 			channel.appendLocalisedError('no_import_file');
 		}
 
@@ -126,13 +126,13 @@ class Service extends PushBase {
 				className = require(`./importers/${className}`);
 				instance = new className();
 
-				return instance.import(pathName)
+				return instance.import(uri)
 					.then((result) => {
 						settings = result;
 
 						return this.getFileNamePrompt(
 							settingsFilename,
-							this.paths.getDirName(pathName),
+							[{ uri: this.paths.getDirName(uri) }],
 							true,
 							false
 						);
@@ -163,7 +163,10 @@ class Service extends PushBase {
 						if (result.write) {
 							// Write the file
 							this.writeAndOpen(
-								'\/\/ ' + i18n.t('comm_settings_imported', pathName) +
+								'\/\/ ' + i18n.t(
+									'comm_settings_imported',
+									this.paths.getNormalPath(uri)
+								) +
 								JSON.stringify(settings, null, '\t'),
 								result.fileName
 							);

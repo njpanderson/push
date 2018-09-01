@@ -314,7 +314,7 @@ class Push extends PushBase {
 	/**
 	 * Adds the current service settings based on the contextual URI to the
 	 * current configuration, then returns the configuration.
-	 * @param {uri} uriContext
+	 * @param {Uri} uriContext
 	 */
 	configWithServiceSettings(uriContext) {
 		const settings = this.service.settings.getServerJSON(

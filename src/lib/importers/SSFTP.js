@@ -1,8 +1,12 @@
 const BaseImporter = require('./BaseImporter');
 
 class SSFTP extends BaseImporter {
-	import(pathName) {
-		return this.loadFile(pathName)
+	/**
+	 * Import a single file into the SFTP importer.
+	 * @param {Uri} uri - Uri of file to read.
+	 */
+	import(uri) {
+		return this.loadFile(uri)
 			.then(
 				(buffer) => this.translate(this.parseJSON(buffer.toString('utf8')))
 			);

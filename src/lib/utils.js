@@ -309,7 +309,7 @@ const utils = {
 	/**
 	 * @param {string} fnName - Identifiable name of the Class#function calling this method.
 	 * @param {*} args - The arguments as provided to the function.
-	 * @param {*[]} asserts - Array of objects to compare to the arguments.
+	 * @param {array} asserts - Array of objects to compare to the arguments.
 	 * @description
 	 * Asserts that a function's arguments are of a specific type. Typescript on
 	 * a budget :D Supply an arguments object as the second argument, and an array

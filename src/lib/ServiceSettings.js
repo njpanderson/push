@@ -133,7 +133,7 @@ class ServiceSettings {
 			// File isn't empty and exists - read and set into cache
 			return {
 				file,
-				contents: (fs.readFileSync(file, "UTF-8")).toString().trim()
+				contents: (fs.readFileSync(file, 'utf8')).toString().trim()
 			};
 		}
 
@@ -166,7 +166,7 @@ class ServiceSettings {
 			return this.settingsCache[uriPath];
 		}
 
-		if (settings = this.getServerFile(uriPath, settingsFilename)) {
+		if ((settings = this.getServerFile(uri, settingsFilename))) {
 			// File isn't empty and exists - read and set into cache
 			try {
 				data = this.normalise(
@@ -219,7 +219,7 @@ class ServiceSettings {
 			}
 
 			// Find the nearest settings file
-			if (!(settings = this.getServerFile(uriPath, settingsFileGlob))) {
+			if (!(settings = this.getServerFile(uri, settingsFileGlob))) {
 				channel.appendLocalisedError('no_service_file', settingsFileGlob);
 				return reject();
 			}
