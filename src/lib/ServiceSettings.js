@@ -39,7 +39,7 @@ class ServiceSettings {
 	/**
 	 * Creates the contents for a server settings file.
 	 * @param {ServiceType} serviceType - Service type settings instance.
-	 * @returns {string} - The file contents.
+	 * @returns {string} The file contents.
 	 */
 	createServerFileContents(serviceType) {
 		let content, serviceJSON, serviceJSONLines,

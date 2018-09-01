@@ -265,7 +265,7 @@ class File extends ServiceBase {
 	 * Returns a promise either resolving to a recursive file list in the format
 	 * given by {@link PathCache#getRecursiveFiles}, or rejects if `dir` is not
 	 * found.
-	 * @returns {promise}
+	 * @returns {Promise<array>} Resolving to an array of files.
 	 */
 	listRecursiveFiles(dir, ignoreGlobs) {
 		return this.paths.getDirectoryContentsAsFiles(

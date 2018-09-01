@@ -85,7 +85,7 @@ class SFTP extends ServiceBase {
 
 	/**
 	 * Connect to an SSH server, returning a Promise resolving to a client instance.
-	 * @returns {promise} - Promise resolving to a connected SFTP client instance.
+	 * @returns {Promise<object>} Promise resolving to a connected SFTP client instance.
 	 */
 	connect() {
 		let hash = this.config.serviceSettingsHash;
@@ -157,7 +157,7 @@ class SFTP extends ServiceBase {
 	/**
 	 * Open a connection to the SFTP server via the defined gateway server.
 	 * @param {object} client - SFTP client spec.
-	 * @returns {Promise} - Resolving to a connected SFTP instance.
+	 * @returns {Promise<object>} Resolving to a connected SFTP instance.
 	 */
 	openGatewayConnection(client) {
 		return new Promise((resolve, reject) => {
@@ -197,7 +197,7 @@ class SFTP extends ServiceBase {
 	/**
 	 * Connect to an SFTP server via SSH gateway, resolving the connected SFTP instance.
 	 * @param {Object} client - SFTP client spec.
-	 * @returns {Promise} - Resolving to a connected SFTP instance.
+	 * @returns {Promise<object>} Resolving to a connected SFTP instance.
 	 */
 	connectGatewaySFTP(client) {
 		return new Promise((resolve, reject) => {
@@ -342,7 +342,7 @@ class SFTP extends ServiceBase {
 	 * Returns a Promise eventually resolving to a new client instance, with the addition
 	 * of performing cleanup to ensure a maximum number of client instances exist.
 	 * @param {string} hash
-	 * @returns {promise} - Promise resolving to an SFTP client instance.
+	 * @returns {Promise<object>} Promise resolving to an SFTP client instance.
 	 */
 	getClient(hash) {
 		let date = new Date(),
@@ -730,7 +730,7 @@ class SFTP extends ServiceBase {
 	/**
 	 * Reads a file and returns its contents.
 	 * @param {SSH2Client} ssh - A connected instance of SSH2Client.
-	 * @returns {Promise} resolving to the file's contents.
+	 * @returns {Promise<string>} resolving to the file's contents.
 	 */
 	readWithSSH(ssh, fileName) {
 		return new Promise((resolve, reject) => {
@@ -993,7 +993,7 @@ class SFTP extends ServiceBase {
 	 * Returns a promise either resolving to a recursive file list in the format
 	 * given by {@link PathCache#getRecursiveFiles}, or rejects if `dir` is not
 	 * found.
-	 * @returns {promise}
+	 * @returns {Promise<array>} Resolving to a nested array of files.
 	 */
 	listRecursiveFiles(dir, ignoreGlobs) {
 		let counter = {
@@ -1009,8 +1009,7 @@ class SFTP extends ServiceBase {
 						dir
 					));
 				}
-			})
-			.catch(reject);
+			}).catch(reject);
 		});
 	}
 

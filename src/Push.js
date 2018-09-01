@@ -489,7 +489,7 @@ class Push extends PushBase {
 	 * Copies the "upload" queue over to the default queue and runs the default queue.
 	 * The upload queue is then emptied once the default queue has completed without
 	 * errors.
-	 * @returns promise - Promise, resolving when the queue is complete.
+	 * @returns {Promise} Promise, resolving when the queue is complete.
 	 */
 	execUploadQueue() {
 		return new Promise((resolve, reject) => {
@@ -509,7 +509,7 @@ class Push extends PushBase {
 					queue.then(() => {
 						uploadQueue.empty();
 					})
-					.then(resolve);
+						.then(resolve);
 				}
 			} else {
 				utils.showWarning(i18n.t('queue_empty'));
@@ -587,7 +587,8 @@ class Push extends PushBase {
 	/**
 	 * Execute a queue (by running its #exec method).
 	 * @param {object} queueDef - One of the {@link Push.queueDefs} queue definitions.
-	 * @returns {promise} A promise, eventually resolving once the queue is complete.
+	 * @returns {Promise<object>} A promise, eventually resolving once the queue
+	 * is complete, containing a result object.
 	 */
 	execQueue(queueDef) {
 		const queue = this.getQueue(queueDef);
@@ -892,7 +893,7 @@ class Push extends PushBase {
 	 * Transfers a single file or array of single files.
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to transfer.
 	 * @param {string} method - Either 'get' or 'put'.
-	 * @returns {promise} - A promise, resolving when the file has transferred.
+	 * @returns {Promise} A promise, resolving when the file has transferred.
 	 */
 	transfer(uris, method) {
 		let ignoreGlobs = [],
@@ -999,7 +1000,7 @@ class Push extends PushBase {
 	 * Transfers a directory of files.
 	 * @param {Uri} uri - Uri of the directory to transfer.
 	 * @param {*} method - Either 'get' or 'put'.
-	 * @returns {promise} - A promise, resolving when the directory has transferred.
+	 * @returns {Promise} A promise, resolving when the directory has transferred.
 	 */
 	transferDirectory(uri, method) {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;

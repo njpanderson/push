@@ -80,7 +80,7 @@ class PathCache {
 	 * @param {number} source - One of the {@link PathCache.sources} sources.
 	 * @param {string} [dir] - The directory to retrieve.
 	 * @param {string} [type] - Restrict files to a specific type. ('f' file or 'd' directory).
-	 * @returns {PathCacheList|array} - Either a single PathCacheList list or an array
+	 * @returns {PathCacheList|array} Either a single PathCacheList list or an array
 	 * of PathCacheList instances, in the case that the directory was not defined
 	 */
 	getDir(source, dir, type = null) {
@@ -101,6 +101,13 @@ class PathCache {
 		return null;
 	}
 
+	/**
+	 * Returns a nested array of files.
+	 * @param {number} source - One of the {@link PathCache.sources} sources.
+	 * @param {string} dir - The directory to start scanning
+	 * @returns {array} A nested array of files, or null if the directory was
+	 * not found or could not be read.
+	 */
 	getRecursiveFiles(source, dir) {
 		let result = [],
 			re = new RegExp('^' + dir + '($|\/)'),

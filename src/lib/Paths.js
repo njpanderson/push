@@ -23,7 +23,7 @@ class Paths {
 
 	/**
 	 * Returns a current or new instance of PathCache.
-	 * @returns {PathCache} - An instance of PathCache.
+	 * @returns {PathCache} An instance of PathCache.
 	 */
 	getPathCache() {
 		if (!this.pathCache) {
@@ -281,6 +281,7 @@ class Paths {
 	 * @param {uri|string|array} include - Uri of directory to glob for paths, a glob string,
 	 * or an array of path components.
 	 * @param {array} [ignoreGlobs] - List of globs to ignore.
+	 * @returns {Promose<array>} Resolving to an array of files.
 	 */
 	getDirectoryContentsAsFiles(include, ignoreGlobs = [], followSymlinks = false) {
 		if (include instanceof vscode.Uri) {
@@ -315,7 +316,7 @@ class Paths {
 	 * Filters a Uri by the array of ignoreGlobs globs.
 	 * @param {Uri} uri - The Uri to check.
 	 * @param {string[]} [ignoreGlobs] - An array of globs to match against.
-	 * @returns {Promise} - resolving to either the original Uri, or `false` in
+	 * @returns {Promise} resolving to either the original Uri, or `false` in
 	 * the case that one of the ignoreGlobs globs matched.
 	 */
 	filterUriByGlobs(uri, ignoreGlobs = []) {
@@ -368,7 +369,7 @@ class Paths {
 	 * the root of the active workspace is reached.
 	 * @param {string} fileName - The filename to look for. Supports globs.
 	 * @param {Uri} start - The directory to start looking in.
-	 * @returns {Uri|null} - Either the matched Uri, or `null`.
+	 * @returns {Uri|null} Either the matched Uri, or `null`.
 	 */
 	findFileInAncestors(fileName, start) {
 		let matches,

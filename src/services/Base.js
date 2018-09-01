@@ -340,7 +340,7 @@ class ServiceBase {
 	 * @param {string} dest - File destination path
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	put() {
 		throw new Error('Service #put method is not yet implemented!');
@@ -352,7 +352,7 @@ class ServiceBase {
 	 * @param {string} dest - File destination path
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	get() {
 		throw new Error('Service #get method is not yet implemented!');
@@ -364,7 +364,7 @@ class ServiceBase {
 	 * Base service directory listing method.
 	 * Should return a promise either resolving to a list in the format given by
 	 * {@link PathCache#getDir}, or rejecting if the directory passed could not be found.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	list() {
 		throw new Error('Service #list method is not yet implemented!');
@@ -433,7 +433,7 @@ class ServiceBase {
 	 * Should return a promise either resolving to a list in the format given by
 	 * {@link PathCache#getRecursiveFiles}, or rejecting if the directory passed
 	 * could not be found.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	listRecursiveFiles() {
 		throw new Error('Service #listRecursiveFiles method is not yet implemented!');

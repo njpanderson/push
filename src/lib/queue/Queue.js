@@ -156,7 +156,7 @@ class Queue {
 	/**
 	 * Starts queue execution, returning a promise.
 	 * @param {function} fnProgress - Function to call when requesting progress updates.
-	 * @returns {promise} Resolving when the queue is complete.
+	 * @returns {Promise<object>} Resolving when the queue is complete.
 	 */
 	exec(fnProgress) {
 		let lastState;
@@ -323,7 +323,7 @@ class Queue {
 	 * @param {boolean} [silent=false] - Use to prevent messaging channel.
 	 * @param {boolean} [clearQueue=true] - Empty the queue of all its tasks.
 	 * @param {boolean} [force=false] - Force stop, instead of waiting for a currently running task.
-	 * @returns {promise} - A promise, eventually resolving when the current task
+	 * @returns {Promise} A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
 	stop(silent = false, clearQueue = true, force = false) {
@@ -368,7 +368,7 @@ class Queue {
 
 	/**
 	 * Invoked on queue completion (regardless of success).
-	 * @returns {Promise} - Resolved on completion.
+	 * @returns {Promise<object>} Resolved on completion, passing results.
 	 */
 	complete() {
 		return new Promise((resolve) => {

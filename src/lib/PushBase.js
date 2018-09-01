@@ -78,7 +78,7 @@ class PushBase extends Configurable {
 	 * Will either prompt the user to select a root path, or in the case that
 	 * only one `folders` element exists, will resolve to its path Uri.
 	 * @param {vscode.WorkspaceFolder[]} folders
-	 * @returns {promise} A promise eventually resolving to a single Uri.
+	 * @returns {Promise<Uri>} A promise eventually resolving to a single Uri.
 	 */
 	getRootPathPrompt(folders) {
 		return new Promise((resolve) => {

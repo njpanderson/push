@@ -214,7 +214,7 @@ const utils = {
 	 * @param {string} filename - Absolute filename to write to.
 	 * @param {boolean} useTmpFile - Whether to use a temporary file or write
 	 * directly to the target file.
-	 * @returns {promise} Resolving on success, rejecting on failure
+	 * @returns {Promise} Resolving on success, rejecting on failure
 	 */
 	writeFileFromStream(read, writeFilename, readFilename = '', useTmpFile = true) {
 		return new Promise((resolve, reject) => {
@@ -320,7 +320,7 @@ const utils = {
 	 * @example
 	 * utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
 	 * // Assert File#put has two args of type: vscode.Uri and typeof 'string'.
-	 * @returns {undefined} - Returns nothing, but throws on assertion errors.
+	 * @returns {undefined} Returns nothing, but throws on assertion errors.
 	 */
 	assertFnArgs(fnName, args, asserts) {
 		asserts.forEach((assertable, index) => {

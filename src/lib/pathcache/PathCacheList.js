@@ -47,7 +47,7 @@ class PathCacheList {
 	 * Returns the index of a path within the list.
 	 * @param {number} source - One of {@link PathCache.sources} sources.
 	 * @param {string} file - Fully qualified path (including directory).
-	 * @returns {number} - The index of the item, or `-1` if the item cannot be
+	 * @returns {number} The index of the item, or `-1` if the item cannot be
 	 * found.
 	 */
 	indexOf(pathName) {
