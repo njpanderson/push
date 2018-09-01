@@ -50,20 +50,15 @@ class Paths {
 
 	/**
 	 * Retrieves the active workspace folders.
-	 * @param {boolean} [urisOnly=false] - Only return Uris, not full folder objects.
-	 * @returns {array} Either an array of Uris, folders, or an empty array if nothing
-	 * was found.
+	 * @returns {array} Either an array of workspace folders, or an empty array if
+	 * nothing was found.
 	 */
-	getWorkspaceFolders(urisOnly = false) {
+	getWorkspaceFolders() {
 		if (
 			vscode.workspace &&
 			vscode.workspace.workspaceFolders &&
 			vscode.workspace.workspaceFolders.length
 		) {
-			if (urisOnly) {
-				return vscode.workspace.workspaceFolders.map((folder) => folder.uri);
-			}
-
 			return vscode.workspace.workspaceFolders;
 		}
 
