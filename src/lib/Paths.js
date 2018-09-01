@@ -140,6 +140,12 @@ class Paths {
 		return uri;
 	}
 
+	/**
+	 * UNUSED
+	 * @param {*} src
+	 * @private
+	 * TODO: Remove?
+	 */
 	getPathFromStreamOrUri(src) {
 		if (src instanceof vscode.Uri) {
 			return this.getNormalPath(src);
@@ -154,24 +160,26 @@ class Paths {
 
 	/**
 	 * Return a path without a trailing slash.
-	 * @param {string} dir - Dir to remove trailing slash
+	 * @param {string} pathName - Path to remove a trailing slash from.
+	 * @returns {string} The path without a trailing slash.
 	 */
-	stripTrailingSlash(dir) {
-		return dir.replace(/\/$/, '');
+	stripTrailingSlash(pathName) {
+		return pathName.replace(/\/$/, '');
 	}
 
 	/**
 	 * Return a path with a trailing slash.
-	 * @param {string} dir - Dir to ensure a trailing slash
+	 * @param {string} pathName - Path on which to ensure a trailing slash.
+	 * @returns {string} The path with a trailing slash.
 	 */
-	addTrailingSlash(dir) {
-		return this.stripTrailingSlash(dir) + '/';
+	addTrailingSlash(pathName) {
+		return this.stripTrailingSlash(pathName) + '/';
 	}
 
 	/**
 	 * Joins a path using the built in node Path method, returns a Uri.
 	 * @param {...Uri|string} - Path components to join.
-	 * @returns {Uri} - The resulting Uri.
+	 * @returns {Uri} The resulting Uri.
 	 */
 	join() {
 		let parts = [...arguments].map((item) =>
@@ -183,16 +191,18 @@ class Paths {
 
 	/**
 	 * Returns whether the supplied path is a directory. A shortcut for the fs.statSync method.
-	 * @param {string|Uri} dir - Directory to validate
+	 * @param {Uri} uri - Directory to validate
 	 * @returns {boolean} `true` if the path is a directory, `false` otherwise.
 	 */
-	isDirectory(dir) {
-		dir = this.getNormalPath(dir, 'file');
+	isDirectory(uri) {
+		utils.assertFnArgs('Paths#isDirectory', arguments, [vscode.Uri]);
 
-		if (dir) {
+		uri = this.getNormalPath(uri, 'file');
+
+		if (uri) {
 			// Use a try block to suppress statSync exceptions
 			try {
-				const stats = fs.statSync(dir);
+				const stats = fs.statSync(uri);
 				return stats.isDirectory();
 			} catch(e) {
 				return false;
@@ -202,6 +212,11 @@ class Paths {
 		return false;
 	}
 
+	/**
+	 * Obtain a consistent set of Glob options.
+	 * @param {object} [extend] - Optionally extend the options with further options.
+	 * @returns {object} A set of options, for use with Glob.
+	 */
 	getGlobOptions(extend = {}) {
 		return Object.assign({
 			// Match dotfiles (".filename")
