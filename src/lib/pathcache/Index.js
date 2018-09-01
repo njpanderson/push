@@ -1,6 +1,6 @@
 const path = require('path');
 
-const ExtendedStream = require('./ExtendedStream');
+const ExtendedStream = require('../ExtendedStream');
 const PathCacheList = require('./PathCacheList');
 const PathCacheItem = require('./PathCacheItem');
 
