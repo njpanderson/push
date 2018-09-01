@@ -66,11 +66,11 @@ class Explorer extends Configurable {
 		if (this.data.watchList && this.data.watchList.length) {
 			return Promise.resolve(
 				this.data.watchList.map((watch) => {
-					let isFolder = this.paths.isDirectory(watch.path);
+					let isFolder = this.paths.isDirectory(watch.uri);
 
 					return new Item(
 						this.paths.getPathWithoutWorkspace(
-							watch.path,
+							watch.uri,
 							vscode.workspace
 						),
 						vscode.TreeItemCollapsibleState.None,

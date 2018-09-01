@@ -1,16 +1,16 @@
-const vscode = require("vscode");
+const vscode = require('vscode');
 const SFTPClient = require('ssh2-sftp-client');
 const ssh = require('ssh2').Client;
 const fs = require('fs');
 const path = require('path');
 const homedir = require('os').homedir;
-const micromatch = require("micromatch");
+const micromatch = require('micromatch');
 
 const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const PushError = require('../lib/PushError');
-const PathCache = require('../lib/PathCache');
+const PathCache = require('../lib/pathcache/Index');
 const channel = require('../lib/channel');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('../lib/constants');
@@ -917,7 +917,7 @@ class SFTP extends ServiceBase {
 							})
 							.then(() => {
 								// Add dir to cache
-								this.pathCache.addCachedFile(
+								this.pathCache.addFilePath(
 									SRC_REMOTE,
 									dir,
 									((new Date()).getTime() / 1000),
@@ -971,7 +971,7 @@ class SFTP extends ServiceBase {
 								}
 
 								if (!match || !match.length) {
-									this.pathCache.addCachedFile(
+									this.pathCache.addFilePath(
 										SRC_REMOTE,
 										pathName,
 										(item.modifyTime / 1000),

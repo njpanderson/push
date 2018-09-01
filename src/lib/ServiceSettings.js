@@ -151,12 +151,14 @@ class ServiceSettings {
 	 * @param {boolean} [refresh=false] - Set `true` to ensure a fresh copy of the JSON.
 	 */
 	getServerJSON(uri, settingsFilename, quiet = false, refresh = false) {
-		let uriPath = this.paths.getNormalPath(uri),
-			settings, newFile, data, hash, digest;
+		let uriPath, settings, newFile, data, hash, digest;
 
-		// If the path isn't a directory, get its directory name
-		if (!this.paths.isDirectory(uriPath)) {
-			uriPath = path.dirname(uriPath);
+		if (!this.paths.isDirectory(uri)) {
+			// If the path isn't a directory, get its directory name
+			uriPath = this.paths.getNormalPath(this.paths.getDirName(uri));
+		} else {
+			// Otherwise, just get it as-is
+			uriPath = this.paths.getNormalPath(uri);
 		}
 
 		if (!refresh && this.settingsCache[uriPath]) {
@@ -210,12 +212,11 @@ class ServiceSettings {
 
 	setConfigEnv(uri, settingsFileGlob) {
 		return new Promise((resolve, reject) => {
-			let uriPath = this.paths.getNormalPath(uri),
-				environments, settings, jsonData;
+			let environments, settings, jsonData;
 
 			// If the path isn't a directory, get its directory name
-			if (!this.paths.isDirectory(uriPath)) {
-				uriPath = path.dirname(uriPath);
+			if (!this.paths.isDirectory(uri)) {
+				uri = this.paths.getDirName(uri);
 			}
 
 			// Find the nearest settings file

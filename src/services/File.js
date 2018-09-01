@@ -6,7 +6,7 @@ const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
-const PathCache = require('../lib/PathCache');
+const PathCache = require('../lib/pathcache/Index');
 const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('../lib/constants');
@@ -231,7 +231,7 @@ class File extends ServiceBase {
 							}
 
 							// Add dir to cache
-							this.pathCache.addCachedFile(
+							this.pathCache.addFilePath(
 								SRC_REMOTE,
 								dir,
 								((new Date()).getTime() / 1000),

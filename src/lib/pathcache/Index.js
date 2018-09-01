@@ -1,17 +1,17 @@
 const path = require('path');
 
 const ExtendedStream = require('./ExtendedStream');
+const PathCacheList = require('./PathCacheList');
+const PathCacheItem = require('./PathCacheItem');
 
 class PathCache {
 	constructor() {
 		// Path cache
 		this.cache = {};
-		this.indices = {};
 	}
 
 	createSource(source) {
 		this.cache[source] = {};
-		this.indices[source] = {};
 	}
 
 	createSourceDir(source, dir) {
@@ -20,8 +20,7 @@ class PathCache {
 			this.createSource(source);
 		}
 
-		this.cache[source][dir] = [];
-		this.indices[source][dir] = {};
+		this.cache[source][dir] = new PathCacheList();
 	}
 
 	/**
@@ -32,67 +31,64 @@ class PathCache {
 	 * @param {string} type - Either 'd' for directory, or 'f' for file.
 	 * @param {*} [meta] - Any extra information to store.
 	 */
-	addCachedFile(source, pathName, modified = 0, type = 'f', meta = null) {
-		const dir = path.dirname(pathName),
-			basename = path.basename(pathName);
-
-		let index;
+	addFilePath(source, pathName, modified = 0, type = 'f', meta = null) {
+		const dir = path.dirname(pathName);
 
 		if (!this.cache[source] || !this.cache[source][dir]) {
 			// Dir does not exist in the source cache
 			this.createSourceDir(source, dir);
 		}
 
-		if ((index = this.indices[source][dir][pathName]) === undefined) {
-			// File does not exist in the source/dir index cache
-			index = (this.cache[source][dir].push({
-				name: basename,
-				pathName,
-				modified,
-				type,
-				meta
-			})) - 1;
-
-			this.indices[source][dir][pathName] = index;
-		} else {
-			this.cache[source][dir][index] = {
-				name: basename,
-				modified,
-				type,
-				meta
-			};
-		}
+		this.cache[source][dir].push(new PathCacheItem(
+			pathName,
+			modified,
+			type,
+			meta
+		));
 	}
 
+	/**
+	 * Returns whether or not a directory is cached.
+	 * @param {number} source - One of the {@link PathCache.sources} sources.
+	 * @param {string} dir - Directory to test.
+	 * @returns {boolean} `true` if the directory is cached.
+	 */
 	dirIsCached(source, dir) {
 		return !!(
-			(this.indices[source]) &&
-			(this.indices[source][dir])
+			(this.cache[source]) &&
+			(this.cache[source][dir])
 		);
 	}
 
 	/**
-	 * Returns whether a file or directory is cached or not.
-	 * @param {number} source - One of {@link PathCache.sources} sources.
+	 * Returns whether or not a file is cached.
+	 * @param {number} source - One of the {@link PathCache.sources} sources.
 	 * @param {string} file - Fully qualified path (including directory).
-	 * @returns {boolean} - `true` if the path exists within the cache, `false` otherwise.
+	 * @returns {boolean} `true` if the path exists within the cache.
 	 */
-	filenameIsCached(source, file) {
+	fileIsCached(source, file) {
 		const dirname = path.dirname(file);
 
 		return !!(
-			(this.indices[source]) &&
-			(this.indices[source][dirname]) &&
-			(file in this.indices[source][dirname])
+			this.dirIsCached(dirname) &&
+			(this.cache[source][dirname].indexOf(file) !== -1)
 		);
 	}
 
+	/**
+	 * Retrieve the cached contents of a directory
+	 * @param {number} source - One of the {@link PathCache.sources} sources.
+	 * @param {string} [dir] - The directory to retrieve.
+	 * @param {string} [type] - Restrict files to a specific type. ('f' file or 'd' directory).
+	 * @returns {PathCacheList|array} - Either a single PathCacheList list or an array
+	 * of PathCacheList instances, in the case that the directory was not defined
+	 */
 	getDir(source, dir, type = null) {
 		if (this.cache[source]) {
 			if (dir) {
 				if (type !== null) {
-					return this.cache[source][dir].filter((file) => {
-						return file.type === type;
+					return this.cache[source][dir].filter((item) => {
+						return item.type === type;
 					});
 				}
 
@@ -132,16 +128,15 @@ class PathCache {
 	/**
 	 * Retrieves a file from the cache by its full path name.
 	 * @param {number} source - One of {@link PathCache.sources} sources.
-	 * @param {*} file - Fully qualified path (including directory).
-	 * @returns {*} Either the file object, or `null` if no file was found.
+	 * @param {string} file - Fully qualified path (including directory).
+	 * @returns {PathCacheItem|null} Either the PathCacheItem object, or `null`
+	 * if no file was found.
 	 */
 	getFileByPath(source, file) {
 		const dirname = path.dirname(file);
 
-		if (this.filenameIsCached(source, file)) {
-			return this.cache[source][dirname][
-				this.indices[source][dirname][file]
-			];
+		if ((this.cache[source]) && (this.cache[source][dirname])) {
+			return this.cache[source][dirname].getByPath(file);
 		}
 
 		return null;

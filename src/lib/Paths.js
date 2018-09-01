@@ -5,7 +5,7 @@ const mkdirp = require('mkdirp');
 const glob = require('glob');
 
 const ExtendedStream = require('./ExtendedStream');
-const PathCache = require('../lib/PathCache');
+const PathCache = require('./pathcache/Index');
 const utils = require('../lib/utils');
 
 /**
@@ -225,7 +225,9 @@ class Paths {
 	 * an instance specific to the Paths class is created.
 	 * @param {string} dir - Directory to list
 	 * @param {number} [loc=PathCache.sources.LOCAL] - `PathCache.sources` locations.
-	 * @param {class} [cache] - Cache class instance
+	 * @param {PathCache} [cache] - PathCache instance. Will use an internal instance
+	 * if not specified.
+	 * @returns {Promise<PathCacheList>} A promise resolving to a directory list.
 	 */
 	listDirectory(dir, loc = PathCache.sources.LOCAL, cache) {
 		// Use supplied cache or fall back to class instance
@@ -245,7 +247,7 @@ class Paths {
 						let pathname = dir + Paths.sep + filename,
 							stats = fs.statSync(pathname);
 
-						cache.addCachedFile(
+						cache.addFilePath(
 							loc,
 							pathname,
 							(stats.mtime.getTime() / 1000),
