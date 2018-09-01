@@ -4,16 +4,31 @@ const ExtendedStream = require('../ExtendedStream');
 const PathCacheList = require('./PathCacheList');
 const PathCacheItem = require('./PathCacheItem');
 
+/**
+ * Controls caching of a source filesystem.
+ */
 class PathCache {
 	constructor() {
-		// Path cache
+		/**
+		 * Main cache.
+		 * @private
+		 */
 		this.cache = {};
 	}
 
+	/**
+	 * Creates a source container.
+	 * @param {string|number} source - Source id.
+	 */
 	createSource(source) {
 		this.cache[source] = {};
 	}
 
+	/**
+	 * Creates a directory (PathCacheList instance) within a source.
+	 * @param {string|number} source - Source container to use.
+	 * @param {string} dir - Directory name
+	 */
 	createSourceDir(source, dir) {
 		if (!this.cache[source]) {
 			// Cache source does not exist
@@ -24,7 +39,7 @@ class PathCache {
 	}
 
 	/**
-	 *	Adds a single file to the path cache.
+	 * Adds a single file to the path cache.
 	 * @param {string} source - Source name from `PathCache.source`
 	 * @param {string} pathName - Full path of the file/directory.
 	 * @param {number} modified - Modified date, as a Unix epoch in seconds.
@@ -177,9 +192,10 @@ class PathCache {
 	}
 
 	/**
-	 * Extends a stream with cached data about a file
-	 * @param {Readable} stream
-	 * @param {string} filename
+	 * Extends a stream with cached data about a file.
+	 * @param {Readable} stream - An existing Readable stream.
+	 * @param {string|number} source - Source container.
+	 * @param {string} filename - The filename to stream to/from.
 	 */
 	extendStream(stream, source, filename) {
 		let file = this.getFileByPath(source, filename);
@@ -194,6 +210,11 @@ class PathCache {
 	}
 };
 
+/**
+ * Built in sources.
+ * @property {number} REMOTE
+ * @property {number} LOCAL
+ */
 PathCache.sources = {
 	REMOTE: 0,
 	LOCAL: 1
