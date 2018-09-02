@@ -12,8 +12,9 @@
             ],
             "stopOnEntry": false,
             "skipFiles": [
-                "${workspaceRoot}/node_modules/**/*.js",
-                "<node_internals>/**/*.js"
+                "${workspaceRoot}/node_modules/**/*",
+                "/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/**/*",
+                "<node_internals>/**/*"
             ]
         },
         {
@@ -27,8 +28,9 @@
             ],
             "stopOnEntry": false,
             "skipFiles": [
-                "${workspaceRoot}/node_modules/**/*.js",
-                "<node_internals>/**/*.js"
+                "${workspaceRoot}/node_modules/**/*",
+                "/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/**/*",
+                "<node_internals>/**/*"
             ]
         },
         {
