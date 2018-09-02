@@ -330,14 +330,19 @@ class Push extends PushBase {
 			newConfig.env = settings.data.env;
 			newConfig.serviceName = settings.data.service;
 			newConfig.serviceFilename = settings.file;
-			newConfig.serviceUri = settings.uri;
 			newConfig.service = settings.data[newConfig.serviceName];
+			newConfig.serviceUri = settings.uri;
 			newConfig.serviceSettingsHash = settings.hash;
 
-			// Expand environment variables
-			newConfig.service.root = newConfig.service.root.replace(/%([^%]+)%/g, function(_, n) {
-				return process.env[n] || _;
-			});
+			if (newConfig.service && newConfig.service.root) {
+				// Expand environment variables
+				newConfig.service.root = newConfig.service.root.replace(
+					/%([^%]+)%/g,
+					function(_, n) {
+						return process.env[n] || _;
+					}
+				);
+			}
 
 			return newConfig;
 		} else {

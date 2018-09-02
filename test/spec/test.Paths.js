@@ -159,12 +159,6 @@ describe('Paths', function() {
 		it('should filter a uri');
 	});
 
-	describe('#iterateDirectoryPath', () => {
-		it('should iterate exactly 0 times');
-		it('should iterate exactly 1 times');
-		it('should iterate exactly 2 times');
-	});
-
 	describe('#findFileInAncestors', () => {
 		it('should find a file');
 		it('return null if no file is found');

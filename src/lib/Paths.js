@@ -349,25 +349,6 @@ class Paths {
 	}
 
 	/**
-	 * Iterates over each segment of a path, invoking an iterator function with
-	 * a cumulative portion of that path.
-	 * @param {string} dir
-	 * @param {function} iterator
-	 */
-	iterateDirectoryPath(dir, iterator) {
-		let segment_dir = '';
-
-		dir = path.dirname(dir);
-		dir = dir.replace(/^\//, '');
-		dir = dir.split('/');
-
-		dir.forEach((segment) => {
-			segment_dir += `/${segment}`;
-			iterator(segment_dir);
-		});
-	}
-
-	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
 	 * the root of the active workspace is reached.
 	 * @param {string} fileName - The filename to look for. Supports globs.
@@ -415,24 +396,28 @@ class Paths {
 
 	/**
 	 * Retrieves a source file based on the workspace of the command.
-	 * @param {object} [uri] - Source file Uri.
+	 * @param {object} [uri] - Source file Uri. In the case that a Uri is not
+	 * supplied, a contextual Uri may be returned.
+	 * @returns {Uri|null} A Uri, or null if a contextual Uri could not be found.
 	 */
 	getFileSrc(uri) {
 		let folders;
 
 		if (uri && uri instanceof vscode.Uri) {
+			// Return contextual Uri
 			return uri;
 		}
 
-		// uri is not set or does not exist. attempt to get from the editor
 		if (vscode.window.activeTextEditor) {
+			// Return active editor Uri
 			return vscode.window.activeTextEditor &&
 				vscode.window.activeTextEditor.document.uri;
 		} else if ((folders = this.getWorkspaceFolders()).length) {
+			// Return base workspace Uri
 			return folders[0].uri;
 		}
 
-		return '';
+		return null;
 	}
 
 	/**
@@ -440,6 +425,7 @@ class Paths {
 	 * @param {Uri} uri - Uri to check.
 	 */
 	isValidScheme(uri) {
+		utils.assertFnArgs('Paths#isValidScheme', arguments, [vscode.Uri]);
 		return (uri.scheme === 'file' || uri.scheme === '' || !uri.scheme);
 	}
 
@@ -451,9 +437,12 @@ class Paths {
 	 * - Has at least one directory
 	 * - Contains a "root" path (e.g. / or c:\)
 	 * - Doesn't contain "bad" characters (e.g. traversal characters)
-	 * @param {Uri|string} uri
+	 * @param {Uri} uri
+	 * @returns	{boolean} `true` if the path validates, `false` otherwise.
 	 */
 	isValidPath(uri) {
+		utils.assertFnArgs('Paths#isValidPath', arguments, [vscode.Uri]);
+
 		uri = path.parse(this.getNormalPath(uri));
 
 		return !(
@@ -466,8 +455,10 @@ class Paths {
 	/**
 	 * Process a Uri and retrieve the basename component.
 	 * @param {Uri} uri - Uri to process.
+	 * @returns {string} The basename of the file.
 	 */
 	getBaseName(uri) {
+		utils.assertFnArgs('Paths#getBaseName', arguments, [vscode.Uri]);
 		return path.basename(this.getNormalPath(uri));
 	}
 
@@ -485,9 +476,16 @@ class Paths {
 		return vscode.Uri.file(path.dirname(this.getNormalPath(uri)));
 	}
 
+	/**
+	 * Checks for the existence of a directory.
+	 * @param {Uri} dir - The path to check.
+	 * @returns {Promise} Resolving if the directory exists, rejecting otherwise.
+	 */
 	ensureDirExists(dir) {
 		return new Promise((resolve, reject) => {
-			this.getFileStats(dir)
+			utils.assertFnArgs('Paths#ensureDirExists', arguments, [vscode.Uri]);
+
+			this.getFileStats(this.getNormalPath(dir))
 				.then(stats => {
 					if (!stats) {
 						mkdirp(dir, function (error) {

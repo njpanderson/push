@@ -545,42 +545,42 @@ class SFTP extends ServiceBase {
 				this.mkDir
 			);
 		})
-		.then(() => {
-			return this.getFileStats(remote, local);
-		})
-		.then((stats) => {
-			if (!stats.local) {
-				// No local file! return TransferResult error
-				return new TransferResult(
-					local,
-					new PushError(i18n.t(
-						'file_not_found',
-						this.paths.getBaseName(local)
-					)),
-					TRANSFER_TYPES.PUT
+			.then(() => {
+				return this.getFileStats(remote, local);
+			})
+			.then((stats) => {
+				if (!stats.local) {
+					// No local file! return TransferResult error
+					return new TransferResult(
+						local,
+						new PushError(i18n.t(
+							'file_not_found',
+							this.paths.getBaseName(local)
+						)),
+						TRANSFER_TYPES.PUT
+					);
+				}
+
+				return super.checkCollision(
+					stats.local,
+					stats.remote,
+					collisionAction
 				);
-			}
+			})
+			.then((result) => {
+				if (result instanceof TransferResult) {
+					// Pass through TransferResult results
+					return result;
+				}
 
-			return super.checkCollision(
-				stats.local,
-				stats.remote,
-				collisionAction
-			);
-		})
-		.then((result) => {
-			if (result instanceof TransferResult) {
-				// Pass through TransferResult results
-				return result;
-			}
+				// Figure out what to do based on the collision (if any)
+				if (result === false) {
+					// No collision, just keep going
+					return this.clientPut(local, remote);
+				} else {
+					this.setCollisionOption(result);
 
-			// Figure out what to do based on the collision (if any)
-			if (result === false) {
-				// No collision, just keep going
-				return this.clientPut(local, remote);
-			} else {
-				this.setCollisionOption(result);
-
-				switch (result.option) {
+					switch (result.option) {
 					case utils.collisionOpts.stop:
 						throw utils.errors.stop;
 
@@ -601,29 +601,28 @@ class SFTP extends ServiceBase {
 									)
 								);
 							});
+					}
 
+					return false;
+				}
+			})
+			.then((result) => {
+				if ((result instanceof TransferResult) && !result.error) {
+					// Transfer occured with no errors - set the remote file mode
+					return this.setRemotePathMode(remote, this.config.service.fileMode)
+						.then(() => result);
 				}
 
-				return false;
-			}
-		})
-		.then((result) => {
-			if ((result instanceof TransferResult) && !result.error) {
-				// Transfer occured with no errors - set the remote file mode
-				return this.setRemotePathMode(remote, this.config.service.fileMode)
-					.then(() => result);
-			}
-
-			return result;
-		})
-		.then((result) => {
-			this.setProgress(false);
-			return result;
-		})
-		.catch((error) => {
-			this.setProgress(false);
-			throw error;
-		});
+				return result;
+			})
+			.then((result) => {
+				this.setProgress(false);
+				return result;
+			})
+			.catch((error) => {
+				this.setProgress(false);
+				throw error;
+			});
 	}
 
 	/**
@@ -660,7 +659,7 @@ class SFTP extends ServiceBase {
 						local,
 						new PushError(i18n.t(
 							'remote_file_not_found',
-							this.paths.getBaseName(remote)
+							this.paths.getBaseName(local)
 						)),
 						TRANSFER_TYPES.GET
 					);
@@ -864,7 +863,9 @@ class SFTP extends ServiceBase {
 			.then((connection) => {
 				client = connection;
 			})
-			.then(() => this.paths.ensureDirExists(path.dirname(localPath)))
+			.then(() => this.paths.ensureDirExists(
+				this.paths.getDirName(localPath)
+			))
 			.then(() => this.getMimeCharset(remote))
 			.then((charset) => {
 				return new Promise((resolve, reject) => {

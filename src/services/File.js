@@ -90,6 +90,7 @@ class File extends ServiceBase {
 	get(local, remote, collisionAction) {
 		utils.assertFnArgs('File#get', arguments, [vscode.Uri, 'string']);
 
+		// Convert remote into a Uri
 		remote = vscode.Uri.file(remote);
 
 		collisionAction = collisionAction ||

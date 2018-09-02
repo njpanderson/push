@@ -144,7 +144,7 @@ class ServiceSettings {
 	 * @description
 	 * Attempts to retrieve a server settings JSON file from the supplied URI,
 	 * eventually ascending the directory tree to the root of the project.
-	 * @param {object} uri - URI of the path in which to start looking.
+	 * @param {Uri} uri - URI of the path in which to start looking.
 	 * @param {string} settingsFilename - Name of the settings file.
 	 * @param {boolean} [quiet=false] - Produce no errors if a settings file couldn't be
 	 * found. (Will not affect subsequent errors.)
@@ -210,6 +210,12 @@ class ServiceSettings {
 		return null;
 	}
 
+	/**
+	 * Sets the active environment option within a service settings file.
+	 * @param {Uri} uri - Uri for the contextual file.
+	 * @param {string} settingsFileGlob - Glob to find the settings file.
+	 * @returns {Promise} Resolving once the change has been made.
+	 */
 	setConfigEnv(uri, settingsFileGlob) {
 		return new Promise((resolve, reject) => {
 			let environments, settings, jsonData;
@@ -259,7 +265,7 @@ class ServiceSettings {
 				return reject();
 			}
 
-			return vscode.window.showQuickPick(
+			vscode.window.showQuickPick(
 				environments,
 				{
 					placeHolder: i18n.t('select_env')
@@ -293,8 +299,10 @@ class ServiceSettings {
 					);
 
 					if (this.options.onServiceFileUpdate) {
-						this.options.onServiceFileUpdate(vscode.Uri.file(settings.file))
+						this.options.onServiceFileUpdate(vscode.Uri.file(settings.file));
 					}
+
+					resolve();
 				} catch(error) {
 					throw new PushError(i18n.t(
 						'error_writing_json',

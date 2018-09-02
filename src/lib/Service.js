@@ -43,56 +43,53 @@ class Service extends PushBase {
 	 * if the service file is level with the contextual file.
 	 */
 	editServiceConfig(uri, forceCreate) {
-		let folders, dir, settingsFile;
+		return new Promise((resolve, reject) => {
+			let dir, settingsFile;
 
-		uri = this.paths.getFileSrc(uri);
-		dir = this.paths.getDirName(uri, true);
+			uri = this.paths.getFileSrc(uri);
+			dir = this.paths.getDirName(uri, true);
 
-		// Find the nearest settings file
-		settingsFile = this.paths.findFileInAncestors(
-			this.config.settingsFileGlob,
-			dir
-		);
+			// Find the nearest settings file
+			settingsFile = this.paths.findFileInAncestors(
+				this.config.settingsFileGlob,
+				dir
+			);
 
-		if (dir !== ".") {
-			// If a directory is defined, use it as the workspace folder
-			folders = [{
-				uri: dir
-			}]
-		} else {
-			folders = this.paths.getWorkspaceFolders();
-		}
-
-		/**
-		 * If a settings file is found but forceCreate is true, then the file name
-		 * prompt path is chosen.
-		 *
-		 * In the case that a service file exists in the _same_ location as the
-		 * contextual file, it will still be edited (due to the logic within
-		 * getFileNamePromp() based on resolving immediately unless `forceDialog`
-		 * is true. This is intended behaviour as two service files should not
-		 * exist within the same folder.
-		 */
-		if (settingsFile && !forceCreate) {
-			// Edit the settings file found
-			return this.openDoc(settingsFile);
-		} else {
-			// Produce a prompt to create a new settings file
-			return this.getFileNamePrompt(this.config.settingsFilename, folders)
-				.then((file) => {
-					if (file.exists) {
-						return this.openDoc(file.fileName);
-					} else {
-						// Create the file
-						return this.writeAndOpen(
-							this.settings.createServerFileContents(
-								file.serviceType
-							),
-							file.fileName
-						);
-					}
-				});
-		}
+			/**
+			 * If a settings file is found but forceCreate is true, then the file name
+			 * prompt path is chosen.
+			 *
+			 * In the case that a service file exists in the _same_ location as the
+			 * contextual file, it will still be edited (due to the logic within
+			 * getFileNamePromp() based on resolving immediately unless `forceDialog`
+			 * is true. This is intended behaviour as two service files should not
+			 * exist within the same folder.
+			 */
+			if (settingsFile && !forceCreate) {
+				// Edit the settings file found
+				this.openDoc(settingsFile)
+					.then(resolve, reject);
+			} else {
+				// Produce a prompt to create a new settings file
+				this.getFileNamePrompt(this.config.settingsFilename, [{
+					uri: dir
+				}])
+					.then((file) => {
+						if (file.exists) {
+							return this.openDoc(file.fileName);
+						} else {
+							// Create the file
+							return this.writeAndOpen(
+								this.settings.createServerFileContents(
+									file.serviceType
+								),
+								file.fileName
+							);
+						}
+					})
+					.then(resolve, reject);
+			}
+		});
 	}
 
 	/**
