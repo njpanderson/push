@@ -864,7 +864,7 @@ class SFTP extends ServiceBase {
 				client = connection;
 			})
 			.then(() => this.paths.ensureDirExists(
-				this.paths.getDirName(localPath)
+				this.paths.getDirName(local)
 			))
 			.then(() => this.getMimeCharset(remote))
 			.then((charset) => {

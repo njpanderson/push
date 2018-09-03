@@ -128,11 +128,11 @@ const utils = {
 		placeHolder
 	) {
 		let options = [
-				utils.collisionOpts.skip,
-				utils.collisionOpts.rename,
-				utils.collisionOpts.stop,
-				utils.collisionOpts.overwrite,
-			];
+			utils.collisionOpts.skip,
+			utils.collisionOpts.rename,
+			utils.collisionOpts.stop,
+			utils.collisionOpts.overwrite,
+		];
 
 		placeHolder = placeHolder || i18n.t('filename_exists', name);
 
@@ -325,10 +325,12 @@ const utils = {
 	assertFnArgs(fnName, args, asserts) {
 		asserts.forEach((assertable, index) => {
 			if (
-				(typeof assertable === 'string' && (typeof args[index] !== assertable)) ||
-				(typeof assertable !== 'string' && (
-					assertable !== null && !(args[index] instanceof assertable)
-				))
+				(args.length > index && typeof args[index] !== 'undefined') && (
+					(typeof assertable === 'string' && (typeof args[index] !== assertable)) ||
+					(typeof assertable !== 'string' && (
+						assertable !== null && !(args[index] instanceof assertable)
+					))
+				)
 			) {
 				debugger;
 				throw new Error(`${fnName}: Argument ${index} type mismatch.`);

@@ -4,6 +4,7 @@ const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const ServiceSettings = require('./ServiceSettings');
+const ServicePromptResult = require('./ServicePromptResult');
 const ServiceType = require('./ServiceType');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
@@ -76,14 +77,14 @@ class Service extends PushBase {
 				}])
 					.then((file) => {
 						if (file.exists) {
-							return this.openDoc(file.fileName);
+							return this.openDoc(file.uri);
 						} else {
 							// Create the file
 							return this.writeAndOpen(
 								this.settings.createServerFileContents(
 									file.serviceType
 								),
-								file.fileName
+								file.uri
 							);
 						}
 					})
@@ -147,25 +148,25 @@ class Service extends PushBase {
 								}
 							).then((collisionAnswer) => {
 								return ({
-									fileName: result.fileName,
+									uri: result.uri,
 									write: (collisionAnswer.title === i18n.t('overwrite'))
 								});
 							});
 						} else {
 							// Just create and open
-							return ({ fileName: result.fileName, write: true });
+							return ({ uri: result.uri, write: true });
 						}
 					})
 					.then((result) => {
 						if (result.write) {
 							// Write the file
 							this.writeAndOpen(
-								'\/\/ ' + i18n.t(
+								'// ' + i18n.t(
 									'comm_settings_imported',
 									this.paths.getNormalPath(uri)
 								) +
 								JSON.stringify(settings, null, '\t'),
-								result.fileName
+								result.uri
 							);
 						}
 					})
@@ -187,39 +188,41 @@ class Service extends PushBase {
 	 * If `false`, will not display a dialog even if the file exists.
 	 * @param {boolean} fromTemplate - Produce a list of service templates with which
 	 * to fill the file.
+	 * @returns {Promise<ServicePromptResult} Resolving to an instance of
+	 * ServicePromptResult with the relevant properties.
 	 */
 	getFileNamePrompt(exampleFileName, folders, forceDialog = false, fromTemplate = true) {
 		return new Promise((resolve, reject) => {
 			// Produce a filename prompt
 			this.getRootPathPrompt(folders)
 				.then((rootUri) => {
-					let fileName;
+					let uri;
 
 					if (!rootUri) {
 						return reject();
 					}
 
-					fileName = this.paths.join(rootUri, exampleFileName);
+					uri = this.paths.join(rootUri, exampleFileName);
 
 					// File exists but forceDialog is false - just keep going
-					if (this.paths.fileExists(fileName) && !forceDialog) {
-						return resolve({ fileName, exists: true });
+					if (this.paths.fileExists(uri) && !forceDialog) {
+						return resolve(ServicePromptResult(uri));
 					}
 
-					// Produce a file prompt
+					// Show a prompt, asking the user where the settings file should go
 					vscode.window.showInputBox({
 						prompt: i18n.t('enter_service_settings_filename'),
-						value: fileName.fsPath
+						value: uri.fsPath
 					}).then((fileName) => {
-						fileName = vscode.Uri.file(fileName);
+						let uri = vscode.Uri.file(fileName);
+
+						if (!uri) {
+							return reject();
+						}
 
 						// Show a service type picker (unless fromTemplate is false)
 						if (!fromTemplate) {
-							return { fileName };
-						}
-
-						if (!fileName) {
-							return reject();
+							return resolve(new ServicePromptResult(uri));
 						}
 
 						return vscode.window.showQuickPick(
@@ -231,13 +234,10 @@ class Service extends PushBase {
 								placeHolder: i18n.t('select_service_type_template')
 							}
 						).then((serviceType) => {
-							return { fileName, serviceType };
-						});
-					}).then(({ fileName, serviceType }) => {
-						resolve({
-							fileName,
-							exists: this.paths.fileExists(fileName),
-							serviceType
+							resolve(new ServicePromptResult(
+								uri,
+								serviceType
+							));
 						});
 					});
 				})

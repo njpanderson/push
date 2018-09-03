@@ -311,8 +311,8 @@ class ServiceBase {
 						this.queueLength,
 						(
 							(!this.config.service.testCollisionTimeDiffs) ?
-							i18n.t('filename_exists_ignore_times', source.name) :
-							null
+								i18n.t('filename_exists_ignore_times', source.name) :
+								null
 						)
 					);
 				}

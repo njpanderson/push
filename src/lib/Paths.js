@@ -464,11 +464,13 @@ class Paths {
 
 	/**
 	 *
-	 * @param {string|Uri} uri - Uri or pathname.
+	 * @param {Uri} uri - Uri or pathname.
 	 * @param {boolean} [returnIfDirectory=false] - If the path supplied is already a
 	 * directory, just return it.
 	 */
 	getDirName(uri, returnIfDirectory = false) {
+		utils.assertFnArgs('Paths#getDirName', arguments, [vscode.Uri, 'boolean']);
+
 		if (returnIfDirectory && this.isDirectory(uri)) {
 			return uri;
 		}

@@ -206,7 +206,7 @@ class UI extends Push {
 	 */
 	importConfig(uri) {
 		if (this.getValidUri(uri)) {
-			this.service.importConfig(uri);
+			return this.service.importConfig(uri).catch(this.catchError);
 		}
 	}
 }
