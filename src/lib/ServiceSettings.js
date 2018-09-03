@@ -220,10 +220,8 @@ class ServiceSettings {
 		return new Promise((resolve, reject) => {
 			let environments, settings, jsonData;
 
-			// If the path isn't a directory, get its directory name
-			if (!this.paths.isDirectory(uri)) {
-				uri = this.paths.getDirName(uri);
-			}
+			// Get the Uri's directory name
+			uri = this.paths.getDirName(uri, true);
 
 			// Find the nearest settings file
 			if (!(settings = this.getServerFile(uri, settingsFileGlob))) {

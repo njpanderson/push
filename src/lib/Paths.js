@@ -368,7 +368,7 @@ class Paths {
 
 		utils.assertFnArgs('Paths#findFileInAncestors', arguments, ['string', vscode.Uri]);
 
-		start = this.getDirName(start);
+		start = this.getDirName(start, true);
 
 		while (!(matches = (glob.sync(
 			this.ensureGlobPath(start, fileName),
