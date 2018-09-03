@@ -173,7 +173,7 @@ class ServiceSettings {
 			try {
 				data = this.normalise(
 					jsonc.parse(settings.contents),
-					settings.file
+					settings.uri
 				);
 
 				hash = crypto.createHash('sha256');
@@ -313,23 +313,26 @@ class ServiceSettings {
 
 	getServerEnvDetail(jsonData, key) {
 		switch (jsonData[key].service) {
-			case "SFTP":
-				return (jsonData[key].options && (
+		case 'SFTP':
+			return (jsonData[key].options && (
+				jsonData[key].options.host ?
 					jsonData[key].options.host + (
 						(jsonData[key].options.port ? ':' + jsonData[key].options.port : '')
-					)
-				)) || '';
+					) :
+					i18n.t('no_host_defined')
+			)) || '';
 
-			case "File":
-				return (jsonData[key].options && jsonData[key].options.root) || '';
+		case 'File':
+			return (jsonData[key].options && jsonData[key].options.root) || '';
 		}
 	}
 
 	/**
 	 * Normalises server data into a consistent format.
-	 * @param {object} settings - Settings data as retrieved by JSON/C files
+	 * @param {object} settings - Settings data as retrieved by JSON/C files.
+	 * @param {Uri} uri - Uri of the settings file. Mainly for error reporting.
 	 */
-	normalise(settings, filename) {
+	normalise(settings, uri) {
 		let serviceData, variant;
 
 		if (!settings.service) {
@@ -345,7 +348,7 @@ class ServiceSettings {
 							settings.hasOwnProperty(variant) &&
 							variant !== 'service' &&
 							variant !== settings.service &&
-							variant !== "env"
+							variant !== 'env'
 						) {
 							delete settings[variant];
 						}
@@ -355,14 +358,14 @@ class ServiceSettings {
 					throw new PushError(i18n.t(
 						'active_service_not_found',
 						settings.env,
-						filename
+						this.paths.getNormalPath(uri)
 					));
 				}
 			} else {
 				// No service defined
 				throw new PushError(i18n.t(
 					'service_not_defined',
-					filename
+					this.paths.getNormalPath(uri)
 				));
 			}
 		}
@@ -371,7 +374,7 @@ class ServiceSettings {
 			// Service defined but no config object found
 			throw new PushError(i18n.t(
 				'service_defined_but_no_config_exists',
-				filename
+				this.paths.getNormalPath(uri)
 			));
 		}
 
