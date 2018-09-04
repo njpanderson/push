@@ -482,17 +482,17 @@ class Paths {
 
 	/**
 	 * Checks for the existence of a directory.
-	 * @param {Uri} dir - The path to check.
+	 * @param {Uri} uri - The path to check.
 	 * @returns {Promise} Resolving if the directory exists, rejecting otherwise.
 	 */
-	ensureDirExists(dir) {
+	ensureDirExists(uri) {
 		return new Promise((resolve, reject) => {
 			utils.assertFnArgs('Paths#ensureDirExists', arguments, [vscode.Uri]);
 
-			this.getFileStats(this.getNormalPath(dir))
+			this.getFileStats(this.getNormalPath(uri))
 				.then(stats => {
 					if (!stats) {
-						mkdirp(dir, function (error) {
+						mkdirp(uri, function (error) {
 							if (error) {
 								reject(error);
 							} else {
