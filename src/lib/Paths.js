@@ -467,6 +467,8 @@ class Paths {
 	 * @param {Uri} uri - Uri or pathname.
 	 * @param {boolean} [returnIfDirectory=false] - If the path supplied is already a
 	 * directory, just return it.
+	 * @returns {Uri} the original path's directory name, or the same path if it's
+	 * already a directory and `returnIfDirectory` is `true`.
 	 */
 	getDirName(uri, returnIfDirectory = false) {
 		utils.assertFnArgs('Paths#getDirName', arguments, [vscode.Uri, 'boolean']);
@@ -511,6 +513,8 @@ class Paths {
 	 */
 	writeFile(contents, uri) {
 		return new Promise((resolve, reject) => {
+			utils.assertFnArgs('Paths#writeFile', arguments, [null, vscode.Uri]);
+
 			fs.writeFile(
 				this.getNormalPath(uri),
 				contents,

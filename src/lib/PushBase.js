@@ -56,17 +56,17 @@ class PushBase extends Configurable {
 	/**
 	 * Writes content to a file and then opens it for editing.
 	 * @param {string} content - Content to write to the file.
-	 * @param {string} fileName - Filename to write to.
+	 * @param {Uri} uri - Uri of the filename to write to.
 	 */
-	writeAndOpen(content, fileName) {
+	writeAndOpen(content, uri) {
 		// Write the file...
 		return this.paths.writeFile(
 			content,
-			fileName
+			uri
 		)
-			.then((fileName) => {
+			.then((uri) => {
 				// Open it
-				this.openDoc(fileName);
+				this.openDoc(uri);
 			})
 			.catch((error) => {
 				// Append the error

@@ -122,18 +122,27 @@ class ServiceSettings {
 		return content;
 	}
 
+	/**
+	 * Retrieves the contents of a settings file by locating it within the current
+	 * `dir` path or within the path's ancestors.
+	 * @param {Uri} dir
+	 * @param {string} settingsFileGlob
+	 * @returns {object|null}
+	 */
 	getServerFile(dir, settingsFileGlob) {
 		// Find the settings file
-		let file = this.paths.getNormalPath(this.paths.findFileInAncestors(
+		let uri = this.paths.findFileInAncestors(
 			settingsFileGlob,
 			dir
-		));
+		);
 
-		if (file !== '' && fs.existsSync(file)) {
+		if (uri !== null && this.paths.fileExists(uri)) {
 			// File isn't empty and exists - read and set into cache
 			return {
-				file,
-				contents: (fs.readFileSync(file, 'utf8')).toString().trim()
+				uri: uri,
+				contents: (
+					fs.readFileSync(this.paths.getNormalPath(uri), 'utf8')
+				).toString().trim()
 			};
 		}
 
@@ -188,8 +197,7 @@ class ServiceSettings {
 
 				// Cache entry
 				this.settingsCache[uriPath] = {
-					file: settings.file,
-					uri: vscode.Uri.file(settings.file),
+					uri: settings.uri,
 					fileContents: settings.contents,
 					newFile,
 					data,
@@ -256,7 +264,7 @@ class ServiceSettings {
 			if (environments.length === 1) {
 				channel.appendLocalisedError(
 					'single_env',
-					settings.file,
+					this.paths.getNormalPath(settings.uri),
 					environments[0]
 				);
 
@@ -291,13 +299,13 @@ class ServiceSettings {
 
 					// Write back to the file
 					fs.writeFileSync(
-						settings.file,
+						this.paths.getNormalPath(settings.uri),
 						settings.newContents,
 						'UTF-8'
 					);
 
 					if (this.options.onServiceFileUpdate) {
-						this.options.onServiceFileUpdate(vscode.Uri.file(settings.file));
+						this.options.onServiceFileUpdate(settings.uri);
 					}
 
 					resolve();
