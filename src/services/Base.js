@@ -141,8 +141,8 @@ class ServiceBase {
 	 * Returns a filename, guarnteeing that it will not be the same as any others within
 	 * the supplied file list.
 	 * @param {string} file - Filename to rename
-	 * @param {array} dirContents - Array of filenames in the file's directory as
-	 * returned from PathCache.
+	 * @param {PathCacheItem[]} dirContents - Array of PathCacheItem items in the
+	 * file's directory as returned from PathCache.
 	 */
 	getNonCollidingName(file, dirContents) {
 		let indexOfDot = file.indexOf('.'),
@@ -172,9 +172,11 @@ class ServiceBase {
 
 	/**
 	 * Matches the files in a directory given a regular expression.
-	 * @param {array} dirContents - Contents of the directory given by pathCache.
-	 * @param {*} re - Regular expression used to match.
-	 * @return {object|null} Either the matches as a regular expression result, or `null`.
+	 * @param {PathCacheItem[]} dirContents - Contents of the directory given by
+	 * pathCache.
+	 * @param {RegExp} re - Regular expression used to match.
+	 * @return {object|null} Either the matches as a regular expression result,
+	 * or `null`.
 	 */
 	matchFilesInDir(dirContents, re) {
 		return dirContents.filter((item) => {

@@ -107,7 +107,7 @@ class PathCache {
 					});
 				}
 
-				return (this.cache[source][dir] || null);
+				return (this.cache[source][dir].list || null);
 			}
 
 			return this.cache[source];

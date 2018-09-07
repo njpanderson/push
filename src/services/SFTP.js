@@ -686,34 +686,34 @@ class SFTP extends ServiceBase {
 					this.setCollisionOption(collision);
 
 					switch (collision.option) {
-						case utils.collisionOpts.stop:
-							throw utils.errors.stop;
+					case utils.collisionOpts.stop:
+						throw utils.errors.stop;
 
-						case utils.collisionOpts.skip:
-						case undefined:
-							return new TransferResult(local, false, TRANSFER_TYPES.GET);
+					case utils.collisionOpts.skip:
+					case undefined:
+						return new TransferResult(local, false, TRANSFER_TYPES.GET);
 
-						case utils.collisionOpts.overwrite:
-							return this.clientGetByStream(local, remote);
+					case utils.collisionOpts.overwrite:
+						return this.clientGetByStream(local, remote);
 
-						case utils.collisionOpts.rename:
-							localDir = path.dirname(localPath);
-							localFilename = path.basename(localPath);
+					case utils.collisionOpts.rename:
+						localDir = path.dirname(localPath);
+						localFilename = path.basename(localPath);
 
-							// Rename (non-colliding) and get
-							return this.paths.listDirectory(localDir)
-								.then((dirContents) => {
-									let localPath = localDir + '/' +
-										this.getNonCollidingName(
-											localFilename,
-											dirContents
-										);
-
-									return this.clientGetByStream(
-										vscode.Uri.file(localPath),
-										remote
+						// Rename (non-colliding) and get
+						return this.paths.listDirectory(localDir)
+							.then((dirContents) => {
+								let localPath = localDir + '/' +
+									this.getNonCollidingName(
+										localFilename,
+										dirContents
 									);
-								});
+
+								return this.clientGetByStream(
+									vscode.Uri.file(localPath),
+									remote
+								);
+							});
 
 					}
 

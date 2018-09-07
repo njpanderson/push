@@ -83,10 +83,10 @@ class i18n {
 				this,
 				(
 					params && params[key] ?
-					[object[key]].concat(
-						params[key] || []
-					) :
-					[object[key]]
+						[object[key]].concat(
+							params[key] || []
+						) :
+						[object[key]]
 				)
 			);
 		}

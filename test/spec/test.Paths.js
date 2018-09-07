@@ -25,7 +25,8 @@ describe('Paths', function() {
 	useMockery(() => {
 		useMockery
 			.registerMultiple({
-				'vscode': vscode
+				'vscode': vscode,
+				'../lang/i18n': require('../mocks/lib/i18n')
 			});
 	});
 
@@ -79,10 +80,10 @@ describe('Paths', function() {
 
 	describe('#getPathWithoutWorkspace', () => {
 		it('should return a Uri normalised without workspace path', () => {
-			assert(paths.getPathWithoutWorkspace(
+			expect(paths.getPathWithoutWorkspace(
 				fixtures.mockUriFile,
 				fixtures.mockWorkspace
-			) === '/test-file.txt')
+			)).to.eql(fixtures.mockUriFileWithoutWorkspace);
 		});
 	});
 
@@ -117,7 +118,7 @@ describe('Paths', function() {
 	describe('#isDirectory', () => {
 		it('should not fault with a non-existent directory, but return false', () => {
 			assert(paths.isDirectory(
-				'/utter/nonsense/directory/flj3232joisdfosdjgkljhurfs/'
+				fixtures.mockUriMissingDir
 			) === false);
 		});
 	});
