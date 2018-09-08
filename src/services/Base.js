@@ -72,7 +72,7 @@ class ServiceBase {
 				)) !== true) {
 					throw new PushError(i18n.t(
 						'service_setting_missing',
-						this.config.serviceFilename,
+						this.paths.getNormalPath(this.config.serviceUri),
 						this.config.env,
 						this.type,
 						validation
@@ -118,7 +118,7 @@ class ServiceBase {
 		let file = this.paths.getNormalPath(uri);
 
 		file = this.paths.stripTrailingSlash(this.config.service.root) +
-			file.replace(path.dirname(this.config.serviceFilename), '');
+			file.replace(path.dirname(this.config.serviceFile), '');
 
 		file = (path.join(file).split(path.sep)).join('/');
 
@@ -132,7 +132,7 @@ class ServiceBase {
 	 */
 	convertRemoteToUri(file) {
 		return vscode.Uri.file(
-			path.dirname(this.config.serviceFilename) + '/' +
+			path.dirname(this.config.serviceFile) + '/' +
 			file.replace(this.paths.stripTrailingSlash(this.config.service.root) + '/', '')
 		);
 	}

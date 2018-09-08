@@ -201,28 +201,28 @@ class Push extends PushBase {
 		let uri, method, args, settings;
 
 		switch (eventType) {
-			case 'onDidSaveTextDocument':
-				uri = data && data.uri;
-				method = 'didSaveTextDocument';
-				args = [data];
-				break;
+		case 'onDidSaveTextDocument':
+			uri = data && data.uri;
+			method = 'didSaveTextDocument';
+			args = [data];
+			break;
 
-			case 'onDidChangeActiveTextEditor':
-				if (!data) {
-					data = vscode.window.activeTextEditor;
-				}
+		case 'onDidChangeActiveTextEditor':
+			if (!data) {
+				data = vscode.window.activeTextEditor;
+			}
 
-				uri = (data && data.document && data.document.uri);
-				method = 'didChangeActiveTextEditor'
-				args = [data];
-				break;
+			uri = (data && data.document && data.document.uri);
+			method = 'didChangeActiveTextEditor'
+			args = [data];
+			break;
 
-			case 'onServiceFileUpdate':
-				uri = data;
-				break;
+		case 'onServiceFileUpdate':
+			uri = data;
+			break;
 
-			default:
-				throw new Error('Unrecognised event type');
+		default:
+			throw new Error('Unrecognised event type');
 		}
 
 		utils.trace('Push#event', eventType);
@@ -329,8 +329,8 @@ class Push extends PushBase {
 			// Settings retrieved from JSON file within context
 			newConfig.env = settings.data.env;
 			newConfig.serviceName = settings.data.service;
-			newConfig.serviceFilename = settings.file;
 			newConfig.service = settings.data[newConfig.serviceName];
+			newConfig.serviceFile = this.paths.getNormalPath(settings.uri);
 			newConfig.serviceUri = settings.uri;
 			newConfig.serviceSettingsHash = settings.hash;
 

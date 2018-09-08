@@ -316,7 +316,7 @@ class Service extends PushBase {
 			throw new PushError(i18n.t(
 				'service_name_invalid',
 				configObject.serviceName,
-				configObject.serviceFilename
+				this.paths.getNormalPath(configObject.serviceUri)
 			));
 		}
 

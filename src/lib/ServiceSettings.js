@@ -137,7 +137,7 @@ class ServiceSettings {
 		);
 
 		if (uri !== null && this.paths.fileExists(uri)) {
-			// File isn't empty and exists - read and set into cache
+			// File isn't empty and exists - read and return
 			return {
 				uri: uri,
 				contents: (
@@ -195,15 +195,14 @@ class ServiceSettings {
 					digest !== this.settingsCache[uriPath].hash
 				);
 
-				// Cache entry
-				this.settingsCache[uriPath] = {
-					uri: settings.uri,
-					fileContents: settings.contents,
+				// Cache entry, with extra properties
+				this.settingsCache[uriPath] = Object.assign({}, settings, {
 					newFile,
 					data,
 					hash: digest
-				};
+				});
 
+				// Return entry as cached
 				return this.settingsCache[uriPath];
 			} catch(error) {
 				channel.appendError(error.message);

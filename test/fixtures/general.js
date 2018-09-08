@@ -17,8 +17,8 @@ module.exports = {
 
 	servers: {
 		SFTP: {
-			file: '/fake/path/to/.push.settings.json',
-			fileContents: '[none]',
+			file: vscode.Uri.file('/fake/path/to/.push.settings.json'),
+			contents: '[none]',
 			newFile: true,
 			data: {
 				service: 'SFTP',

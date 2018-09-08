@@ -110,7 +110,7 @@ class File extends ServiceBase {
 			TRANSFER_TYPES.GET,
 			remote,
 			local,
-			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
+			this.paths.getDirName(this.config.serviceUri),
 			collisionAction
 		);
 	}
