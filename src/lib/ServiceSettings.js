@@ -1,5 +1,4 @@
 const vscode = require('vscode');
-const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
@@ -215,6 +214,48 @@ class ServiceSettings {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Adds the current service settings based on the contextual URI to the
+	 * passed `merge` object, then returns a new mutated object.
+	 * @param {Uri} uriContext - Contextual Uri.
+	 * @param {string} settingsGlob - Glob to use for locating the settings file.
+	 * @param {object} [merge={}] - Object to merge with.
+	 */
+	mergeWithServiceSettings(uriContext, settingsGlob, merge = {}) {
+		const settings = this.getServerJSON(
+			uriContext,
+			settingsGlob
+		);
+
+		// Make a duplicate to avoid changing the original config
+		let newConfig = Object.assign({}, merge);
+
+		if (settings) {
+			// Settings retrieved from JSON file within context
+			newConfig.env = settings.data.env;
+			newConfig.serviceName = settings.data.service;
+			newConfig.service = settings.data[newConfig.serviceName];
+			newConfig.serviceFile = this.paths.getNormalPath(settings.uri);
+			newConfig.serviceUri = settings.uri;
+			newConfig.serviceSettingsHash = settings.hash;
+
+			if (newConfig.service && newConfig.service.root) {
+				// Expand Windows environment variables
+				newConfig.service.root = newConfig.service.root.replace(
+					/%([^%]+)%/g,
+					function (_, n) {
+						return process.env[n] || _;
+					}
+				);
+			}
+
+			return newConfig;
+		} else {
+			// No settings for this context
+			return false;
+		}
 	}
 
 	/**

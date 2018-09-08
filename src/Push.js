@@ -317,38 +317,11 @@ class Push extends PushBase {
 	 * @param {Uri} uriContext
 	 */
 	configWithServiceSettings(uriContext) {
-		const settings = this.service.settings.getServerJSON(
+		return this.service.settings.mergeWithServiceSettings(
 			uriContext,
-			this.config.settingsFileGlob
+			this.config.settingsFileGlob,
+			this.config
 		);
-
-		// Make a duplicate to avoid changing the original config
-		let newConfig = Object.assign({}, this.config);
-
-		if (settings) {
-			// Settings retrieved from JSON file within context
-			newConfig.env = settings.data.env;
-			newConfig.serviceName = settings.data.service;
-			newConfig.service = settings.data[newConfig.serviceName];
-			newConfig.serviceFile = this.paths.getNormalPath(settings.uri);
-			newConfig.serviceUri = settings.uri;
-			newConfig.serviceSettingsHash = settings.hash;
-
-			if (newConfig.service && newConfig.service.root) {
-				// Expand environment variables
-				newConfig.service.root = newConfig.service.root.replace(
-					/%([^%]+)%/g,
-					function(_, n) {
-						return process.env[n] || _;
-					}
-				);
-			}
-
-			return newConfig;
-		} else {
-			// No settings for this context
-			return false;
-		}
 	}
 
 	/**
