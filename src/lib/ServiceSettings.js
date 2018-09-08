@@ -1,5 +1,4 @@
 const vscode = require('vscode');
-const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
@@ -39,7 +38,7 @@ class ServiceSettings {
 	/**
 	 * Creates the contents for a server settings file.
 	 * @param {ServiceType} serviceType - Service type settings instance.
-	 * @returns {string} - The file contents.
+	 * @returns {string} The file contents.
 	 */
 	createServerFileContents(serviceType) {
 		let content, serviceJSON, serviceJSONLines,
@@ -62,7 +61,7 @@ class ServiceSettings {
 			re = {
 				indents: /\t/g,
 				indentedLine: /^([\t]+)(.*)$/,
-				optionItem: /^([\t]*)(\s*\"(.+?)\":\s[^$]*)/,
+				optionItem: /^([\t]*)(\s*"(.+?)":\s[^$]*)/,
 				optionCloser: /\t{3,}(]|})/
 			};
 
@@ -122,18 +121,27 @@ class ServiceSettings {
 		return content;
 	}
 
+	/**
+	 * Retrieves the contents of a settings file by locating it within the current
+	 * `dir` path or within the path's ancestors.
+	 * @param {Uri} dir
+	 * @param {string} settingsFileGlob
+	 * @returns {object|null}
+	 */
 	getServerFile(dir, settingsFileGlob) {
 		// Find the settings file
-		let file = this.paths.getNormalPath(this.paths.findFileInAncestors(
+		let uri = this.paths.findFileInAncestors(
 			settingsFileGlob,
 			dir
-		));
+		);
 
-		if (file !== '' && fs.existsSync(file)) {
-			// File isn't empty and exists - read and set into cache
+		if (uri !== null && this.paths.fileExists(uri)) {
+			// File isn't empty and exists - read and return
 			return {
-				file,
-				contents: (fs.readFileSync(file, "UTF-8")).toString().trim()
+				uri: uri,
+				contents: (
+					fs.readFileSync(this.paths.getNormalPath(uri), 'utf8')
+				).toString().trim()
 			};
 		}
 
@@ -144,19 +152,21 @@ class ServiceSettings {
 	 * @description
 	 * Attempts to retrieve a server settings JSON file from the supplied URI,
 	 * eventually ascending the directory tree to the root of the project.
-	 * @param {object} uri - URI of the path in which to start looking.
+	 * @param {Uri} uri - URI of the path in which to start looking.
 	 * @param {string} settingsFilename - Name of the settings file.
 	 * @param {boolean} [quiet=false] - Produce no errors if a settings file couldn't be
 	 * found. (Will not affect subsequent errors.)
 	 * @param {boolean} [refresh=false] - Set `true` to ensure a fresh copy of the JSON.
 	 */
 	getServerJSON(uri, settingsFilename, quiet = false, refresh = false) {
-		let uriPath = this.paths.getNormalPath(uri),
-			settings, newFile, data, hash, digest;
+		let uriPath, settings, newFile, data, hash, digest;
 
-		// If the path isn't a directory, get its directory name
-		if (!this.paths.isDirectory(uriPath)) {
-			uriPath = path.dirname(uriPath);
+		if (!this.paths.isDirectory(uri)) {
+			// If the path isn't a directory, get its directory name
+			uriPath = this.paths.getNormalPath(this.paths.getDirName(uri));
+		} else {
+			// Otherwise, just get it as-is
+			uriPath = this.paths.getNormalPath(uri);
 		}
 
 		if (!refresh && this.settingsCache[uriPath]) {
@@ -166,12 +176,12 @@ class ServiceSettings {
 			return this.settingsCache[uriPath];
 		}
 
-		if (settings = this.getServerFile(uriPath, settingsFilename)) {
+		if ((settings = this.getServerFile(uri, settingsFilename))) {
 			// File isn't empty and exists - read and set into cache
 			try {
 				data = this.normalise(
 					jsonc.parse(settings.contents),
-					settings.file
+					settings.uri
 				);
 
 				hash = crypto.createHash('sha256');
@@ -184,16 +194,14 @@ class ServiceSettings {
 					digest !== this.settingsCache[uriPath].hash
 				);
 
-				// Cache entry
-				this.settingsCache[uriPath] = {
-					file: settings.file,
-					uri: vscode.Uri.file(settings.file),
-					fileContents: settings.contents,
+				// Cache entry, with extra properties
+				this.settingsCache[uriPath] = Object.assign({}, settings, {
 					newFile,
 					data,
 					hash: digest
-				};
+				});
 
+				// Return entry as cached
 				return this.settingsCache[uriPath];
 			} catch(error) {
 				channel.appendError(error.message);
@@ -208,18 +216,63 @@ class ServiceSettings {
 		return null;
 	}
 
-	setConfigEnv(uri, settingsFileGlob) {
-		return new Promise((resolve, reject) => {
-			let uriPath = this.paths.getNormalPath(uri),
-				environments, settings, jsonData;
+	/**
+	 * Adds the current service settings based on the contextual URI to the
+	 * passed `merge` object, then returns a new mutated object.
+	 * @param {Uri} uriContext - Contextual Uri.
+	 * @param {string} settingsGlob - Glob to use for locating the settings file.
+	 * @param {object} [merge={}] - Object to merge with.
+	 */
+	mergeWithServiceSettings(uriContext, settingsGlob, merge = {}) {
+		const settings = this.getServerJSON(
+			uriContext,
+			settingsGlob
+		);
 
-			// If the path isn't a directory, get its directory name
-			if (!this.paths.isDirectory(uriPath)) {
-				uriPath = path.dirname(uriPath);
+		// Make a duplicate to avoid changing the original config
+		let newConfig = Object.assign({}, merge);
+
+		if (settings) {
+			// Settings retrieved from JSON file within context
+			newConfig.env = settings.data.env;
+			newConfig.serviceName = settings.data.service;
+			newConfig.service = settings.data[newConfig.serviceName];
+			newConfig.serviceFile = this.paths.getNormalPath(settings.uri);
+			newConfig.serviceUri = settings.uri;
+			newConfig.serviceSettingsHash = settings.hash;
+
+			if (newConfig.service && newConfig.service.root) {
+				// Expand Windows environment variables
+				newConfig.service.root = newConfig.service.root.replace(
+					/%([^%]+)%/g,
+					function (_, n) {
+						return process.env[n] || _;
+					}
+				);
 			}
 
+			return newConfig;
+		} else {
+			// No settings for this context
+			return false;
+		}
+	}
+
+	/**
+	 * Sets the active environment option within a service settings file.
+	 * @param {Uri} uri - Uri for the contextual file.
+	 * @param {string} settingsFileGlob - Glob to find the settings file.
+	 * @returns {Promise} Resolving once the change has been made.
+	 */
+	setConfigEnv(uri, settingsFileGlob) {
+		return new Promise((resolve, reject) => {
+			let environments, settings, jsonData;
+
+			// Get the Uri's directory name
+			uri = this.paths.getDirName(uri, true);
+
 			// Find the nearest settings file
-			if (!(settings = this.getServerFile(uriPath, settingsFileGlob))) {
+			if (!(settings = this.getServerFile(uri, settingsFileGlob))) {
 				channel.appendLocalisedError('no_service_file', settingsFileGlob);
 				return reject();
 			}
@@ -251,14 +304,14 @@ class ServiceSettings {
 			if (environments.length === 1) {
 				channel.appendLocalisedError(
 					'single_env',
-					settings.file,
+					this.paths.getNormalPath(settings.uri),
 					environments[0]
 				);
 
 				return reject();
 			}
 
-			return vscode.window.showQuickPick(
+			vscode.window.showQuickPick(
 				environments,
 				{
 					placeHolder: i18n.t('select_env')
@@ -286,19 +339,21 @@ class ServiceSettings {
 
 					// Write back to the file
 					fs.writeFileSync(
-						settings.file,
+						this.paths.getNormalPath(settings.uri),
 						settings.newContents,
 						'UTF-8'
 					);
 
 					if (this.options.onServiceFileUpdate) {
-						this.options.onServiceFileUpdate(vscode.Uri.file(settings.file))
+						this.options.onServiceFileUpdate(settings.uri);
 					}
+
+					resolve();
 				} catch(error) {
 					throw new PushError(i18n.t(
 						'error_writing_json',
 						(error && error.message) || i18n.t('no_error')
-					))
+					));
 				}
 			});
 		});
@@ -306,23 +361,26 @@ class ServiceSettings {
 
 	getServerEnvDetail(jsonData, key) {
 		switch (jsonData[key].service) {
-			case "SFTP":
-				return (jsonData[key].options && (
+		case 'SFTP':
+			return (jsonData[key].options && (
+				jsonData[key].options.host ?
 					jsonData[key].options.host + (
 						(jsonData[key].options.port ? ':' + jsonData[key].options.port : '')
-					)
-				)) || '';
+					) :
+					i18n.t('no_host_defined')
+			)) || '';
 
-			case "File":
-				return (jsonData[key].options && jsonData[key].options.root) || '';
+		case 'File':
+			return (jsonData[key].options && jsonData[key].options.root) || '';
 		}
 	}
 
 	/**
 	 * Normalises server data into a consistent format.
-	 * @param {object} settings - Settings data as retrieved by JSON/C files
+	 * @param {object} settings - Settings data as retrieved by JSON/C files.
+	 * @param {Uri} uri - Uri of the settings file. Mainly for error reporting.
 	 */
-	normalise(settings, filename) {
+	normalise(settings, uri) {
 		let serviceData, variant;
 
 		if (!settings.service) {
@@ -338,7 +396,7 @@ class ServiceSettings {
 							settings.hasOwnProperty(variant) &&
 							variant !== 'service' &&
 							variant !== settings.service &&
-							variant !== "env"
+							variant !== 'env'
 						) {
 							delete settings[variant];
 						}
@@ -348,14 +406,14 @@ class ServiceSettings {
 					throw new PushError(i18n.t(
 						'active_service_not_found',
 						settings.env,
-						filename
+						this.paths.getNormalPath(uri)
 					));
 				}
 			} else {
 				// No service defined
 				throw new PushError(i18n.t(
 					'service_not_defined',
-					filename
+					this.paths.getNormalPath(uri)
 				));
 			}
 		}
@@ -364,7 +422,7 @@ class ServiceSettings {
 			// Service defined but no config object found
 			throw new PushError(i18n.t(
 				'service_defined_but_no_config_exists',
-				filename
+				this.paths.getNormalPath(uri)
 			));
 		}
 

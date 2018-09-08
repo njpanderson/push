@@ -176,7 +176,7 @@ class UI extends Push {
 	 */
 	createServiceConfig(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			this.service.editServiceConfig(uri, true);
+			return this.service.editServiceConfig(uri, true).catch(this.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -187,7 +187,7 @@ class UI extends Push {
 	 */
 	editServiceConfig(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			return this.service.editServiceConfig(uri);
+			return this.service.editServiceConfig(uri).catch(this.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -206,7 +206,7 @@ class UI extends Push {
 	 */
 	importConfig(uri) {
 		if (this.getValidUri(uri)) {
-			this.service.importConfig(uri);
+			return this.service.importConfig(uri).catch(this.catchError);
 		}
 	}
 }

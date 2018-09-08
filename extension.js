@@ -13,6 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * Visual Studio Code API - Uri class.
+ * @typedef {object} Uri
+ * @see https://code.visualstudio.com/docs/extensionAPI/vscode-api#Uri
+ */
 const vscode = require('vscode');
 const UI = require('./src/UI');
 

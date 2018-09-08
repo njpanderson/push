@@ -72,12 +72,12 @@ class ServiceBase {
 				)) !== true) {
 					throw new PushError(i18n.t(
 						'service_setting_missing',
-						this.config.serviceFilename,
+						this.paths.getNormalPath(this.config.serviceUri),
 						this.config.env,
 						this.type,
 						validation
 					));
-				};
+				}
 			}
 		}
 	}
@@ -118,7 +118,7 @@ class ServiceBase {
 		let file = this.paths.getNormalPath(uri);
 
 		file = this.paths.stripTrailingSlash(this.config.service.root) +
-			file.replace(path.dirname(this.config.serviceFilename), '');
+			file.replace(path.dirname(this.config.serviceFile), '');
 
 		file = (path.join(file).split(path.sep)).join('/');
 
@@ -132,7 +132,7 @@ class ServiceBase {
 	 */
 	convertRemoteToUri(file) {
 		return vscode.Uri.file(
-			path.dirname(this.config.serviceFilename) + '/' +
+			path.dirname(this.config.serviceFile) + '/' +
 			file.replace(this.paths.stripTrailingSlash(this.config.service.root) + '/', '')
 		);
 	}
@@ -141,17 +141,17 @@ class ServiceBase {
 	 * Returns a filename, guarnteeing that it will not be the same as any others within
 	 * the supplied file list.
 	 * @param {string} file - Filename to rename
-	 * @param {array} dirContents - Array of filenames in the file's directory as
-	 * returned from PathCache.
+	 * @param {PathCacheItem[]} dirContents - Array of PathCacheItem items in the
+	 * file's directory as returned from PathCache.
 	 */
 	getNonCollidingName(file, dirContents) {
 		let indexOfDot = file.indexOf('.'),
 			re, matches;
 
 		if (indexOfDot > 0 || indexOfDot === -1) {
-			re = new RegExp('^' + file.substring(0, indexOfDot) + '(-\d+)?\..*');
+			re = new RegExp('^' + file.substring(0, indexOfDot) + '(-\\d+)?\\..*');
 		} else {
-			re = new RegExp('^' + file + '(-\d+)?');
+			re = new RegExp('^' + file + '(-\\d+)?');
 		}
 
 		matches = this.matchFilesInDir(dirContents, re);
@@ -172,9 +172,11 @@ class ServiceBase {
 
 	/**
 	 * Matches the files in a directory given a regular expression.
-	 * @param {array} dirContents - Contents of the directory given by pathCache.
-	 * @param {*} re - Regular expression used to match.
-	 * @return {object|null} Either the matches as a regular expression result, or `null`.
+	 * @param {PathCacheItem[]} dirContents - Contents of the directory given by
+	 * pathCache.
+	 * @param {RegExp} re - Regular expression used to match.
+	 * @return {object|null} Either the matches as a regular expression result,
+	 * or `null`.
 	 */
 	matchFilesInDir(dirContents, re) {
 		return dirContents.filter((item) => {
@@ -311,8 +313,8 @@ class ServiceBase {
 						this.queueLength,
 						(
 							(!this.config.service.testCollisionTimeDiffs) ?
-							i18n.t('filename_exists_ignore_times', source.name) :
-							null
+								i18n.t('filename_exists_ignore_times', source.name) :
+								null
 						)
 					);
 				}
@@ -340,7 +342,7 @@ class ServiceBase {
 	 * @param {string} dest - File destination path
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	put() {
 		throw new Error('Service #put method is not yet implemented!');
@@ -352,7 +354,7 @@ class ServiceBase {
 	 * @param {string} dest - File destination path
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	get() {
 		throw new Error('Service #get method is not yet implemented!');
@@ -364,7 +366,7 @@ class ServiceBase {
 	 * Base service directory listing method.
 	 * Should return a promise either resolving to a list in the format given by
 	 * {@link PathCache#getDir}, or rejecting if the directory passed could not be found.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	list() {
 		throw new Error('Service #list method is not yet implemented!');
@@ -433,7 +435,7 @@ class ServiceBase {
 	 * Should return a promise either resolving to a list in the format given by
 	 * {@link PathCache#getRecursiveFiles}, or rejecting if the directory passed
 	 * could not be found.
-	 * @returns {promise}
+	 * @returns {Promise} Should return a Promise.
 	 */
 	listRecursiveFiles() {
 		throw new Error('Service #listRecursiveFiles method is not yet implemented!');

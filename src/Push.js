@@ -201,28 +201,28 @@ class Push extends PushBase {
 		let uri, method, args, settings;
 
 		switch (eventType) {
-			case 'onDidSaveTextDocument':
-				uri = data && data.uri;
-				method = 'didSaveTextDocument';
-				args = [data];
-				break;
+		case 'onDidSaveTextDocument':
+			uri = data && data.uri;
+			method = 'didSaveTextDocument';
+			args = [data];
+			break;
 
-			case 'onDidChangeActiveTextEditor':
-				if (!data) {
-					data = vscode.window.activeTextEditor;
-				}
+		case 'onDidChangeActiveTextEditor':
+			if (!data) {
+				data = vscode.window.activeTextEditor;
+			}
 
-				uri = (data && data.document && data.document.uri);
-				method = 'didChangeActiveTextEditor'
-				args = [data];
-				break;
+			uri = (data && data.document && data.document.uri);
+			method = 'didChangeActiveTextEditor';
+			args = [data];
+			break;
 
-			case 'onServiceFileUpdate':
-				uri = data;
-				break;
+		case 'onServiceFileUpdate':
+			uri = data;
+			break;
 
-			default:
-				throw new Error('Unrecognised event type');
+		default:
+			throw new Error('Unrecognised event type');
 		}
 
 		utils.trace('Push#event', eventType);
@@ -314,36 +314,14 @@ class Push extends PushBase {
 	/**
 	 * Adds the current service settings based on the contextual URI to the
 	 * current configuration, then returns the configuration.
-	 * @param {uri} uriContext
+	 * @param {Uri} uriContext
 	 */
 	configWithServiceSettings(uriContext) {
-		const settings = this.service.settings.getServerJSON(
+		return this.service.settings.mergeWithServiceSettings(
 			uriContext,
-			this.config.settingsFileGlob
+			this.config.settingsFileGlob,
+			this.config
 		);
-
-		// Make a duplicate to avoid changing the original config
-		let newConfig = Object.assign({}, this.config);
-
-		if (settings) {
-			// Settings retrieved from JSON file within context
-			newConfig.env = settings.data.env;
-			newConfig.serviceName = settings.data.service;
-			newConfig.serviceFilename = settings.file;
-			newConfig.serviceUri = settings.uri;
-			newConfig.service = settings.data[newConfig.serviceName];
-			newConfig.serviceSettingsHash = settings.hash;
-
-			// Expand environment variables
-			newConfig.service.root = newConfig.service.root.replace(/%([^%]+)%/g, function(_, n) {
-				return process.env[n] || _;
-			});
-
-			return newConfig;
-		} else {
-			// No settings for this context
-			return false;
-		}
 	}
 
 	/**
@@ -372,7 +350,7 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
-		utils.trace('Push#queue', 'Adding {tasks.length} task(s)');
+		utils.trace('Push#queue', `Adding ${tasks.length} task(s)`);
 
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
@@ -489,7 +467,7 @@ class Push extends PushBase {
 	 * Copies the "upload" queue over to the default queue and runs the default queue.
 	 * The upload queue is then emptied once the default queue has completed without
 	 * errors.
-	 * @returns promise - Promise, resolving when the queue is complete.
+	 * @returns {Promise} Promise, resolving when the queue is complete.
 	 */
 	execUploadQueue() {
 		return new Promise((resolve, reject) => {
@@ -503,13 +481,13 @@ class Push extends PushBase {
 			uploadQueue = this.getQueue(Push.queueDefs.upload);
 
 			if (uploadQueue.tasks.length) {
-				queue = this.queue(uploadQueue.tasks, true)
+				queue = this.queue(uploadQueue.tasks, true);
 
 				if (queue instanceof Promise) {
 					queue.then(() => {
 						uploadQueue.empty();
 					})
-					.then(resolve);
+						.then(resolve);
 				}
 			} else {
 				utils.showWarning(i18n.t('queue_empty'));
@@ -555,7 +533,7 @@ class Push extends PushBase {
 					);
 				}
 			}], true, Push.queueDefs.diff).then(resolve, reject);
-		})
+		});
 	}
 
 	/**
@@ -587,7 +565,8 @@ class Push extends PushBase {
 	/**
 	 * Execute a queue (by running its #exec method).
 	 * @param {object} queueDef - One of the {@link Push.queueDefs} queue definitions.
-	 * @returns {promise} A promise, eventually resolving once the queue is complete.
+	 * @returns {Promise<object>} A promise, eventually resolving once the queue
+	 * is complete, containing a result object.
 	 */
 	execQueue(queueDef) {
 		const queue = this.getQueue(queueDef);
@@ -892,7 +871,7 @@ class Push extends PushBase {
 	 * Transfers a single file or array of single files.
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to transfer.
 	 * @param {string} method - Either 'get' or 'put'.
-	 * @returns {promise} - A promise, resolving when the file has transferred.
+	 * @returns {Promise} A promise, resolving when the file has transferred.
 	 */
 	transfer(uris, method) {
 		let ignoreGlobs = [],
@@ -999,7 +978,7 @@ class Push extends PushBase {
 	 * Transfers a directory of files.
 	 * @param {Uri} uri - Uri of the directory to transfer.
 	 * @param {*} method - Either 'get' or 'put'.
-	 * @returns {promise} - A promise, resolving when the directory has transferred.
+	 * @returns {Promise} A promise, resolving when the directory has transferred.
 	 */
 	transferDirectory(uri, method) {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;

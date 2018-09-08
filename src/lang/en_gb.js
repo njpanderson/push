@@ -97,5 +97,6 @@ module.exports = {
 	'dir_read_error': 'The directory "${1}" could not be read.',
 	'dir_read_error_with_error': 'The directory "${1}" could not be read. The full error was: "${2}".',
 	'push_upgraded': 'Push has been upgraded to version ${1}.',
-	'show_changelog': 'Show Changelog'
+	'show_changelog': 'Show Changelog',
+	'no_host_defined': '(No host defined)'
 };

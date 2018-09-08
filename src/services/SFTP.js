@@ -1,16 +1,16 @@
-const vscode = require("vscode");
+const vscode = require('vscode');
 const SFTPClient = require('ssh2-sftp-client');
 const ssh = require('ssh2').Client;
 const fs = require('fs');
 const path = require('path');
 const homedir = require('os').homedir;
-const micromatch = require("micromatch");
+const micromatch = require('micromatch');
 
 const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const PushError = require('../lib/PushError');
-const PathCache = require('../lib/PathCache');
+const PathCache = require('../lib/pathcache/Index');
 const channel = require('../lib/channel');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('../lib/constants');
@@ -65,7 +65,7 @@ class SFTP extends ServiceBase {
 				{},
 				SFTP.gatewayDefaults,
 				newSettings.sshGateway
-			)
+			);
 		}
 
 		return newSettings;
@@ -85,7 +85,7 @@ class SFTP extends ServiceBase {
 
 	/**
 	 * Connect to an SSH server, returning a Promise resolving to a client instance.
-	 * @returns {promise} - Promise resolving to a connected SFTP client instance.
+	 * @returns {Promise<object>} Promise resolving to a connected SFTP client instance.
 	 */
 	connect() {
 		let hash = this.config.serviceSettingsHash;
@@ -157,7 +157,7 @@ class SFTP extends ServiceBase {
 	/**
 	 * Open a connection to the SFTP server via the defined gateway server.
 	 * @param {object} client - SFTP client spec.
-	 * @returns {Promise} - Resolving to a connected SFTP instance.
+	 * @returns {Promise<object>} Resolving to a connected SFTP instance.
 	 */
 	openGatewayConnection(client) {
 		return new Promise((resolve, reject) => {
@@ -197,7 +197,7 @@ class SFTP extends ServiceBase {
 	/**
 	 * Connect to an SFTP server via SSH gateway, resolving the connected SFTP instance.
 	 * @param {Object} client - SFTP client spec.
-	 * @returns {Promise} - Resolving to a connected SFTP instance.
+	 * @returns {Promise<object>} Resolving to a connected SFTP instance.
 	 */
 	connectGatewaySFTP(client) {
 		return new Promise((resolve, reject) => {
@@ -342,7 +342,7 @@ class SFTP extends ServiceBase {
 	 * Returns a Promise eventually resolving to a new client instance, with the addition
 	 * of performing cleanup to ensure a maximum number of client instances exist.
 	 * @param {string} hash
-	 * @returns {promise} - Promise resolving to an SFTP client instance.
+	 * @returns {Promise<object>} Promise resolving to an SFTP client instance.
 	 */
 	getClient(hash) {
 		let date = new Date(),
@@ -465,7 +465,7 @@ class SFTP extends ServiceBase {
 		if (service.debug) {
 			options.debug = (data) => {
 				channel.appendLine(`SFTP: "${data}"`);
-			}
+			};
 		}
 
 		return options;
@@ -516,7 +516,7 @@ class SFTP extends ServiceBase {
 			if (typeof this.globalReject === 'function') {
 				this.globalReject();
 				this.globalReject = null;
-			};
+			}
 
 			this.removeClient(hash);
 		}
@@ -545,42 +545,42 @@ class SFTP extends ServiceBase {
 				this.mkDir
 			);
 		})
-		.then(() => {
-			return this.getFileStats(remote, local);
-		})
-		.then((stats) => {
-			if (!stats.local) {
-				// No local file! return TransferResult error
-				return new TransferResult(
-					local,
-					new PushError(i18n.t(
-						'file_not_found',
-						this.paths.getBaseName(local)
-					)),
-					TRANSFER_TYPES.PUT
+			.then(() => {
+				return this.getFileStats(remote, local);
+			})
+			.then((stats) => {
+				if (!stats.local) {
+					// No local file! return TransferResult error
+					return new TransferResult(
+						local,
+						new PushError(i18n.t(
+							'file_not_found',
+							this.paths.getBaseName(local)
+						)),
+						TRANSFER_TYPES.PUT
+					);
+				}
+
+				return super.checkCollision(
+					stats.local,
+					stats.remote,
+					collisionAction
 				);
-			}
+			})
+			.then((result) => {
+				if (result instanceof TransferResult) {
+					// Pass through TransferResult results
+					return result;
+				}
 
-			return super.checkCollision(
-				stats.local,
-				stats.remote,
-				collisionAction
-			);
-		})
-		.then((result) => {
-			if (result instanceof TransferResult) {
-				// Pass through TransferResult results
-				return result;
-			}
+				// Figure out what to do based on the collision (if any)
+				if (result === false) {
+					// No collision, just keep going
+					return this.clientPut(local, remote);
+				} else {
+					this.setCollisionOption(result);
 
-			// Figure out what to do based on the collision (if any)
-			if (result === false) {
-				// No collision, just keep going
-				return this.clientPut(local, remote);
-			} else {
-				this.setCollisionOption(result);
-
-				switch (result.option) {
+					switch (result.option) {
 					case utils.collisionOpts.stop:
 						throw utils.errors.stop;
 
@@ -601,29 +601,28 @@ class SFTP extends ServiceBase {
 									)
 								);
 							});
+					}
 
+					return false;
+				}
+			})
+			.then((result) => {
+				if ((result instanceof TransferResult) && !result.error) {
+					// Transfer occured with no errors - set the remote file mode
+					return this.setRemotePathMode(remote, this.config.service.fileMode)
+						.then(() => result);
 				}
 
-				return false;
-			}
-		})
-		.then((result) => {
-			if ((result instanceof TransferResult) && !result.error) {
-				// Transfer occured with no errors - set the remote file mode
-				return this.setRemotePathMode(remote, this.config.service.fileMode)
-					.then(() => result);
-			}
-
-			return result;
-		})
-		.then((result) => {
-			this.setProgress(false);
-			return result;
-		})
-		.catch((error) => {
-			this.setProgress(false);
-			throw error;
-		});
+				return result;
+			})
+			.then((result) => {
+				this.setProgress(false);
+				return result;
+			})
+			.catch((error) => {
+				this.setProgress(false);
+				throw error;
+			});
 	}
 
 	/**
@@ -660,7 +659,7 @@ class SFTP extends ServiceBase {
 						local,
 						new PushError(i18n.t(
 							'remote_file_not_found',
-							this.paths.getBaseName(remote)
+							this.paths.getBaseName(local)
 						)),
 						TRANSFER_TYPES.GET
 					);
@@ -687,34 +686,34 @@ class SFTP extends ServiceBase {
 					this.setCollisionOption(collision);
 
 					switch (collision.option) {
-						case utils.collisionOpts.stop:
-							throw utils.errors.stop;
+					case utils.collisionOpts.stop:
+						throw utils.errors.stop;
 
-						case utils.collisionOpts.skip:
-						case undefined:
-							return new TransferResult(local, false, TRANSFER_TYPES.GET);
+					case utils.collisionOpts.skip:
+					case undefined:
+						return new TransferResult(local, false, TRANSFER_TYPES.GET);
 
-						case utils.collisionOpts.overwrite:
-							return this.clientGetByStream(local, remote);
+					case utils.collisionOpts.overwrite:
+						return this.clientGetByStream(local, remote);
 
-						case utils.collisionOpts.rename:
-							localDir = path.dirname(localPath);
-							localFilename = path.basename(localPath);
+					case utils.collisionOpts.rename:
+						localDir = path.dirname(localPath);
+						localFilename = path.basename(localPath);
 
-							// Rename (non-colliding) and get
-							return this.paths.listDirectory(localDir)
-								.then((dirContents) => {
-									let localPath = localDir + '/' +
-										this.getNonCollidingName(
-											localFilename,
-											dirContents
-										);
-
-									return this.clientGetByStream(
-										vscode.Uri.file(localPath),
-										remote
+						// Rename (non-colliding) and get
+						return this.paths.listDirectory(localDir)
+							.then((dirContents) => {
+								let localPath = localDir + '/' +
+									this.getNonCollidingName(
+										localFilename,
+										dirContents
 									);
-								});
+
+								return this.clientGetByStream(
+									vscode.Uri.file(localPath),
+									remote
+								);
+							});
 
 					}
 
@@ -730,7 +729,7 @@ class SFTP extends ServiceBase {
 	/**
 	 * Reads a file and returns its contents.
 	 * @param {SSH2Client} ssh - A connected instance of SSH2Client.
-	 * @returns {Promise} resolving to the file's contents.
+	 * @returns {Promise<string>} resolving to the file's contents.
 	 */
 	readWithSSH(ssh, fileName) {
 		return new Promise((resolve, reject) => {
@@ -864,7 +863,9 @@ class SFTP extends ServiceBase {
 			.then((connection) => {
 				client = connection;
 			})
-			.then(() => this.paths.ensureDirExists(path.dirname(localPath)))
+			.then(() => this.paths.ensureDirExists(
+				this.paths.getDirName(local)
+			))
 			.then(() => this.getMimeCharset(remote))
 			.then((charset) => {
 				return new Promise((resolve, reject) => {
@@ -886,7 +887,7 @@ class SFTP extends ServiceBase {
 										new PushError(error),
 										TRANSFER_TYPES.GET
 									));
-								})
+								});
 						})
 						.catch((error) => {
 							throw new PushError(`${remote}: ${error && error.message}`);
@@ -917,7 +918,7 @@ class SFTP extends ServiceBase {
 							})
 							.then(() => {
 								// Add dir to cache
-								this.pathCache.addCachedFile(
+								this.pathCache.addFilePath(
 									SRC_REMOTE,
 									dir,
 									((new Date()).getTime() / 1000),
@@ -931,9 +932,9 @@ class SFTP extends ServiceBase {
 					}
 				});
 		})
-		.catch((error) => {
-			throw error;
-		});
+			.catch((error) => {
+				throw error;
+			});
 	}
 
 	/**
@@ -971,7 +972,7 @@ class SFTP extends ServiceBase {
 								}
 
 								if (!match || !match.length) {
-									this.pathCache.addCachedFile(
+									this.pathCache.addFilePath(
 										SRC_REMOTE,
 										pathName,
 										(item.modifyTime / 1000),
@@ -993,7 +994,7 @@ class SFTP extends ServiceBase {
 	 * Returns a promise either resolving to a recursive file list in the format
 	 * given by {@link PathCache#getRecursiveFiles}, or rejects if `dir` is not
 	 * found.
-	 * @returns {promise}
+	 * @returns {Promise<array>} Resolving to a nested array of files.
 	 */
 	listRecursiveFiles(dir, ignoreGlobs) {
 		let counter = {
@@ -1009,8 +1010,7 @@ class SFTP extends ServiceBase {
 						dir
 					));
 				}
-			})
-			.catch(reject);
+			}).catch(reject);
 		});
 	}
 
@@ -1106,7 +1106,7 @@ class SFTP extends ServiceBase {
 				throw new PushError(
 					i18n.t('cannot_list_directory', remoteDir, error.message)
 				);
-			})
+			});
 	}
 
 	/**
@@ -1218,7 +1218,7 @@ class SFTP extends ServiceBase {
 			prompt: i18n.t('sftp_enter_ssh_pass')
 		});
 	}
-};
+}
 
 SFTP.description = i18n.t('sftp_class_description');
 

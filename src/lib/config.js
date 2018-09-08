@@ -9,13 +9,13 @@ module.exports = {
 	 */
 	get: function(item) {
 		let config = Object.assign(
-			{},
-			vscode.workspace.getConfiguration(
-				'njpPush',
-				vscode.window.activeTextEditor &&
-				vscode.window.activeTextEditor.document.uri
-			)
-		),
+				{},
+				vscode.workspace.getConfiguration(
+					'njpPush',
+					vscode.window.activeTextEditor &&
+					vscode.window.activeTextEditor.document.uri
+				)
+			),
 			settingsGlob;
 
 		// Augment configuration with computed settings
