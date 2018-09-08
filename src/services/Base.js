@@ -77,7 +77,7 @@ class ServiceBase {
 						this.type,
 						validation
 					));
-				};
+				}
 			}
 		}
 	}
@@ -149,9 +149,9 @@ class ServiceBase {
 			re, matches;
 
 		if (indexOfDot > 0 || indexOfDot === -1) {
-			re = new RegExp('^' + file.substring(0, indexOfDot) + '(-\d+)?\..*');
+			re = new RegExp('^' + file.substring(0, indexOfDot) + '(-\\d+)?\\..*');
 		} else {
-			re = new RegExp('^' + file + '(-\d+)?');
+			re = new RegExp('^' + file + '(-\\d+)?');
 		}
 
 		matches = this.matchFilesInDir(dirContents, re);

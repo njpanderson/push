@@ -65,7 +65,7 @@ class SFTP extends ServiceBase {
 				{},
 				SFTP.gatewayDefaults,
 				newSettings.sshGateway
-			)
+			);
 		}
 
 		return newSettings;
@@ -465,7 +465,7 @@ class SFTP extends ServiceBase {
 		if (service.debug) {
 			options.debug = (data) => {
 				channel.appendLine(`SFTP: "${data}"`);
-			}
+			};
 		}
 
 		return options;
@@ -516,7 +516,7 @@ class SFTP extends ServiceBase {
 			if (typeof this.globalReject === 'function') {
 				this.globalReject();
 				this.globalReject = null;
-			};
+			}
 
 			this.removeClient(hash);
 		}
@@ -887,7 +887,7 @@ class SFTP extends ServiceBase {
 										new PushError(error),
 										TRANSFER_TYPES.GET
 									));
-								})
+								});
 						})
 						.catch((error) => {
 							throw new PushError(`${remote}: ${error && error.message}`);
@@ -932,9 +932,9 @@ class SFTP extends ServiceBase {
 					}
 				});
 		})
-		.catch((error) => {
-			throw error;
-		});
+			.catch((error) => {
+				throw error;
+			});
 	}
 
 	/**
@@ -1106,7 +1106,7 @@ class SFTP extends ServiceBase {
 				throw new PushError(
 					i18n.t('cannot_list_directory', remoteDir, error.message)
 				);
-			})
+			});
 	}
 
 	/**
@@ -1218,7 +1218,7 @@ class SFTP extends ServiceBase {
 			prompt: i18n.t('sftp_enter_ssh_pass')
 		});
 	}
-};
+}
 
 SFTP.description = i18n.t('sftp_class_description');
 

@@ -310,7 +310,7 @@ class File extends ServiceBase {
 		return new Promise((resolve, reject) => {
 			function fnError(error) {
 				this.stop(() => reject(error));
-			};
+			}
 
 			// Create write stream & attach events
 			this.writeStream = fs.createWriteStream(dest);
@@ -344,7 +344,7 @@ class File extends ServiceBase {
 			}
 		});
 	}
-};
+}
 
 File.description = i18n.t('file_class_description');
 

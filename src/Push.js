@@ -213,7 +213,7 @@ class Push extends PushBase {
 			}
 
 			uri = (data && data.document && data.document.uri);
-			method = 'didChangeActiveTextEditor'
+			method = 'didChangeActiveTextEditor';
 			args = [data];
 			break;
 
@@ -350,7 +350,7 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
-		utils.trace('Push#queue', 'Adding {tasks.length} task(s)');
+		utils.trace('Push#queue', `Adding ${tasks.length} task(s)`);
 
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
@@ -481,7 +481,7 @@ class Push extends PushBase {
 			uploadQueue = this.getQueue(Push.queueDefs.upload);
 
 			if (uploadQueue.tasks.length) {
-				queue = this.queue(uploadQueue.tasks, true)
+				queue = this.queue(uploadQueue.tasks, true);
 
 				if (queue instanceof Promise) {
 					queue.then(() => {
@@ -533,7 +533,7 @@ class Push extends PushBase {
 					);
 				}
 			}], true, Push.queueDefs.diff).then(resolve, reject);
-		})
+		});
 	}
 
 	/**

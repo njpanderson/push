@@ -61,7 +61,7 @@ class ServiceSettings {
 			re = {
 				indents: /\t/g,
 				indentedLine: /^([\t]+)(.*)$/,
-				optionItem: /^([\t]*)(\s*\"(.+?)\":\s[^$]*)/,
+				optionItem: /^([\t]*)(\s*"(.+?)":\s[^$]*)/,
 				optionCloser: /\t{3,}(]|})/
 			};
 
@@ -353,7 +353,7 @@ class ServiceSettings {
 					throw new PushError(i18n.t(
 						'error_writing_json',
 						(error && error.message) || i18n.t('no_error')
-					))
+					));
 				}
 			});
 		});
