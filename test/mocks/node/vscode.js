@@ -18,6 +18,12 @@ class ExtensionContext {
 	}
 }
 
+class StatusBarItem {
+	constructor() {
+		this.show = counter.attach('vscode.StatusBarItem.show');
+	}
+}
+
 class StateMachine {
 	constructor() {
 		this.store = {};
@@ -53,6 +59,9 @@ module.exports = {
 			},
 			this
 		),
+		createStatusBarItem: () => {
+			return new StatusBarItem();
+		},
 		showInformationMessage: () => {
 			return Promise.resolve('');
 		}
@@ -68,5 +77,11 @@ module.exports = {
 	},
 
 	Uri,
-	ExtensionContext
+	ExtensionContext,
+	StatusBarItem,
+
+	StatusBarAlignment: {
+		Left: 1,
+		Right: 2
+	}
 };

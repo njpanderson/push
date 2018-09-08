@@ -21,6 +21,7 @@ module.exports = {
 			contents: '[none]',
 			newFile: true,
 			data: {
+				env: 'dev',
 				service: 'SFTP',
 				SFTP: {
 					host: 'neilinscotland.net',
