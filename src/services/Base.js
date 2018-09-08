@@ -5,6 +5,7 @@ const tmp = require('tmp');
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
+const PathCache = require('../lib/pathcache/Index');
 const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
 
@@ -27,6 +28,11 @@ class ServiceBase {
 		this.channel = channel;
 
 		this.paths = new Paths();
+
+		this.pathCache = {
+			local: new PathCache(),
+			remote: new PathCache()
+		};
 	}
 
 	destructor() {
@@ -192,7 +198,7 @@ class ServiceBase {
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
 	init(queueLength) {
-		utils.trace('ServiceBase#init', `Initialising`);
+		utils.trace('ServiceBase#init', 'Initialising');
 		this.persistCollisionOptions = {};
 		this.queueLength = queueLength;
 

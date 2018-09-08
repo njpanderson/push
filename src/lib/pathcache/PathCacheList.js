@@ -44,9 +44,19 @@ class PathCacheList {
 	}
 
 	/**
+	 * @param {function} callback - Callback function to fire for each item.
+	 * @description
+	 * Filters items based on the return value of a callback.
+	 * Works in a similar way to Array#filter.
+	 * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
+	 */
+	filter() {
+		return Array.prototype.filter.apply(this.list, arguments);
+	}
+
+	/**
 	 * Returns the index of a path within the list.
-	 * @param {number} source - One of {@link PathCache.sources} sources.
-	 * @param {string} file - Fully qualified path (including directory).
+	 * @param {string} pathName - Fully qualified path (including directory).
 	 * @returns {number} The index of the item, or `-1` if the item cannot be
 	 * found.
 	 */
