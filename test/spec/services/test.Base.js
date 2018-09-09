@@ -18,14 +18,13 @@ const fixtures = require('../../fixtures/general');
 const vscode = require('../../mocks/node/vscode');
 
 // Defines a Mocha test suite to group tests of similar kind together
-describe('Paths', function () {
+describe('Services/Base', function () {
 	let Base, base;
 
 	useMockery(() => {
 		useMockery
 			.registerMultiple({
 				'vscode': vscode,
-				'../lib/utils': require('../../mocks/lib/utils'),
 				'../lib/channel': require('../../mocks/lib/channel'),
 				'../lang/i18n': require('../../mocks/lib/i18n')
 			});

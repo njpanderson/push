@@ -281,18 +281,18 @@ describe('Push', function() {
 
 	describe('#transfer', () => {
 		const tests = [{
-				method: 'put',
-				files: fixtures.mockUriFile
-			}, {
-				method: 'put',
-				files: [fixtures.mockUriFile, fixtures.mockUriFile2]
-			}, {
-				method: 'get',
-				files: fixtures.mockUriFile
-			}, {
-				method: 'get',
-				files: [fixtures.mockUriFile, fixtures.mockUriFile2]
-			}];
+			method: 'put',
+			files: fixtures.mockUriFile
+		}, {
+			method: 'put',
+			files: [fixtures.mockUriFile, fixtures.mockUriFile2]
+		}, {
+			method: 'get',
+			files: fixtures.mockUriFile
+		}, {
+			method: 'get',
+			files: [fixtures.mockUriFile, fixtures.mockUriFile2]
+		}];
 
 		beforeEach(() => {
 			push.queue = counter.attach(
