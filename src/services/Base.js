@@ -100,7 +100,8 @@ class ServiceBase {
 	 * Validates the supplied `settings` object against `spec` specification.
 	 * @param {object} spec - Settings specification.
 	 * @param {*} settings - Settings to be validated.
-	 * @returns {boolean} `true` if the settings are valid, `false` otherwise.
+	 * @returns {boolean|string} boolean `true` if the settings are valid, the
+	 * offending key value as a string otherwise.
 	 */
 	validateServiceSettings(spec, settings) {
 		let key;
@@ -149,6 +150,7 @@ class ServiceBase {
 	 * @param {string} file - Filename to rename
 	 * @param {PathCacheItem[]} dirContents - Array of PathCacheItem items in the
 	 * file's directory as returned from PathCache.
+	 * @returns {string} a non-colliding filensme.
 	 */
 	getNonCollidingName(file, dirContents) {
 		let indexOfDot = file.indexOf('.'),
