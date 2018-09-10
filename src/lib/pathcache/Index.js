@@ -79,8 +79,8 @@ class PathCache {
 	 * of PathCacheList instances, in the case that the directory was not defined
 	 */
 	getDir(dir, type = null) {
-		if (this.cache) {
-			if (dir) {
+		if (dir) {
+			if (this.cache[dir]) {
 				if (type !== null) {
 					return this.cache[dir].filter((item) => {
 						return item.type === type;
@@ -90,10 +90,10 @@ class PathCache {
 				return (this.cache[dir].list || null);
 			}
 
-			return this.cache;
+			return null;
 		}
 
-		return null;
+		return this.cache;
 	}
 
 	/**
