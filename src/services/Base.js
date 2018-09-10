@@ -5,6 +5,7 @@ const tmp = require('tmp');
 const utils = require('../lib/utils');
 const Paths = require('../lib/Paths');
 const channel = require('../lib/channel');
+const PathCache = require('../lib/pathcache/Index');
 const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
 
@@ -27,6 +28,11 @@ class ServiceBase {
 		this.channel = channel;
 
 		this.paths = new Paths();
+
+		this.pathCache = {
+			local: new PathCache(),
+			remote: new PathCache()
+		};
 	}
 
 	destructor() {
@@ -94,7 +100,8 @@ class ServiceBase {
 	 * Validates the supplied `settings` object against `spec` specification.
 	 * @param {object} spec - Settings specification.
 	 * @param {*} settings - Settings to be validated.
-	 * @returns {boolean} `true` if the settings are valid, `false` otherwise.
+	 * @returns {boolean|string} boolean `true` if the settings are valid, the
+	 * offending key value as a string otherwise.
 	 */
 	validateServiceSettings(spec, settings) {
 		let key;
@@ -143,6 +150,7 @@ class ServiceBase {
 	 * @param {string} file - Filename to rename
 	 * @param {PathCacheItem[]} dirContents - Array of PathCacheItem items in the
 	 * file's directory as returned from PathCache.
+	 * @returns {string} a non-colliding filensme.
 	 */
 	getNonCollidingName(file, dirContents) {
 		let indexOfDot = file.indexOf('.'),
@@ -192,7 +200,7 @@ class ServiceBase {
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
 	init(queueLength) {
-		utils.trace('ServiceBase#init', `Initialising`);
+		utils.trace('ServiceBase#init', 'Initialising');
 		this.persistCollisionOptions = {};
 		this.queueLength = queueLength;
 

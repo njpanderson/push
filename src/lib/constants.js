@@ -31,6 +31,14 @@ module.exports = {
 		GET: 1
 	},
 
+	/**
+	 * File/folder cache source locations (Used manily by PathCache)
+	 */
+	CACHE_SOURCES: {
+		remote: 'remote',
+		local: 'local'
+	},
+
 	QUEUE_LOG_TYPES: {
 		success: 0,
 		fail: 1,

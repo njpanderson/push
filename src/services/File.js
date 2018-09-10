@@ -6,13 +6,9 @@ const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
-const PathCache = require('../lib/pathcache/Index');
 const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
-const { TRANSFER_TYPES } = require('../lib/constants');
-
-const SRC_REMOTE = PathCache.sources.REMOTE;
-const SRC_LOCAL = PathCache.sources.LOCAL;
+const { TRANSFER_TYPES, CACHE_SOURCES } = require('../lib/constants');
 
 /**
  * Filesystem based uploading.
@@ -25,7 +21,6 @@ class File extends ServiceBase {
 		this.checkServiceRoot = this.checkServiceRoot.bind(this);
 
 		this.type = 'File';
-		this.pathCache = new PathCache();
 		this.writeStream = null;
 		this.readStream = null;
 	}
@@ -33,9 +28,8 @@ class File extends ServiceBase {
 	init(queueLength) {
 		return super.init(queueLength)
 			.then(this.checkServiceRoot)
-			.then(() => {
-				return this.pathCache.clear();
-			});
+			.then(() => this.pathCache.local.clear())
+			.then(() => this.pathCache.remote.clear());
 	}
 
 	/**
@@ -127,7 +121,10 @@ class File extends ServiceBase {
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
 			rootDir = this.paths.getNormalPath(root),
-			srcType = (transferType === TRANSFER_TYPES.PUT ? SRC_REMOTE : SRC_LOCAL);
+			srcType = (
+				transferType === TRANSFER_TYPES.PUT ?
+					CACHE_SOURCES.remote : CACHE_SOURCES.local
+			);
 
 		this.setProgress(`${destFilename}...`);
 
@@ -222,7 +219,7 @@ class File extends ServiceBase {
 	mkDir(dir) {
 		return this.list(path.dirname(dir))
 			.then(() => {
-				let existing = this.pathCache.getFileByPath(SRC_REMOTE, dir);
+				let existing = this.pathCache.remote.getFileByPath(dir);
 
 				if (existing === null) {
 					return new Promise((resolve, reject) => {
@@ -232,8 +229,7 @@ class File extends ServiceBase {
 							}
 
 							// Add dir to cache
-							this.pathCache.addFilePath(
-								SRC_REMOTE,
+							this.pathCache.remote.addFilePath(
 								dir,
 								((new Date()).getTime() / 1000),
 								'd'
@@ -253,10 +249,10 @@ class File extends ServiceBase {
 	/**
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
-	 * @param {string} loc - One of the {@link PathCache.sources} types.
+	 * @param {string} loc - One of the {@link CACHE_SOURCES} types.
 	 */
-	list(dir, loc = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, loc, this.pathCache);
+	list(dir, loc = CACHE_SOURCES.remote) {
+		return this.paths.listDirectory(dir, this.pathCache[loc]);
 	}
 
 	/**
@@ -284,10 +280,10 @@ class File extends ServiceBase {
 		const remotePath = this.paths.getNormalPath(remote),
 			remoteDir = path.dirname(remotePath);
 
-		return this.list(remoteDir, SRC_REMOTE)
+		return this.list(remoteDir, CACHE_SOURCES.remote)
 			.then(() => ({
 				// Get remote stats
-				remote: this.pathCache.getFileByPath(SRC_REMOTE, remotePath)
+				remote: this.pathCache.remote.getFileByPath(remotePath)
 			}))
 			.then(stats => (new Promise(resolve => {
 				// Get local stats

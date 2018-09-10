@@ -10,13 +10,9 @@ const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const PushError = require('../lib/PushError');
-const PathCache = require('../lib/pathcache/Index');
 const channel = require('../lib/channel');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('../lib/constants');
-
-const SRC_REMOTE = PathCache.sources.REMOTE;
-// const SRC_LOCAL = PathCache.sources.LOCAL;
 
 /**
  * SFTP transfers.
@@ -29,7 +25,6 @@ class SFTP extends ServiceBase {
 
 		this.type = 'SFTP';
 		this.clients = {};
-		this.pathCache = new PathCache();
 		this.sftpError = null;
 		this.globalReject = null;
 
@@ -78,9 +73,9 @@ class SFTP extends ServiceBase {
 		return super.init(queueLength)
 			.then(() => {
 				this.sftpError = null;
-
-				return this.pathCache.clear();
-			});
+			})
+			.then(() => this.pathCache.local.clear())
+			.then(() => this.pathCache.remote.clear());
 	}
 
 	/**
@@ -701,7 +696,7 @@ class SFTP extends ServiceBase {
 						localFilename = path.basename(localPath);
 
 						// Rename (non-colliding) and get
-						return this.paths.listDirectory(localDir)
+						return this.paths.listDirectory(localDir, this.pathCache.local)
 							.then((dirContents) => {
 								let localPath = localDir + '/' +
 									this.getNonCollidingName(
@@ -905,7 +900,7 @@ class SFTP extends ServiceBase {
 		return this.connect().then((connection) => {
 			return this.list(path.dirname(dir))
 				.then(() => {
-					let existing = this.pathCache.getFileByPath(SRC_REMOTE, dir);
+					let existing = this.pathCache.remote.getFileByPath(dir);
 
 					if (existing === null) {
 						return connection.mkdir(dir)
@@ -918,8 +913,7 @@ class SFTP extends ServiceBase {
 							})
 							.then(() => {
 								// Add dir to cache
-								this.pathCache.addFilePath(
-									SRC_REMOTE,
+								this.pathCache.remote.addFilePath(
 									dir,
 									((new Date()).getTime() / 1000),
 									'd'
@@ -943,11 +937,11 @@ class SFTP extends ServiceBase {
 	 * @param {string} ignoreGlobs - List of globs to ignore.
 	 */
 	list(dir, ignoreGlobs) {
-		if (this.pathCache.dirIsCached(SRC_REMOTE, dir)) {
+		if (this.pathCache.remote.dirIsCached(dir)) {
 			// Retrieve cached path list
 			// TODO: Allow ignoreGlobs option on this route
 			utils.trace('SFTP#list', `Using cached path for ${dir}`);
-			return Promise.resolve(this.pathCache.getDir(SRC_REMOTE, dir));
+			return Promise.resolve(this.pathCache.remote.getDir(dir));
 		} else {
 			// Get path list interactively and cache
 			return this.connect()
@@ -972,8 +966,7 @@ class SFTP extends ServiceBase {
 								}
 
 								if (!match || !match.length) {
-									this.pathCache.addFilePath(
-										SRC_REMOTE,
+									this.pathCache.remote.addFilePath(
 										pathName,
 										(item.modifyTime / 1000),
 										(item.type === 'd' ? 'd' : 'f')
@@ -981,7 +974,7 @@ class SFTP extends ServiceBase {
 								}
 							});
 
-							return this.pathCache.getDir(SRC_REMOTE, dir);
+							return this.pathCache.remote.getDir(dir);
 						});
 				});
 		}
@@ -1005,8 +998,7 @@ class SFTP extends ServiceBase {
 		return new Promise((resolve, reject) => {
 			this.cacheRecursiveList(dir, counter, ignoreGlobs, () => {
 				if (counter.scanned === counter.total) {
-					resolve(this.pathCache.getRecursiveFiles(
-						PathCache.sources.REMOTE,
+					resolve(this.pathCache.remote.getRecursiveFiles(
 						dir
 					));
 				}
@@ -1095,8 +1087,7 @@ class SFTP extends ServiceBase {
 				})
 			))
 			.then(() => {
-				result.remote = this.pathCache.getFileByPath(
-					SRC_REMOTE,
+				result.remote = this.pathCache.remote.getFileByPath(
 					remote
 				);
 

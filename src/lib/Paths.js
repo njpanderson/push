@@ -230,26 +230,21 @@ class Paths {
 	/**
 	 * List the contents of a single filesystem-accessible directory.
 	 * @param {string} dir - Directory to list.
-	 * @param {number} [loc=PathCache.sources.LOCAL] - `PathCache.sources` locations.
 	 * @param {PathCache} [cache] - PathCache instance. Will use an internal instance
 	 * if not specified.
 	 * @description
-	 * `loc` provides a mechanism for distinguishing between multiple "sets" of
-	 * caches. The distinction is arbitrary but generally recommended to use one
-	 * of the `PathCache.sources` options for consistent recall.
-	 *
 	 * An existing `cache` instance (of PathCache) may be supplied. Otherwise,
-	 * an instance specific to the Paths class is created.
+	 * a generic cache instance is created.
 	 * @returns {Promise<PathCacheList>} A promise resolving to a directory list.
 	 */
-	listDirectory(dir, loc = PathCache.sources.LOCAL, cache) {
+	listDirectory(dir, cache) {
 		dir = this.stripTrailingSlash(dir);
 
 		// Use supplied cache or fall back to class instance
 		cache = cache || this.getPathCache();
 
-		if (cache.dirIsCached(loc, dir)) {
-			return Promise.resolve(cache.getDir(loc, dir));
+		if (cache.dirIsCached(dir)) {
+			return Promise.resolve(cache.getDir(dir));
 		} else {
 			return new Promise((resolve, reject) => {
 				fs.readdir(dir, (error, list) => {
@@ -262,14 +257,13 @@ class Paths {
 							stats = fs.statSync(pathname);
 
 						cache.addFilePath(
-							loc,
 							pathname,
 							(stats.mtime.getTime() / 1000),
 							(stats.isDirectory() ? 'd' : 'f')
 						);
 					});
 
-					resolve(cache.getDir(loc, dir));
+					resolve(cache.getDir(dir));
 				});
 			});
 		}

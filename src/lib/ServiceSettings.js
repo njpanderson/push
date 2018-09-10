@@ -381,7 +381,7 @@ class ServiceSettings {
 	 * @param {Uri} uri - Uri of the settings file. Mainly for error reporting.
 	 */
 	normalise(settings, uri) {
-		let serviceData, variant;
+		let serviceData, env;
 
 		if (!settings.service) {
 			if (settings.env) {
@@ -390,15 +390,15 @@ class ServiceSettings {
 					settings.service = serviceData.service;
 					settings[settings.service] = serviceData.options;
 
-					// Strip out service variants (to ensure they don't make it to Push)
-					for (variant in settings) {
+					// Strip out unused environments for safety
+					for (env in settings) {
 						if (
-							settings.hasOwnProperty(variant) &&
-							variant !== 'service' &&
-							variant !== settings.service &&
-							variant !== 'env'
+							settings.hasOwnProperty(env) &&
+							env !== 'service' &&
+							env !== settings.service &&
+							env !== 'env'
 						) {
-							delete settings[variant];
+							delete settings[env];
 						}
 					}
 				} else {

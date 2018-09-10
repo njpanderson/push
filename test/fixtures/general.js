@@ -21,6 +21,7 @@ module.exports = {
 			contents: '[none]',
 			newFile: true,
 			data: {
+				env: 'dev',
 				service: 'SFTP',
 				SFTP: {
 					host: 'neilinscotland.net',
@@ -41,5 +42,25 @@ module.exports = {
 		nonCancellable: {
 			id: 'testNonCancellableQueue'
 		}
+	},
+
+	pathCache: {
+		list1: [
+			{ name: 'filename1.txt' },
+			{ name: 'filename2.txt' },
+			{ name: 'filename3.txt' },
+			{ name: 'filename4.txt' },
+			{ name: 'filename5.txt' }
+		],
+		list2: [
+			{ name: 'filename1.txt' },
+			{ name: 'filename1-2.txt' },
+			{ name: 'filename-1-20-2009.ogg' },
+			{ name: 'filename-1-20-2009-2.ogg' },
+			{ name: 'filename4.jpg' },
+			{ name: 'filename4-2.jpg' },
+			{ name: 'filename4-3.jpg' },
+			{ name: 'filename5.mvk' }
+		]
 	}
 };
