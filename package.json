@@ -211,6 +211,16 @@
         "category": "Push"
       },
       {
+        "command": "push.queueGitCommit",
+        "title": "Add files from a Git commit to the Push queue",
+        "category": "Push"
+      },
+      {
+        "command": "push.uploadGitCommit",
+        "title": "Upload files from a Git commit",
+        "category": "Push"
+      },
+      {
         "command": "push.cancelQueues",
         "title": "Cancel active queue",
         "category": "Push"

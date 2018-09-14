@@ -173,21 +173,75 @@ class Push extends PushBase {
 	 * @param {boolean} [exec=`false`] - `true` to immediately upload, `false` to queue.
 	 */
 	queueGitChangedFiles(uri, exec = false) {
-		this.scm.exec(
+		return this.scm.exec(
 			SCM.providers.git,
-			this.paths.getCurrentWorkspaceRootPath(
-				uri,
-				true
-			),
+			this.paths.getCurrentWorkspaceRootPath(uri, true),
 			'listWorkingUris'
-		).then((files) => {
+		).then((uris) => {
 			if (exec) {
 				// Immediately execute uploads
-				this.transfer(files, 'put');
-			} else {
-				// Queue uploads
-				this.queueForUpload(files);
+				return this.transfer(uris, 'put');
 			}
+
+			// Queue uploads
+			return this.queueForUpload(uris);
+		});
+	}
+
+	queueGitCommitChanges(uri, exec = false) {
+		let dir = this.paths.getCurrentWorkspaceRootPath(uri, true);
+
+		return this.scm.exec(
+			SCM.providers.git,
+			dir,
+			'listCommits',
+			2
+		).then((commits) => {
+			return vscode.window.showQuickPick(
+				commits,
+				{
+					placeholder: 'placeholder'
+				}
+			).then((option) => {
+				let result = {
+					option
+				};
+
+				if (!option) {
+					return null;
+				}
+
+				return this.scm.exec(
+					SCM.providers.git,
+					dir,
+					'urisFromCommit',
+					option.baseOption
+				).then((uris) => {
+					result.uris = uris;
+					return result;
+				});
+			}).then((result) => {
+				if (!result.uris) {
+					return;
+				}
+
+				// TODO: need to filter URIs by ignoreGlobs here
+
+				if (!result.uris.length) {
+					return utils.showLocalisedWarning(
+						'commit_contained_no_files',
+						result.option.shortCommit
+					);
+				}
+
+				if (exec) {
+					// Immediately execute uploads
+					return this.transfer(result.uris, 'put');
+				}
+
+				// Queue uploads
+				return this.queueForUpload(result.uris);
+			});
 		});
 	}
 

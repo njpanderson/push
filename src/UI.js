@@ -36,7 +36,7 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			super.queueGitChangedFiles(uri);
+			return super.queueGitChangedFiles(uri).catch(this.catchError);
 		}
 	}
 
@@ -44,7 +44,23 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			super.queueGitChangedFiles(uri, true);
+			return super.queueGitChangedFiles(uri, true).catch(this.catchError);
+		}
+	}
+
+	queueGitCommit() {
+		let uri;
+
+		if ((uri = this.getValidUri(uri))) {
+			return super.queueGitCommitChanges(uri).catch(this.catchError);
+		}
+	}
+
+	uploadGitCommit() {
+		let uri;
+
+		if ((uri = this.getValidUri(uri))) {
+			return super.queueGitCommitChanges(uri, true).catch(this.catchError);
 		}
 	}
 

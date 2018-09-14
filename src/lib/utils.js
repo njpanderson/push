@@ -175,7 +175,7 @@ const utils = {
 				}
 			).then((option) => {
 				resolve({ option, type: 'mismatch_type' });
-			})
+			});
 		});
 	},
 
