@@ -173,22 +173,86 @@ class Push extends PushBase {
 	 * @param {boolean} [exec=`false`] - `true` to immediately upload, `false` to queue.
 	 */
 	queueGitChangedFiles(uri, exec = false) {
-		this.scm.exec(
+		return this.scm.exec(
 			SCM.providers.git,
-			this.paths.getCurrentWorkspaceRootPath(
-				uri,
-				true
-			),
+			this.paths.getCurrentWorkspaceRootPath(uri, true),
 			'listWorkingUris'
-		).then((files) => {
+		).then((uris) => {
 			if (exec) {
 				// Immediately execute uploads
-				this.transfer(files, 'put');
-			} else {
-				// Queue uploads
-				this.queueForUpload(files);
+				return this.transfer(uris, 'put');
 			}
+
+			// Queue uploads
+			return this.queueForUpload(uris);
 		});
+	}
+
+	queueGitCommitChanges(uri, exec = false) {
+		let dir = this.paths.getCurrentWorkspaceRootPath(uri, true);
+
+		return this.scm.exec(
+			SCM.providers.git,
+			dir,
+			'listCommits',
+			10
+		)
+			.then((commits) => vscode.window.showQuickPick(commits, {
+				placeholder: 'placeholder'
+			}))
+			.then((option) => {
+				// Get Uris from the selected commit
+				let result = { option };
+
+				if (!option) {
+					throw undefined;
+				}
+
+				return this.scm.exec(
+					SCM.providers.git,
+					dir,
+					'urisFromCommit',
+					option.baseOption
+				).then((uris) => {
+					result.uris = uris;
+					return result;
+				});
+			})
+			.then((result) => {
+				// Filter Uris by ignoreGlobs
+				return this.paths.filterUrisByGlobs(
+					result.uris,
+					this.config.ignoreGlobs
+				).then(({ uris, ignored }) => {
+					result.uris = uris;
+					result.ignored = ignored;
+					return result;
+				});
+			})
+			.then((result) => {
+				if (!result.uris.length) {
+					if (result.ignored) {
+						return utils.showLocalisedWarning(
+							'commit_no_files_with_ignore',
+							result.option.shortCommit,
+							result.ignored
+						);
+					}
+
+					return utils.showLocalisedWarning(
+						'commit_no_files',
+						result.option.shortCommit
+					);
+				}
+
+				if (exec) {
+					// Immediately execute uploads
+					return this.transfer(result.uris, 'put');
+				}
+
+				// Queue uploads
+				return this.queueForUpload(result.uris);
+			});
 	}
 
 	/**

@@ -2,10 +2,11 @@ const vscode = require('vscode');
 
 const channel = require('./channel');
 const Paths = require('./Paths');
+const utils = require('./utils');
 
 class SCM {
 	constructor() {
-		this._paths = new Paths();
+		this.paths = new Paths();
 		this._provider = {
 			id: null,
 			dir: null,
@@ -27,9 +28,9 @@ class SCM {
 		};
 
 		switch (this._provider.id) {
-			case SCM.providers.git:
-				this._provider.instance = require('simple-git')(this._provider.dir);
-				break;
+		case SCM.providers.git:
+			this._provider.instance = require('simple-git')(this._provider.dir);
+			break;
 		}
 
 		return this._provider;
@@ -85,26 +86,136 @@ class SCM {
 			let files;
 
 			switch (provider.id) {
-				case SCM.providers.git:
-					provider.instance.cwd(dir);
-					provider.instance.status((error, status) => {
-						if (error) {
-							return reject(error);
-						}
+			case SCM.providers.git:
+				// Set working directory
+				provider.instance.cwd(dir);
 
-						files = this._urisFromGitStatus(dir, status);
-						resolve(files);
-					})
-					break;
+				// Get status, including changed files
+				provider.instance.status((error, status) => {
+					if (error) {
+						return reject(error);
+					}
 
-				default:
-					reject(new Error('Unknown provider.'));
+					files = this._urisFromGitStatus(dir, status);
+					resolve(files);
+				});
+
+				break;
+
+			default:
+				reject(new Error('Unknown provider.'));
 			}
 		});
 	}
 
+	_listCommits(provider, dir, limit = 20, hashSize = 10) {
+		return new Promise((resolve, reject) => {
+			switch (provider.id) {
+			case SCM.providers.git:
+				// Set working directory
+				provider.instance.cwd(dir);
+
+				// Get log from git
+				provider.instance.log([
+					`-${limit}`
+				], (error, status) => {
+					if (error) {
+						return reject(error);
+					}
+
+					if (status && status.all) {
+						// Return an array of items for use with the quick pick
+						return resolve(status.all.map((commit) => {
+							let shortCommit = commit.hash.substring(0, (hashSize - 1)),
+								date = new Date(commit.date);
+
+							return {
+								label: shortCommit +
+									' ' + commit.message,
+								detail: `${commit.author_name} <${commit.author_email}>` +
+									` (${utils.dateFormat(date)})`,
+								shortCommit,
+								baseOption: commit.hash
+							};
+						}));
+					}
+
+					channel.appendLocalisedError('no_commits_for_queue');
+					return reject();
+				});
+
+				break;
+
+			default:
+				reject(new Error('Unknown provider.'));
+			}
+		});
+	}
+
+	/**
+	 * Find the Uris affected by a commit.
+	 * @param {number} provider - The provider to use. See SCM.providers.
+	 * @param {string} dir - The base directory for this operation.
+	 * @param {string} commit - The unique commit hash. Will reject with an error
+	 * if the commit is not unique.
+	 * @returns {Promise} Resolving to an array of Uris.
+	 */
+	_urisFromCommit(provider, dir, commit) {
+		return new Promise((resolve, reject) => {
+			switch (provider.id) {
+			case SCM.providers.git:
+				// Set working directory
+				provider.instance.cwd(dir);
+
+				// Get commit details from git
+				provider.instance.raw([
+					'diff-tree',
+					'--no-commit-id',
+					'--name-only',
+					'-r',
+					'--diff-filter=AMRd',
+					'-m',
+					commit
+				], (error, status) => {
+					let uris = [];
+
+					if (error) {
+						return reject(error);
+					}
+
+					if (status && (status = status.trim().split('\n'))) {
+						status.forEach((file) => {
+							let uri = this.paths.join(
+								dir,
+								this._cleanGitPath(file)
+							);
+
+							console.log(uri.fsPath, this.paths.fileExists(uri));
+
+							if (this.paths.fileExists(uri)) {
+								return uris.push(uri);
+							}
+						});
+
+						resolve(uris);
+					}
+				});
+
+				break;
+
+			default:
+				reject(new Error('Unknown provider.'));
+			}
+		});
+	}
+
+	/**
+	 * Return a list of edited Uris given a git status collection
+	 * @param {string} dir - The containing directory.
+	 * @param {*} status - The status object, passed by simple-git#status.
+	 * @returns {Uri[]} - A list of Uris that are edited.
+	 */
 	_urisFromGitStatus(dir, status) {
-		// TODO: strip out files that have been deleted
 		let files = [];
 
 		status.files.forEach((file) => {
@@ -114,7 +225,7 @@ class SCM {
 			}
 
 			file.uri = vscode.Uri.parse(
-				this._paths.addTrailingSlash(dir) + this._cleanGitPath(file.path)
+				this.paths.addTrailingSlash(dir) + this._cleanGitPath(file.path)
 			);
 
 			files.push(file.uri);
@@ -139,6 +250,7 @@ class SCM {
 	 * @param {object} provider - Provider data as set by {@link SCM#getProvider}.
 	 * @param {string} error - Error string.
 	 * @param {...mixed} $3 - Replacement arguments as needed.
+	 * @private
 	 */
 	_appendChannelMessage(type, provider, error) {
 		let key,
@@ -179,6 +291,15 @@ SCM.providers = {
 	git: 0
 };
 
+/**
+ * @description
+ * These strings are converted from the original message given by the provider
+ * into a language identity string for localised messaging.
+ *
+ * Each item within `strings` is a key/value pair of locale string references
+ * and the message given by the SCM provider.
+ * @see {@link SCM#_appendChannelMessage} for implementation.
+ */
 SCM.errorStrings = [{
 	provider: SCM.providers.git,
 	strings: {

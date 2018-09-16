@@ -1,4 +1,7 @@
 module.exports = {
+	'date_format_short': 'yy-m-d',
+	'today': 'Today',
+	'yesterday': 'Yesterday',
 	'comm_push_settings1': 'Push settings file - first generated on ${1}\n',
 	'comm_push_settings2': 'Note: Optional items are commented out and can be uncommented if you wish to set them\n',
 	'comm_add_service_config': 'Add service configuration here...',
@@ -98,5 +101,7 @@ module.exports = {
 	'dir_read_error_with_error': 'The directory "${1}" could not be read. The full error was: "${2}".',
 	'push_upgraded': 'Push has been upgraded to version ${1}.',
 	'show_changelog': 'Show Changelog',
-	'no_host_defined': '(No host defined)'
+	'no_host_defined': '(No host defined)',
+	'commit_no_files': 'The selected commit (${1}) did not contain any uploadable files.',
+	'commit_no_files_with_ignore': 'The selected commit (${1}) did not contain any uploadable files. (${2} p{2:file:files} ignored.)'
 };
