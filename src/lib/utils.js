@@ -1,18 +1,19 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
-const path = require('path');
 const dateFormat = require('dateformat');
 
 const config = require('./config');
-const constants = require('./constants');
 const PushError = require('./PushError');
 const i18n = require('../lang/i18n');
+const {
+	TMP_FILE_PREFIX,
+	DEBUG
+} = require('./constants');
 
 const utils = {
 	_timeouts: {},
 	_sb: null,
-	_debug: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
 	/**
 	 * Show an informational message using the VS Code interface
@@ -288,7 +289,7 @@ const utils = {
 	 */
 	getTmpFile(getUri = true) {
 		let tmpobj = tmp.fileSync({
-			prefix: constants.TMP_FILE_PREFIX
+			prefix: TMP_FILE_PREFIX
 		});
 
 		if (getUri) {
@@ -299,7 +300,7 @@ const utils = {
 	},
 
 	trace(id) {
-		if (this._debug) {
+		if (DEBUG) {
 			console.log(
 				(new Date).toLocaleTimeString() +
 				`[${id}] - "${[...arguments].slice(1).join(', ')}"`

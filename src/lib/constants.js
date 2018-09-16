@@ -1,6 +1,11 @@
+const fs = require('fs');
+const path = require('path');
+
 const i18n = require('../lang/i18n');
 
 module.exports = {
+	DEBUG: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
+
 	CONFIG_FORMATS: {
 		'SSFTP': /sftp-config\.json/i
 	},
