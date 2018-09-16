@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const glob = require('glob');
+const micromatch = require('micromatch');
 
 const ExtendedStream = require('./ExtendedStream');
 const PathCache = require('./pathcache/Index');
@@ -304,6 +305,38 @@ class Paths {
 					resolve(matches);
 				}
 			);
+		});
+	}
+
+	/**
+	 * Filters a bunch of Uris by the provided globs
+	 * @param {Uri[]} uris - An array of Uris to check.
+	 * @param {string[]} ignoreGlobs - An array of globs to match against.
+	 * @returns {Promise<Object>} resolving to an object containing the
+	 * remaining Uris and a count of ignored Uris.
+	 */
+	filterUrisByGlobs(uris, ignoreGlobs = []) {
+		return new Promise((resolve, reject) => {
+			let matches;
+
+			if (!Array.isArray(ignoreGlobs) || !ignoreGlobs.length) {
+				resolve(uris);
+			}
+
+			try {
+				// Get uris not matching from micromatch
+				matches = micromatch.not(
+					Array.from(uris, uri => uri.fsPath), ignoreGlobs
+				);
+
+				// Convert back to Uris and resolve
+				resolve({
+					uris: Array.from(matches, match => vscode.Uri.file(match)),
+					ignored: (uris.length - matches.length)
+				});
+			} catch(e) {
+				reject(e);
+			}
 		});
 	}
 

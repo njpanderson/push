@@ -195,20 +195,17 @@ class Push extends PushBase {
 			SCM.providers.git,
 			dir,
 			'listCommits',
-			2
-		).then((commits) => {
-			return vscode.window.showQuickPick(
-				commits,
-				{
-					placeholder: 'placeholder'
-				}
-			).then((option) => {
-				let result = {
-					option
-				};
+			10
+		)
+			.then((commits) => vscode.window.showQuickPick(commits, {
+				placeholder: 'placeholder'
+			}))
+			.then((option) => {
+				// Get Uris from the selected commit
+				let result = { option };
 
 				if (!option) {
-					return null;
+					throw undefined;
 				}
 
 				return this.scm.exec(
@@ -220,16 +217,30 @@ class Push extends PushBase {
 					result.uris = uris;
 					return result;
 				});
-			}).then((result) => {
-				if (!result.uris) {
-					return;
-				}
-
-				// TODO: need to filter URIs by ignoreGlobs here
-
+			})
+			.then((result) => {
+				// Filter Uris by ignoreGlobs
+				return this.paths.filterUrisByGlobs(
+					result.uris,
+					this.config.ignoreGlobs
+				).then(({ uris, ignored }) => {
+					result.uris = uris;
+					result.ignored = ignored;
+					return result;
+				});
+			})
+			.then((result) => {
 				if (!result.uris.length) {
+					if (result.ignored) {
+						return utils.showLocalisedWarning(
+							'commit_no_files_with_ignore',
+							result.option.shortCommit,
+							result.ignored
+						);
+					}
+
 					return utils.showLocalisedWarning(
-						'commit_contained_no_files',
+						'commit_no_files',
 						result.option.shortCommit
 					);
 				}
@@ -242,7 +253,6 @@ class Push extends PushBase {
 				// Queue uploads
 				return this.queueForUpload(result.uris);
 			});
-		});
 	}
 
 	/**

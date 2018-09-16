@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const channel = require('./channel');
 const Paths = require('./Paths');
+const utils = require('./utils');
 
 class SCM {
 	constructor() {
@@ -125,12 +126,14 @@ class SCM {
 					if (status && status.all) {
 						// Return an array of items for use with the quick pick
 						return resolve(status.all.map((commit) => {
-							let shortCommit = commit.hash.substring(0, (hashSize - 1));
+							let shortCommit = commit.hash.substring(0, (hashSize - 1)),
+								date = new Date(commit.date);
 
 							return {
 								label: shortCommit +
 									' ' + commit.message,
-								detail: `${commit.author_name} <${commit.author_email}>`,
+								detail: `${commit.author_name} <${commit.author_email}>` +
+									` (${utils.dateFormat(date)})`,
 								shortCommit,
 								baseOption: commit.hash
 							};

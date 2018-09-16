@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
 const path = require('path');
+const dateFormat = require('dateformat');
 
 const config = require('./config');
 const constants = require('./constants');
@@ -335,6 +336,54 @@ const utils = {
 				throw new Error(`${fnName}: Argument ${index} type mismatch.`);
 			}
 		});
+	},
+
+	/**
+	 * @param {Date} date - The date to format.
+	 * @param {string} format - The format. See dateformat docs.
+	 * @param {string} relativeFallback - The fallback format string for when the date
+	 * is outwith the boundaries of being relative. Defaults to the localised
+	 * date_format_short value.
+	 * @description
+	 * Formats a date with an optional relative format for the day. Uses
+	 * dateformat from NPM.
+	 *
+	 * Use the extended `R` key to return a relative day if needed.
+	 * @see https://www.npmjs.com/package/dateformat
+	 * @returns {string} The formatted date.
+	 */
+	dateFormat(date, format, relativeFallback) {
+		const now = new Date();
+
+		if (!format) {
+			format = 'R h:MM tt';
+		}
+
+		if (!relativeFallback) {
+			relativeFallback = i18n.strings.localised.date_format_short;
+		}
+
+		if (dateFormat(now, 'yyyy-dd-mm') === dateFormat(date, 'yyyy-dd-mm')) {
+			// Today
+			return dateFormat(
+				date,
+				format.replace('R', `"${i18n.strings.localised.today}"`)
+			);
+		}
+
+		if (dateFormat(
+			now.setDate(now.getDate() - 1),
+			'yyyy-dd-mm'
+		) === dateFormat(date, 'yyyy-dd-mm')) {
+			// Yesterday
+			return dateFormat(
+				date,
+				format.replace('R', `"${i18n.strings.localised.yesterday}"`)
+			);
+		}
+
+		// Fallback
+		return dateFormat(date, format.replace('R', relativeFallback));
 	}
 };
 
