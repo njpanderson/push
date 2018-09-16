@@ -24,6 +24,31 @@ npm install
 
 Once they are installed, you should be able to then use the debugger/launcher within VS Code to launch and test an instance of Push.
 
+## Contributing language files
+
+Language files are a combination of ISO 639-1 language codes and ISO 3166-1 Alpha-2 codes of country codes. Country code is optional if a language does not require that definition, e.g. 'ja' (Japanese) vs 'en_gb' (British English).
+
+The following steps will get you started translating Push:
+
+1. Create a local fork of Push and clone it.
+2. Set it up for development within VS Code, using the instructions above.
+3. Duplicate `src/lang/en_gb.js` to `src/lang/your-language-code.js` (using the reference from ISO 639-1/ISO 3166-1) and make text changes as needed.
+4. Test using the vs code debugger "Launch extension" launch config.
+5. Open a project or workspace in the test window, then set your Push preferences `njpPush.locale` to `fr`. Anything that can be localised should now be using your `fr.js` for strings.
+
+There are replacement variables throughout the strings which are replaced with real values during runtime:
+
+ - `${1-9}`: Reference numbered arguments within `i18n.t`, etc
+ - `p{1-9:(singular):(plural)}`: Is a pluralise replacement. If the `1-9` argument is `1`, the `(singular)` is used, otherwise the `(plural)` is used.
+
+**Things to note**
+
+ - The language is of course quite technical. Keep this in mind when translating to native terms.
+ - "Push" should remain verbatim. It's a brand, and should be recognisable in any language.
+ - Try to be consistent with the existing letter casing. If a string is in title case, keep it in title case — unless the language itself overrides this requirement (such as languages with no uppercase letters).
+ - Try to maintain any punctuation defined, such as parentheses, full stops, commas etc.
+ - Most of the strings support flexible lengths, but try not to exceed the length of any string to an extreme degree. If the native terms feel too long compared to the english version, consider truncating them.
+
 ## Contributing changes
 
 There are a few points to be aware of before working on Push:
