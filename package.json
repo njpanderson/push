@@ -532,6 +532,7 @@
     "typescript": "^2.8.3"
   },
   "dependencies": {
+    "dateformat": "^3.0.3",
     "jsonc-parser": "^2.0.1",
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
