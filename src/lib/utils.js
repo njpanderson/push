@@ -180,7 +180,7 @@ const utils = {
 	},
 
 	trimSeparators: function(pathname, separator = '/') {
-		const re = new RegExp(`^\${separator}+|\${separator}+$`, 'g');
+		const re = new RegExp('^' + separator + '+|\\' + separator + '+$', 'g');
 		return pathname.trim(re, '');
 	},
 
@@ -332,7 +332,6 @@ const utils = {
 					))
 				)
 			) {
-				debugger;
 				throw new Error(`${fnName}: Argument ${index} type mismatch.`);
 			}
 		});
