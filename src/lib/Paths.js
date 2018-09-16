@@ -50,6 +50,17 @@ class Paths {
 	}
 
 	/**
+	 * Tests whether the supplied path is within an active workspace folder.
+	 * @param {Uri} uri - The path to test.
+	 * @returns {boolean} `true` if the path is within the workspace.
+	 */
+	pathInWorkspaceFolder(uri) {
+		return (this.getWorkspaceFolders().findIndex((workspaceFolder) => {
+			return this.pathInUri(uri, workspaceFolder.uri);
+		}) !== -1);
+	}
+
+	/**
 	 * Retrieves the active workspace folders.
 	 * @returns {array} Either an array of workspace folders, or an empty array if
 	 * nothing was found.
