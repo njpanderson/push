@@ -16,7 +16,8 @@ const i18n = require('./lang/i18n');
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
-	ENV_DEFAULT_STATUS_COLOR
+	ENV_DEFAULT_STATUS_COLOR,
+	DEBUG
 } = require('./lib/constants');
 
 /**
@@ -70,14 +71,16 @@ class Push extends PushBase {
 			this.event('onDidChangeActiveTextEditor', textEditor);
 		});
 
-		// Once initialised, do the new version check
-		this.checkNewVersion();
+		if (!DEBUG) {
+			// Once initialised, do the new version check
+			this.checkNewVersion();
+		}
 	}
 
 	/**
 	 * @description
 	 * Checks for a major/minor version, and if found, loads the changelog,
-	 * based on the users preferences.
+	 * based on the users preferences. Also sets the current version into storage.
 	 */
 	checkNewVersion() {
 		const currentVersion = this.context.globalState.get(
