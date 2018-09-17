@@ -3,6 +3,7 @@ const semver = require('semver');
 
 const packageJson = require('../package.json');
 const Service = require('./lib/Service');
+const PushError = require('./lib/PushError');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
 const Paths = require('./lib/Paths');
@@ -28,6 +29,7 @@ class Push extends PushBase {
 		super();
 
 		this.context = context;
+		this.allowExternalServiceFiles = false;
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
@@ -574,14 +576,13 @@ class Push extends PushBase {
 	 */
 	diffRemote(uri) {
 		return new Promise((resolve, reject) => {
-			let config, tmpFile, remotePath;
+			let tmpFile, remotePath;
 
 			tmpFile = utils.getTmpFile();
-			config = this.configWithServiceSettings(uri);
 
 			remotePath = this.service.execSync(
 				'convertUriToRemote',
-				config,
+				this.configWithServiceSettings(uri),
 				[uri]
 			);
 
@@ -644,9 +645,7 @@ class Push extends PushBase {
 		const queue = this.getQueue(queueDef);
 
 		if (queue.running) {
-			// Reject now - not necessarily a problem but remind functions not to
-			// start the queue while it's running
-			return Promise.reject(`The queue "${queue.id}" is already running.`);
+			return Promise.resolve();
 		}
 
 		// TODO: make channel clearing an option to turn on
@@ -1174,12 +1173,10 @@ class Push extends PushBase {
 				.then((files) => {
 					if (files.length > 1) {
 						// More than one settings file found within the current directory
-						channel.appendLocalisedError('multiple_service_files_no_transfer');
-
-						reject();
+						reject(new PushError(i18n.t('multiple_service_files_no_transfer')));
 					} else {
 						// 1 or less file found
-						resolve();
+						resolve(uri);
 					}
 				});
 		});
