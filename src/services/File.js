@@ -152,11 +152,6 @@ class File extends ServiceBase {
 					case utils.collisionOpts.stop:
 						throw utils.errors.stop;
 
-					case utils.collisionOpts.skip:
-						return new TransferResult(src, false, transferType, {
-							srcLabel: destPath
-						});
-
 					case utils.collisionOpts.overwrite:
 						return this.copy(src, destPath, transferType);
 
@@ -176,6 +171,12 @@ class File extends ServiceBase {
 									rootDir
 								);
 							});
+
+					case utils.collisionOpts.skip:
+					default:
+						return new TransferResult(src, false, transferType, {
+							srcLabel: destPath
+						});
 					}
 
 					return false;

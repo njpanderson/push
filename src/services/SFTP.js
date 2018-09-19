@@ -579,9 +579,6 @@ class SFTP extends ServiceBase {
 					case utils.collisionOpts.stop:
 						throw utils.errors.stop;
 
-					case utils.collisionOpts.skip:
-						return new TransferResult(local, false, TRANSFER_TYPES.PUT);
-
 					case utils.collisionOpts.overwrite:
 						return this.clientPut(local, remote);
 
@@ -596,9 +593,11 @@ class SFTP extends ServiceBase {
 									)
 								);
 							});
-					}
 
-					return false;
+					case utils.collisionOpts.skip:
+					default:
+						return new TransferResult(local, false, TRANSFER_TYPES.PUT);
+					}
 				}
 			})
 			.then((result) => {
@@ -684,10 +683,6 @@ class SFTP extends ServiceBase {
 					case utils.collisionOpts.stop:
 						throw utils.errors.stop;
 
-					case utils.collisionOpts.skip:
-					case undefined:
-						return new TransferResult(local, false, TRANSFER_TYPES.GET);
-
 					case utils.collisionOpts.overwrite:
 						return this.clientGetByStream(local, remote);
 
@@ -710,6 +705,9 @@ class SFTP extends ServiceBase {
 								);
 							});
 
+					case utils.collisionOpts.skip:
+					default:
+						return new TransferResult(local, false, TRANSFER_TYPES.GET);
 					}
 
 					return false;
