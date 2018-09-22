@@ -593,7 +593,7 @@ class Push extends PushBase {
 						'vscode.diff',
 						tmpFile,
 						uri,
-						'Diff: ' + this.paths.getBaseName(uri)
+						`${i18n.t('server_v_local')} (${this.paths.getBaseName(uri)})`
 					);
 				}
 			}], true, Push.queueDefs.diff).then(resolve, reject);

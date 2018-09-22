@@ -103,5 +103,6 @@ module.exports = {
 	'show_changelog': 'Show Changelog',
 	'no_host_defined': '(No host defined)',
 	'commit_no_files': 'The selected commit (${1}) did not contain any uploadable files.',
-	'commit_no_files_with_ignore': 'The selected commit (${1}) did not contain any uploadable files. (${2} p{2:file:files} ignored.)'
+	'commit_no_files_with_ignore': 'The selected commit (${1}) did not contain any uploadable files. (${2} p{2:file:files} ignored.)',
+	'server_v_local': 'Server vs. Local'
 };
