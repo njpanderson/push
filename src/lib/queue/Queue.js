@@ -226,7 +226,7 @@ class Queue {
 					}, 10);
 
 					// Execute all queue items in serial
-					this._execQueueItems(
+					this.execQueueItems(
 						(results) => {
 							clearInterval(this.progressInterval);
 							this._updateStatus(false);
@@ -245,7 +245,7 @@ class Queue {
 	 * @param {function} fnCallback - Callback to invoke once the queue is empty.
 	 * @private
 	 */
-	_execQueueItems(fnCallback) {
+	execQueueItems(fnCallback) {
 		let task;
 
 		if (this._tasks.length) {
@@ -283,7 +283,7 @@ class Queue {
 					}
 
 					// Loop
-					this._loop(fnCallback);
+					this.loop(fnCallback);
 				})
 				.catch((error) => {
 					this.currentTask = null;
@@ -308,14 +308,14 @@ class Queue {
 	}
 
 	/**
-	 * Looper function for #_execQueueItems
-	 * @param {function} fnCallback - Callback function, as supplied to #_execQueueItems.
-	 * @param {object} results - Results object, as supplied to #_execQueueItems.
+	 * Looper function for #execQueueItems
+	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
+	 * @param {object} results - Results object, as supplied to #execQueueItems.
 	 * @private
 	 */
-	_loop(fnCallback) {
+	loop(fnCallback) {
 		this._tasks.shift();
-		this._execQueueItems(fnCallback);
+		this.execQueueItems(fnCallback);
 	}
 
 	/**
