@@ -131,16 +131,24 @@ class ServiceSettings {
 	getServerFile(dir, settingsFileGlob) {
 		// Find the settings file
 		let uri = this.paths.findFileInAncestors(
-			settingsFileGlob,
-			dir
-		);
+				settingsFileGlob,
+				dir
+			),
+			filename;
 
 		if (uri !== null && this.paths.fileExists(uri)) {
 			// File isn't empty and exists - read and return
+			filename = this.paths.getNormalPath(uri);
+
+			utils.trace(
+				'ServiceSettings#getServerFile',
+				`Service file found at ${filename}`
+			);
+
 			return {
 				uri: uri,
 				contents: (
-					fs.readFileSync(this.paths.getNormalPath(uri), 'utf8')
+					fs.readFileSync(filename, 'utf8')
 				).toString().trim()
 			};
 		}
@@ -171,7 +179,11 @@ class ServiceSettings {
 
 		if (!refresh && this.settingsCache[uriPath]) {
 			// Return a cached version
-			utils.trace('ServiceSettings#getServerJSON', `Using cached settings for ${uriPath}`);
+			utils.trace(
+				'ServiceSettings#getServerJSON',
+				`Using cached settings for ${uriPath}`
+			);
+
 			this.settingsCache[uriPath].newFile = false;
 			return this.settingsCache[uriPath];
 		}

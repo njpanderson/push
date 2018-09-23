@@ -19,6 +19,8 @@ class Service extends PushBase {
 	constructor(options) {
 		super();
 
+		utils.trace('Service', 'Begin instantiation', true);
+
 		this.setOptions(options);
 
 		// Create ServiceSettings instance for managing the files

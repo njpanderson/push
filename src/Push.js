@@ -26,6 +26,8 @@ class Push extends PushBase {
 	constructor(context) {
 		super();
 
+		utils.trace('Push', 'Begin instantiation', true);
+
 		this.context = context;
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
@@ -54,6 +56,8 @@ class Push extends PushBase {
 		this.watch.onChange = this.onWatchChange;
 		this.watch.recallByWorkspaceFolders(vscode.workspace.workspaceFolders);
 
+		utils.trace('Push', 'Libraries initialised');
+
 		this.queues = {};
 
 		// Set initial contexts
@@ -69,6 +73,8 @@ class Push extends PushBase {
 		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
 			this.event('onDidChangeActiveTextEditor', textEditor);
 		});
+
+		utils.trace('Push', 'Events bound');
 
 		// Once initialised, do the new version check
 		this.checkNewVersion();
@@ -88,6 +94,11 @@ class Push extends PushBase {
 			// Let's do nothing for new installs
 			return;
 		}
+
+		utils.trace(
+			'Push',
+			`Current version: ${currentVersion}, Package version: ${packageJson.version}`
+		);
 
 		if (
 			['major', 'minor'].indexOf(
@@ -768,7 +779,7 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
-		utils.trace('Push#setContext', context, value);
+		utils.trace('Push#setContext', `${context}: "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}

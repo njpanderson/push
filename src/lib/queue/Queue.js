@@ -166,6 +166,8 @@ class Queue {
 			return Promise.reject(i18n.t('queue_running'));
 		}
 
+		utils.trace('Queue#exec', 'Queue start', true);
+
 		this._setContext(Queue.contexts.running, true);
 
 		if (this._tasks && this._tasks.length > 1) {
@@ -254,6 +256,11 @@ class Queue {
 
 			// Get the first task in the queue
 			task = this._tasks[0];
+
+			utils.trace(
+				'Queue#execQueueItems',
+				`Invoking task 0 of ${this._tasks.length} task(s)`
+			);
 
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()

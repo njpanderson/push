@@ -123,6 +123,11 @@ class SFTP extends ServiceBase {
 	 * @return {promise} - Resolving to a connected SFTP instance.
 	 */
 	openConnection(client, options = {}) {
+		utils.trace(
+			'SFTP#openConnection',
+			`Connecting (${this.credentialStamp(client)})...`
+		);
+
 		return client.sftp.connect(Object.assign({}, client.options, options))
 			.then(() => {
 				this.onConnect();
@@ -156,6 +161,11 @@ class SFTP extends ServiceBase {
 	 */
 	openGatewayConnection(client) {
 		return new Promise((resolve, reject) => {
+			utils.trace(
+				'SFTP#openGatewayConnection',
+				`Connecting (${this.credentialStamp(client)})...`
+			);
+
 			// Set up client gateway and connect to it
 			client.gateway
 				.on('ready', () => {
@@ -166,6 +176,8 @@ class SFTP extends ServiceBase {
 								client.options.privateKey = contents;
 
 								this.connectGatewaySFTP(client)
+									// TODO: Implement and test
+									// .then((client) => this.checkServiceRoot(client))
 									.then(resolve, reject);
 							})
 							.catch((error) => {
@@ -178,6 +190,8 @@ class SFTP extends ServiceBase {
 					} else {
 						// Just connect
 						this.connectGatewaySFTP(client)
+							// TODO: Implement and test
+							// .then((client) => this.checkServiceRoot(client))
 							.then(resolve, reject);
 					}
 				})
@@ -349,6 +363,8 @@ class SFTP extends ServiceBase {
 				// Return the existing client instance
 				this.clients[hash].lastUsed = date.getTime();
 
+				utils.trace('Push#getClient', `Getting cached client (${hash})`);
+
 				// Resolve with an existing client connection
 				resolve(this.clients[hash]);
 			} else {
@@ -356,6 +372,11 @@ class SFTP extends ServiceBase {
 				keys = Object.keys(this.clients);
 
 				if (keys.length === this.options.maxClients) {
+					utils.trace(
+						'Push#getClient',
+						`Purging ${(keys.length - this.options.maxClients)} old client(s)...`
+					);
+
 					// Remove old clients
 					keys.sort((a, b) => {
 						return this.clients[a].lastUsed - this.clients[b].lastUsed;
@@ -369,6 +390,8 @@ class SFTP extends ServiceBase {
 				// Wait until all old clients have disconnected
 				Promise.all(results)
 					.then(() => {
+						utils.trace('Push#getClient', `Creating client (${hash})`);
+
 						// Create a new client
 						this.clients[hash] = {
 							lastUsed: 0,
@@ -397,6 +420,11 @@ class SFTP extends ServiceBase {
 								let hadError = (error || this.sftpError);
 
 								if (hadError && hadError.level) {
+									utils.trace(
+										'Push#getClient',
+										`Close event (with error ${hadError.level})`
+									);
+
 									if (hadError.level === 'client-authentication') {
 										// Error is regarding authentication - don't consider fatal
 										hadError = false;
@@ -404,6 +432,8 @@ class SFTP extends ServiceBase {
 										hadError = true;
 									}
 								} else {
+									utils.trace('Push#getClient', 'Close event');
+
 									hadError = false;
 								}
 
@@ -816,6 +846,8 @@ class SFTP extends ServiceBase {
 			this.globalReject = reject;
 
 			this.connect().then((client) => {
+				utils.trace('SFTP#clientPut', remote);
+
 				client.put(localPath, remote)
 					.then(() => {
 						resolve(new TransferResult(
@@ -864,6 +896,8 @@ class SFTP extends ServiceBase {
 				return new Promise((resolve, reject) => {
 					// Get file with client#get and stream to local pathname
 					this.globalReject = reject;
+
+					utils.trace('SFTP#clientGetByStream', remote);
 
 					client.get(remote, true, charset === 'binary' ? null : 'utf8')
 						.then((stream) => {
@@ -1206,6 +1240,22 @@ class SFTP extends ServiceBase {
 			password: true,
 			prompt: i18n.t('sftp_enter_ssh_pass')
 		});
+	}
+
+	/**
+	 * Returns a "stamp" of the credentials for a client connection. Used with debugging.
+	 * @param {Object} client
+	 */
+	credentialStamp(client) {
+		return `${client.options.host}:${client.options.port}` +
+			(
+				client.options.username ?
+					` [${client.options.username} (pw: ${(client.options.password ? 'YES' : 'NO')})]` :
+					''
+			) +
+			(
+				client.options.privateKey ? ' [KEY]' : ' [NO KEY]'
+			);
 	}
 }
 

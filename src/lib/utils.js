@@ -13,6 +13,7 @@ const utils = {
 	_timeouts: {},
 	_sb: null,
 	_debug: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
+	traceCounter: 0,
 
 	/**
 	 * Show an informational message using the VS Code interface
@@ -299,10 +300,25 @@ const utils = {
 	},
 
 	trace(id) {
+		let args = [...arguments];
+
+		if (this.traceCounter > 100000) {
+			this.traceCounter = 0;
+			console.log('# (Counter reset)');
+		}
+
 		if (this._debug) {
+			args = args.slice(1);
+
+			if (args[args.length - 1] === true) {
+				console.log('##########################');
+				args = args.slice(0, args.length - 1);
+			}
+
 			console.log(
-				(new Date).toLocaleTimeString() +
-				`[${id}] - "${[...arguments].slice(1).join(', ')}"`
+				`#${++this.traceCounter} ` +
+				dateFormat((new Date), 'H:MM:ss.l') +
+				` [${id}] ${args.join(', ')}`
 			);
 		}
 	},

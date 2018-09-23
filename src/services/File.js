@@ -307,6 +307,8 @@ class File extends ServiceBase {
 				this.stop(() => reject(error));
 			}
 
+			utils.trace('File#copy', dest);
+
 			// Create write stream & attach events
 			this.writeStream = fs.createWriteStream(dest);
 
