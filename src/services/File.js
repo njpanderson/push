@@ -178,8 +178,6 @@ class File extends ServiceBase {
 							srcLabel: destPath
 						});
 					}
-
-					return false;
 				}
 			})
 			.then((result) => {
