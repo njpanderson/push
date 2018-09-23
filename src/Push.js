@@ -157,6 +157,7 @@ class Push extends PushBase {
 	 */
 	setContexts(initial) {
 		this.setContext(Push.contexts.hasUploadQueue, this.config.uploadQueue);
+		this.setContext(Push.contexts.showTitleMenuUpload, this.config.showTitleMenuUpload);
 
 		if (initial === true) {
 			this.setContext(Push.contexts.initialised, true);
@@ -1237,7 +1238,8 @@ Push.contexts = {
 	hasUploadQueue: 'hasUploadQueue',
 	initialised: 'initialised',
 	activeEditorInUploadQueue: 'activeEditorInUploadQueue',
-	hasServiceContext: 'hasServiceContext'
+	hasServiceContext: 'hasServiceContext',
+	showTitleMenuUpload: 'showTitleMenuUpload'
 };
 
 module.exports = Push;

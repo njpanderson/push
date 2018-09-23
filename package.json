@@ -128,6 +128,11 @@
           "type": "boolean",
           "default": true,
           "description": "Shows a changelog if Push upgrades either its minor or major version."
+        },
+        "njpPush.showTitleMenuUpload": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show an upload button on the title menu."
         }
       }
     },
@@ -155,7 +160,11 @@
       {
         "command": "push.upload",
         "title": "Upload File",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/data-transfer-upload.svg",
+          "light": "resources/light/data-transfer-upload.svg"
+        }
       },
       {
         "command": "push.download",
@@ -340,6 +349,13 @@
           "when": "push:initialised && explorerResourceIsFolder",
           "command": "push.removeWatchFolder",
           "group": "njp-push-watch@8"
+        }
+      ],
+      "editor/title": [
+        {
+          "when": "push:initialised && push:showTitleMenuUpload && push:hasServiceContext",
+          "command": "push.upload",
+          "group": "navigation"
         }
       ],
       "editor/title/context": [
