@@ -387,43 +387,59 @@
       ],
       "editor/context": [
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.upload",
           "group": "njp-push@1"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.download",
           "group": "njp-push@2"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.diff",
           "group": "njp-push@3"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.addWatchFile",
           "group": "njp-push-watch@7"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.removeWatchFile",
           "group": "njp-push-watch@8"
         }
       ],
       "commandPalette": [
         {
+          "command": "push.editServiceConfig",
+          "when": "push:hasServiceContext"
+        },
+        {
           "command": "push.setServiceEnv",
           "when": "editorIsOpen && push:hasServiceContext"
+        },
+        {
+          "command": "push.upload",
+          "when": "push:hasServiceContext"
         },
         {
           "command": "push.uploadFolder",
           "when": "false"
         },
         {
+          "command": "push.download",
+          "when": "push:hasServiceContext"
+        },
+        {
           "command": "push.downloadFolder",
           "when": "false"
+        },
+        {
+          "command": "push.diff",
+          "when": "push:hasServiceContext"
         },
         {
           "command": "push.addWatchFolder",
@@ -455,19 +471,39 @@
         },
         {
           "command": "push.uploadQueuedItems",
-          "when": "push:hasUploadQueue"
+          "when": "push:hasUploadQueue && push:hasServiceContext"
         },
         {
           "command": "push.clearUploadQueue",
-          "when": "push:hasUploadQueue"
+          "when": "push:hasUploadQueue && push:hasServiceContext"
         },
         {
           "command": "push.removeQueuedItem",
-          "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
+          "when": "push:hasUploadQueue && push:activeEditorInUploadQueue && push:hasServiceContext"
         },
         {
           "command": "push.queueGitChangedFiles",
-          "when": "push:hasUploadQueue"
+          "when": "push:hasUploadQueue && push:hasServiceContext"
+        },
+        {
+          "command": "push.uploadGitChangedFiles",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.removeWatchFile",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.addWatchFile",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.uploadGitCommit",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.queueGitCommit",
+          "when": "push:hasUploadQueue && push:hasServiceContext"
         }
       ],
       "view/title": [
