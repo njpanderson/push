@@ -117,8 +117,9 @@ class ServiceSettings extends Configurable {
 
 		// Add comment to the top, then the contents
 		content =
-			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) +
-			'// ' + i18n.t('comm_push_settings2') +
+			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) + '\n' +
+			'// ' + i18n.t('comm_push_settings2') + '\n' +
+			'// ' + i18n.t('comm_push_settings3') + '\n' +
 		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG);
 
 		return content;

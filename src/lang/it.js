@@ -1,6 +1,7 @@
 module.exports = {
 	'comm_push_settings1': 'File delle impostazioni push - generato il ${1}\n',
 	'comm_push_settings2': 'Nota: i commenti sono supportati nei file di impostazioni Push\n',
+	'comm_push_settings3': 'Le etichette di ambiente predefinite sono: prod, dev, stage. Gli ambienti personalizzati (e i loro colori) possono essere creati nelle impostazioni.',
 	'comm_add_service_config': 'Aggiungi la configurazione del servizio qui ...',
 	'comm_settings_imported': 'Impostazioni importate da ${1}\n',
 	'no_locale': 'L’impostazione "${1}" locale non esiste.È stato creato un file.js per questo ?',
