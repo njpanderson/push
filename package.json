@@ -586,7 +586,8 @@
     "istanbul": "^0.4.5",
     "jsdoc": "^3.5.5",
     "mocha": "^5.2.0",
-    "typescript": "^2.8.3"
+    "typescript": "^2.8.3",
+    "vsce": "^1.53.0"
   },
   "dependencies": {
     "dateformat": "^3.0.3",
@@ -598,7 +599,6 @@
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",
     "url-parse": "^1.4.1",
-    "vsce": "^1.46.0",
     "vscode": "^1.1.18"
   }
 }
