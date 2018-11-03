@@ -133,6 +133,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show an upload button on the title menu."
+        },
+        "njpPush.limitServiceTraversal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Limits how far Push will traverse before giving up when looking for a service settings file. If enabled, Push will stop at the workspace root (or a hard limit of 50 ancestors)."
         }
       }
     },

@@ -3,6 +3,7 @@ const semver = require('semver');
 
 const packageJson = require('../package.json');
 const Service = require('./lib/Service');
+const PushError = require('./lib/PushError');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
 const Paths = require('./lib/Paths');
@@ -16,7 +17,8 @@ const i18n = require('./lang/i18n');
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
-	ENV_DEFAULT_STATUS_COLOR
+	ENV_DEFAULT_STATUS_COLOR,
+	DEBUG
 } = require('./lib/constants');
 
 /**
@@ -29,6 +31,7 @@ class Push extends PushBase {
 		utils.trace('Push', 'Begin instantiation', true);
 
 		this.context = context;
+		this.allowExternalServiceFiles = false;
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
@@ -76,14 +79,16 @@ class Push extends PushBase {
 
 		utils.trace('Push', 'Events bound');
 
-		// Once initialised, do the new version check
-		this.checkNewVersion();
+		if (!DEBUG) {
+			// Once initialised, do the new version check
+			this.checkNewVersion();
+		}
 	}
 
 	/**
 	 * @description
 	 * Checks for a major/minor version, and if found, loads the changelog,
-	 * based on the users preferences.
+	 * based on the users preferences. Also sets the current version into storage.
 	 */
 	checkNewVersion() {
 		const currentVersion = this.context.globalState.get(
@@ -278,6 +283,11 @@ class Push extends PushBase {
 
 		switch (eventType) {
 		case 'onDidSaveTextDocument':
+			if (!this.paths.pathInWorkspaceFolder(data.uri)) {
+				// Do nothing with files outside of the workspace
+				return;
+			}
+
 			uri = data && data.uri;
 			method = 'didSaveTextDocument';
 			args = [data];
@@ -578,14 +588,13 @@ class Push extends PushBase {
 	 */
 	diffRemote(uri) {
 		return new Promise((resolve, reject) => {
-			let config, tmpFile, remotePath;
+			let tmpFile, remotePath;
 
 			tmpFile = utils.getTmpFile();
-			config = this.configWithServiceSettings(uri);
 
 			remotePath = this.service.execSync(
 				'convertUriToRemote',
-				config,
+				this.configWithServiceSettings(uri),
 				[uri]
 			);
 
@@ -648,9 +657,7 @@ class Push extends PushBase {
 		const queue = this.getQueue(queueDef);
 
 		if (queue.running) {
-			// Reject now - not necessarily a problem but remind functions not to
-			// start the queue while it's running
-			return Promise.reject(`The queue "${queue.id}" is already running.`);
+			return Promise.resolve();
 		}
 
 		// TODO: make channel clearing an option to turn on
@@ -1178,12 +1185,10 @@ class Push extends PushBase {
 				.then((files) => {
 					if (files.length > 1) {
 						// More than one settings file found within the current directory
-						channel.appendLocalisedError('multiple_service_files_no_transfer');
-
-						reject();
+						reject(new PushError(i18n.t('multiple_service_files_no_transfer')));
 					} else {
 						// 1 or less file found
-						resolve();
+						resolve(uri);
 					}
 				});
 		});

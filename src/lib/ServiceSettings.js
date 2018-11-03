@@ -3,6 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
 
+const Configurable = require('./Configurable');
 const ServiceType = require('./ServiceType');
 const channel = require('../lib/channel');
 const PushError = require('../lib/PushError');
@@ -11,8 +12,10 @@ const utils = require('../lib/utils');
 const i18n = require('../lang/i18n');
 const constants = require('./constants');
 
-class ServiceSettings {
+class ServiceSettings extends Configurable {
 	constructor(options) {
+		super();
+
 		this.setOptions(options);
 		this.settingsCache = {};
 		this.paths = new Paths();
@@ -124,15 +127,16 @@ class ServiceSettings {
 	/**
 	 * Retrieves the contents of a settings file by locating it within the current
 	 * `dir` path or within the path's ancestors.
-	 * @param {Uri} dir
-	 * @param {string} settingsFileGlob
+	 * @param {Uri} dir - The contextual directory in which to begin searching.
+	 * @param {string} settingsFileGlob - A glob for the settings file.
 	 * @returns {object|null}
 	 */
 	getServerFile(dir, settingsFileGlob) {
 		// Find the settings file
 		let uri = this.paths.findFileInAncestors(
 				settingsFileGlob,
-				dir
+				dir,
+				this.config.limitServiceTraversal
 			),
 			filename;
 

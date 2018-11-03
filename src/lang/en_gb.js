@@ -45,6 +45,7 @@ module.exports = {
 	'transfer_cancelled': 'Transfer cancelled',
 	'no_service_file': 'A settings file could not be found within your project. Have you created a file matching "${1}" yet?',
 	'service_not_defined': 'A transfer service was not defined within the settings file at "${1}".',
+	'service_out_of_workspace': 'The service file was found outside of the current workspace (${1}). The remote root path will be based on the location of this file. Do you want to continue?',
 	'service_defined_but_no_config_exists': 'A transfer service was defined but no configuration could be found within the file at "${1}".',
 	'active_service_not_found': 'The active service "${1}" could not be found within the settings file at "${2}"',
 	'no_service_env': 'The service file at "${1}" isn’t configured for environments. Please see the README on configuring services for multiple environments.',
@@ -104,5 +105,6 @@ module.exports = {
 	'no_host_defined': '(No host defined)',
 	'commit_no_files': 'The selected commit (${1}) did not contain any uploadable files.',
 	'commit_no_files_with_ignore': 'The selected commit (${1}) did not contain any uploadable files. (${2} p{2:file:files} ignored.)',
-	'server_v_local': 'Server vs. Local'
+	'server_v_local': 'Server vs. Local',
+	'continue': 'Continue'
 };

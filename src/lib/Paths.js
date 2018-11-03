@@ -50,6 +50,17 @@ class Paths {
 	}
 
 	/**
+	 * Tests whether the supplied path is within an active workspace folder.
+	 * @param {Uri} uri - The path to test.
+	 * @returns {boolean} `true` if the path is within the workspace.
+	 */
+	pathInWorkspaceFolder(uri) {
+		return (this.getWorkspaceFolders().findIndex((workspaceFolder) => {
+			return this.pathInUri(uri, workspaceFolder.uri);
+		}) !== -1);
+	}
+
+	/**
 	 * Retrieves the active workspace folders.
 	 * @returns {array} Either an array of workspace folders, or an empty array if
 	 * nothing was found.
@@ -380,9 +391,11 @@ class Paths {
 	 * the root of the active workspace is reached.
 	 * @param {string} fileName - The filename to look for. Supports globs.
 	 * @param {Uri} start - The directory to start looking in.
+	 * @param {boolean} [limitToWorkspace=true] - Limit traversal to the workspace
+	 * root.
 	 * @returns {Uri|null} Either the matched Uri, or `null`.
 	 */
-	findFileInAncestors(fileName, start) {
+	findFileInAncestors(fileName, start, limitToWorkspace = true) {
 		let matches,
 			loop = 0,
 			prev = '',
@@ -397,12 +410,23 @@ class Paths {
 
 		start = this.getDirName(start, true);
 
+		utils.trace(
+			'Paths#findFileInAncestors',
+			`Looking for settings file in: ${start}`
+		);
+
 		while (!(matches = (glob.sync(
 			this.ensureGlobPath(start, fileName),
 			globOptions
 		))).length) {
-			if (this.isWorkspaceFolderRoot(start, folders) || loop === 50) {
-				// dir matches any root paths or hard loop limit reached
+			if (
+				// Dir matches a root path
+				(limitToWorkspace && this.isWorkspaceFolderRoot(start, folders)) ||
+				// Loop limit reached
+				loop === 50 ||
+				// Dir matches FS root
+				start.fsPath === prev.fsPath
+			) {
 				return null;
 			}
 
@@ -410,12 +434,13 @@ class Paths {
 			prev = start;
 			start = this.getDirName(start);
 
-			if (start.fsPath === prev.fsPath) {
-				return null;
-			}
-
 			// startDir = startDir.substring(0, startDir.lastIndexOf('/'));
 			loop += 1;
+
+			utils.trace(
+				'Paths#findFileInAncestors',
+				`Looking for settings file in: ${start}`
+			);
 		}
 
 		return vscode.Uri.file(matches[0]);

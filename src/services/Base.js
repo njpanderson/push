@@ -20,6 +20,7 @@ class ServiceBase {
 
 		this.type = '';
 		this.queueLength = 0;
+		this.allowExternalServiceFiles = false;
 		this.progress = null;
 		this.serviceDefaults = serviceDefaults;
 		this.serviceRequired = serviceRequired;
@@ -201,10 +202,48 @@ class ServiceBase {
 	 */
 	init(queueLength) {
 		utils.trace('ServiceBase#init', 'Initialising');
-		this.persistCollisionOptions = {};
-		this.queueLength = queueLength;
 
-		return Promise.resolve(true);
+		return new Promise((resolve) => {
+			// Check if the workspace folder contains the service file...
+			if (
+				!this.paths.pathInWorkspaceFolder(this.config.serviceUri) &&
+				!this.allowExternalServiceFiles
+			) {
+				// ... It doesn't - show a warning first
+				return vscode.window.showInformationMessage(
+					i18n.t('service_out_of_workspace', this.config.serviceFile),
+					{
+						modal: true
+					},
+					{
+						id: 'continue',
+						title: i18n.t('continue')
+					}, {
+						id: 'cancel',
+						isCloseAffordance: true,
+						title: i18n.t('cancel')
+					}
+				).then((answer) => {
+					answer = !!(answer && answer.id === 'continue');
+
+					if (answer) {
+						// Set this for the session, to prevent recurrance of the above dialog
+						this.allowExternalServiceFiles = true;
+					}
+
+					return resolve(answer);
+				});
+			}
+
+			resolve(true);
+		}).then((proceed) => {
+			if (proceed === false) {
+				throw new PushError(i18n.t('transfer_cancelled'));
+			}
+		}).then(() => {
+			this.persistCollisionOptions = {};
+			this.queueLength = queueLength;
+		});
 	}
 
 	/**

@@ -36,7 +36,7 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			return super.queueGitChangedFiles(uri).catch(this.catchError);
+			return this.queueGitChangedFiles(uri).catch(this.catchError);
 		}
 	}
 
@@ -44,7 +44,7 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			return super.queueGitChangedFiles(uri, true).catch(this.catchError);
+			return this.queueGitChangedFiles(uri, true).catch(this.catchError);
 		}
 	}
 
@@ -52,7 +52,7 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			return super.queueGitCommitChanges(uri).catch(this.catchError);
+			return this.queueGitCommitChanges(uri).catch(this.catchError);
 		}
 	}
 
@@ -60,7 +60,7 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			return super.queueGitCommitChanges(uri, true).catch(this.catchError);
+			return this.queueGitCommitChanges(uri, true).catch(this.catchError);
 		}
 	}
 
@@ -75,9 +75,8 @@ class UI extends Push {
 
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
-				.then(() => {
-					return this.transferDirectory(uri, 'put').catch(this.catchError);
-				});
+				.then(() => this.transferDirectory(uri, 'put'))
+				.catch (this.catchError);
 		}
 
 		return this.transfer(uri, 'put').catch(this.catchError);
@@ -94,9 +93,8 @@ class UI extends Push {
 
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
-				.then(() => {
-					return this.transferDirectory(uri, 'get').catch(this.catchError);
-				});
+				.then(() => this.transferDirectory(uri, 'get'))
+				.catch(this.catchError);
 		}
 
 		return this.transfer(uri, 'get').catch(this.catchError);
@@ -125,7 +123,7 @@ class UI extends Push {
 			return false;
 		}
 
-		this.watch.add(uri);
+		return this.watch.add(uri).catch(this.catchError);
 	}
 
 	/**
@@ -140,7 +138,7 @@ class UI extends Push {
 		}
 
 		if ((uri = this.paths.getFileSrc(context))) {
-			this.watch.remove(uri);
+			this.watch.remove(uri).catch(this.catchError);
 		}
 	}
 
