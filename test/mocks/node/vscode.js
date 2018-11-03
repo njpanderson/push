@@ -1,3 +1,5 @@
+const path = require('path');
+
 const counter = require('../../helpers/counter');
 
 class Uri {
@@ -69,7 +71,11 @@ module.exports = {
 
 	workspace: {
 		onDidSaveTextDocument: () => { },
-		onDidChangeConfiguration: () => { }
+		onDidChangeConfiguration: () => { },
+		workspaceFolders: [{
+			name: 'Mocked Workspace Folder',
+			uri: Uri.file(path.dirname(path.dirname(__dirname)) + '/fixtures/transfer')
+		}]
 	},
 
 	ProgressLocation: {
