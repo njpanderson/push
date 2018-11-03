@@ -609,7 +609,11 @@ class Push extends PushBase {
 					'overwrite'
 				],
 				id: tmpFile + remotePath,
-				onTaskComplete: () => {
+				onTaskComplete: (result) => {
+					if (result.error) {
+						return;
+					}
+
 					vscode.commands.executeCommand(
 						'vscode.diff',
 						tmpFile,
