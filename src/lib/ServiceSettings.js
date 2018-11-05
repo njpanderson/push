@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
+const micromatch = require('micromatch');
 
 const Configurable = require('./Configurable');
 const ServiceType = require('./ServiceType');
@@ -159,6 +160,20 @@ class ServiceSettings extends Configurable {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Returns whether or not the supplied Uri is that of a settings file
+	 * @param {Uri} uri
+	 * @returns {boolean}
+	 */
+	isSettingsFile(uri) {
+		return micromatch.isMatch(
+			this.paths.getBaseName(uri),
+			this.config.settingsFileGlob, {
+				basename: true
+			}
+		);
 	}
 
 	/**

@@ -319,17 +319,21 @@ class Push extends PushBase {
 			return;
 		}
 
-		// Get current server settings for the editor
-		settings = this.service.settings.getServerJSON(
-			uri,
-			this.config.settingsFileGlob,
-			true,
-			true
-		);
+		if (!this.service.settings.isSettingsFile(uri)) {
+			// Get current server settings for the editor
+			settings = this.service.settings.getServerJSON(
+				uri,
+				this.config.settingsFileGlob,
+				true,
+				true
+			);
 
-		if (this.config.useEnvLabel && settings && settings.data.env) {
-			// Check env state and add to status
-			this.setEnvStatus(settings.data.env);
+			if (this.config.useEnvLabel && settings && settings.data.env) {
+				// Check env state and add to status
+				this.setEnvStatus(settings.data.env);
+			} else {
+				this.setEnvStatus(false);
+			}
 		} else {
 			this.setEnvStatus(false);
 		}
@@ -370,7 +374,11 @@ class Push extends PushBase {
 	didChangeActiveTextEditor(textEditor, settings) {
 		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
 
-		if (!textEditor || !textEditor.document) {
+		if (
+			!textEditor ||
+			!textEditor.document ||
+			!this.paths.isValidScheme(textEditor.document.uri)
+		) {
 			// Bail if there's still no editor, or no document
 			return;
 		}
