@@ -457,26 +457,19 @@ class Push extends PushBase {
 			queue.addTask(
 				new QueueTask(
 					(() => {
-						let config;
+						// Execute the service method, returning any results and/or promises
+						return this.service.exec(
+							task.method,
+							this.configWithServiceSettings(task.uriContext),
+							task.args
+						)
+							.then((result) => {
+								if (typeof task.onTaskComplete === 'function') {
+									task.onTaskComplete.call(this, result);
+								}
 
-						if (task.uriContext) {
-							// Add service settings to the current configuration
-							config = this.configWithServiceSettings(task.uriContext);
-						} else {
-							throw new Error('No uriContext set from queue source.');
-						}
-
-						if (config) {
-							// Execute the service method, returning any results and/or promises
-							return this.service.exec(task.method, config, task.args)
-								.then((result) => {
-									if (typeof task.onTaskComplete === 'function') {
-										task.onTaskComplete.call(this, result);
-									}
-
-									return result;
-								});
-						}
+								return result;
+							});
 					}),
 					task.id,
 					{
