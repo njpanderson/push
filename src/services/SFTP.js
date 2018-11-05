@@ -1148,6 +1148,8 @@ class SFTP extends ServiceBase {
 		).trim();
 
 		if (fs.existsSync(keyFile)) {
+			utils.trace('SFTP#_getPrivateKey', `Key retrieved from ${keyFile}`);
+
 			return {
 				'file': keyFile,
 				'contents': fs.readFileSync(keyFile, 'UTF-8')
