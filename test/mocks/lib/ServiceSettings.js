@@ -6,6 +6,10 @@ class ServiceSettings {
 	mergeWithServiceSettings(uri, glob, config) {
 		return config;
 	}
+
+	isSettingsFile(uri) {
+		return (uri.path.match(/.push.settings.jsonc?/));
+	}
 }
 
 /**
