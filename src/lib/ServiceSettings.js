@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
+const micromatch = require('micromatch');
 
 const Configurable = require('./Configurable');
 const ServiceType = require('./ServiceType');
@@ -162,6 +163,20 @@ class ServiceSettings extends Configurable {
 	}
 
 	/**
+	 * Returns whether or not the supplied Uri is that of a settings file
+	 * @param {Uri} uri
+	 * @returns {boolean}
+	 */
+	isSettingsFile(uri) {
+		return micromatch.isMatch(
+			this.paths.getBaseName(uri),
+			this.config.settingsFileGlob, {
+				basename: true
+			}
+		);
+	}
+
+	/**
 	 * @description
 	 * Attempts to retrieve a server settings JSON file from the supplied URI,
 	 * eventually ascending the directory tree to the root of the project.
@@ -221,7 +236,10 @@ class ServiceSettings extends Configurable {
 				// Return entry as cached
 				return this.settingsCache[uriPath];
 			} catch(error) {
-				channel.appendError(error.message);
+				if (!quiet) {
+					channel.appendError(error.message);
+				}
+
 				return null;
 			}
 		}

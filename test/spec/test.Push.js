@@ -78,7 +78,7 @@ describe('Push', function() {
 				}
 			);
 
-			assert(counter.getCount('Push#queueForUpload') === 1);
+			expect(counter.getCount('Push#queueForUpload')).to.equal(1);
 		});
 	});
 

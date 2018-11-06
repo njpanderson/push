@@ -346,7 +346,9 @@ class Service extends PushBase {
 		this.setConfig(config);
 
 		if (!this.config || !this.config.service || !this.activeService) {
-			return Promise.reject();
+			return Promise.reject(new PushError(
+				i18n.t('no_service_file', this.config.settingsFileGlob)
+			));
 		}
 
 		// Set the active service's config
