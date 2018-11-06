@@ -4,6 +4,7 @@ const ServiceBase = require('../services/Base');
 const ServiceSFTP = require('../services/SFTP');
 const ServiceFile = require('../services/File');
 const ServiceSettings = require('./ServiceSettings');
+const ServicePromptResult = require('./ServicePromptResult');
 const ServiceType = require('./ServiceType');
 const PushBase = require('./PushBase');
 const Paths = require('./Paths');
@@ -17,6 +18,8 @@ const i18n = require('../lang/i18n');
 class Service extends PushBase {
 	constructor(options) {
 		super();
+
+		utils.trace('Service', 'Begin instantiation', true);
 
 		this.setOptions(options);
 
@@ -43,56 +46,53 @@ class Service extends PushBase {
 	 * if the service file is level with the contextual file.
 	 */
 	editServiceConfig(uri, forceCreate) {
-		let folders, dirName, settingsFile;
+		return new Promise((resolve, reject) => {
+			let dir, settingsFile;
 
-		uri = this.paths.getFileSrc(uri);
-		dirName = this.paths.getDirName(uri, true);
+			uri = this.paths.getFileSrc(uri);
+			dir = this.paths.getDirName(uri, true);
 
-		// Find the nearest settings file
-		settingsFile = this.paths.findFileInAncestors(
-			this.config.settingsFileGlob,
-			dirName
-		);
+			// Find the nearest settings file
+			settingsFile = this.paths.findFileInAncestors(
+				this.config.settingsFileGlob,
+				dir
+			);
 
-		if (dirName !== ".") {
-			// If a directory is defined, use it as the workspace folder
-			folders = [{
-				uri: vscode.Uri.file(dirName)
-			}]
-		} else {
-			folders = this.paths.getWorkspaceFolders();
-		}
-
-		/**
-		 * If a settings file is found but forceCreate is true, then the file name
-		 * prompt path is chosen.
-		 *
-		 * In the case that a service file exists in the _same_ location as the
-		 * contextual file, it will still be edited (due to the logic within
-		 * getFileNamePromp() based on resolving immediately unless `forceDialog`
-		 * is true. This is intended behaviour as two service files should not
-		 * exist within the same folder.
-		 */
-		if (settingsFile && !forceCreate) {
-			// Edit the settings file found
-			return this.openDoc(settingsFile);
-		} else {
-			// Produce a prompt to create a new settings file
-			return this.getFileNamePrompt(this.config.settingsFilename, folders)
-				.then((file) => {
-					if (file.exists) {
-						return this.openDoc(file.fileName);
-					} else {
-						// Create the file
-						return this.writeAndOpen(
-							this.settings.createServerFileContents(
-								file.serviceType
-							),
-							file.fileName
-						);
-					}
-				});
-		}
+			/**
+			 * If a settings file is found but forceCreate is true, then the file name
+			 * prompt path is chosen.
+			 *
+			 * In the case that a service file exists in the _same_ location as the
+			 * contextual file, it will still be edited (due to the logic within
+			 * getFileNamePromp() based on resolving immediately unless `forceDialog`
+			 * is true. This is intended behaviour as two service files should not
+			 * exist within the same folder.
+			 */
+			if (settingsFile && !forceCreate) {
+				// Edit the settings file found
+				this.openDoc(settingsFile)
+					.then(resolve, reject);
+			} else {
+				// Produce a prompt to create a new settings file
+				this.getFileNamePrompt(this.config.settingsFilename, [{
+					uri: dir
+				}])
+					.then((file) => {
+						if (file.exists) {
+							return this.openDoc(file.uri);
+						} else {
+							// Create the file
+							return this.writeAndOpen(
+								this.settings.createServerFileContents(
+									file.serviceType
+								),
+								file.uri
+							);
+						}
+					})
+					.then(resolve, reject);
+			}
+		});
 	}
 
 	/**
@@ -111,12 +111,12 @@ class Service extends PushBase {
 	 * is supported.
 	 */
 	importConfig(uri) {
-		let className, pathName, basename, instance, settings,
+		let className, basename, instance, settings,
 			settingsFilename = this.config.settingsFilename;
 
-		pathName = this.paths.getNormalPath(this.paths.getFileSrc(uri));
+		uri = this.paths.getFileSrc(uri);
 
-		if (!(basename = this.paths.getBaseName(pathName))) {
+		if (!(basename = this.paths.getBaseName(uri))) {
 			channel.appendLocalisedError('no_import_file');
 		}
 
@@ -126,13 +126,13 @@ class Service extends PushBase {
 				className = require(`./importers/${className}`);
 				instance = new className();
 
-				return instance.import(pathName)
+				return instance.import(uri)
 					.then((result) => {
 						settings = result;
 
 						return this.getFileNamePrompt(
 							settingsFilename,
-							this.paths.getDirName(pathName),
+							[{ uri: this.paths.getDirName(uri) }],
 							true,
 							false
 						);
@@ -150,22 +150,25 @@ class Service extends PushBase {
 								}
 							).then((collisionAnswer) => {
 								return ({
-									fileName: result.fileName,
+									uri: result.uri,
 									write: (collisionAnswer.title === i18n.t('overwrite'))
 								});
 							});
 						} else {
 							// Just create and open
-							return ({ fileName: result.fileName, write: true });
+							return ({ uri: result.uri, write: true });
 						}
 					})
 					.then((result) => {
 						if (result.write) {
 							// Write the file
 							this.writeAndOpen(
-								'\/\/ ' + i18n.t('comm_settings_imported', pathName) +
+								'// ' + i18n.t(
+									'comm_settings_imported',
+									this.paths.getNormalPath(uri)
+								) +
 								JSON.stringify(settings, null, '\t'),
-								result.fileName
+								result.uri
 							);
 						}
 					})
@@ -187,56 +190,60 @@ class Service extends PushBase {
 	 * If `false`, will not display a dialog even if the file exists.
 	 * @param {boolean} fromTemplate - Produce a list of service templates with which
 	 * to fill the file.
+	 * @returns {Promise<ServicePromptResult} Resolving to an instance of
+	 * ServicePromptResult with the relevant properties.
 	 */
 	getFileNamePrompt(exampleFileName, folders, forceDialog = false, fromTemplate = true) {
 		return new Promise((resolve, reject) => {
 			// Produce a filename prompt
 			this.getRootPathPrompt(folders)
-				.then((rootPath) => {
-					let fileName = rootPath + Paths.sep + exampleFileName;
+				.then((rootUri) => {
+					let uri;
 
-					if (!rootPath) {
+					if (!rootUri) {
 						return reject();
 					}
 
+					uri = this.paths.join(rootUri, exampleFileName);
+
 					// File exists but forceDialog is false - just keep going
-					if (this.paths.fileExists(fileName) && !forceDialog) {
-						return resolve({ fileName, exists: true });
+					if (this.paths.fileExists(uri) && !forceDialog) {
+						return resolve(ServicePromptResult(uri));
 					}
 
-					// Produce a file prompt
+					// Show a prompt, asking the user where the settings file should go
 					vscode.window.showInputBox({
 						prompt: i18n.t('enter_service_settings_filename'),
-						value: fileName
+						value: uri.fsPath
 					}).then((fileName) => {
-						// Show a service type picker (unless fromTemplate is false)
-						if (!fromTemplate) {
-							return { fileName };
-						}
+						let uri = vscode.Uri.file(fileName);
 
-						if (!fileName) {
+						if (!uri) {
 							return reject();
 						}
 
+						// Show a service type picker (unless fromTemplate is false)
+						if (!fromTemplate) {
+							return resolve(new ServicePromptResult(uri));
+						}
+
 						return vscode.window.showQuickPick(
-							[{
-								'label': i18n.t('empty'),
-								'description': i18n.t('empty_template')
-							}].concat(this.getList()),
+							[new ServiceType(
+								i18n.t('empty'),
+								i18n.t('empty_template')
+							)].concat(this.getList()),
 							{
 								placeHolder: i18n.t('select_service_type_template')
 							}
 						).then((serviceType) => {
-							return { fileName, serviceType };
-						});
-					}).then(({ fileName, serviceType }) => {
-						resolve({
-							fileName,
-							exists: this.paths.fileExists(fileName),
-							serviceType
+							resolve(new ServicePromptResult(
+								uri,
+								serviceType
+							));
 						});
 					});
-				});
+				})
+				.catch(reject);
 		});
 	}
 
@@ -311,7 +318,7 @@ class Service extends PushBase {
 			throw new PushError(i18n.t(
 				'service_name_invalid',
 				configObject.serviceName,
-				configObject.serviceFilename
+				this.paths.getNormalPath(configObject.serviceUri)
 			));
 		}
 
@@ -338,41 +345,47 @@ class Service extends PushBase {
 		// Set the current service configuration
 		this.setConfig(config);
 
-		if (this.activeService) {
-			// Set the active service's config
-			this.activeService.setConfig(this.config);
-
-			// Run the service method with supplied arguments
-			let result = this.activeService[method].apply(
-				this.activeService,
-				args
-			);
-
-			if (!(result instanceof Promise)) {
-				throw new Error(
-					`Method ${method} does not return a Promise. This method cannot ` +
-					`be used with exec(). Try execSync()?`
-				);
-			}
-
-			return result;
+		if (!this.config || !this.config.service || !this.activeService) {
+			return Promise.reject(new PushError(
+				i18n.t('no_service_file', this.config.settingsFileGlob)
+			));
 		}
+
+		// Set the active service's config
+		this.activeService.setConfig(this.config);
+
+		// Run the service method with supplied arguments
+		let result = this.activeService[method].apply(
+			this.activeService,
+			args
+		);
+
+		if (!(result instanceof Promise)) {
+			throw new Error(
+				`Method ${method} does not return a Promise. This method cannot ` +
+				'be used with exec(). Try execSync()?'
+			);
+		}
+
+		return result;
 	}
 
 	execSync(method, config, args = []) {
 		// Set the current service configuration
 		this.setConfig(config);
 
-		if (this.activeService) {
-			// Set the active service's config
-			this.activeService.setConfig(this.config);
-
-			// Run the service method with supplied arguments
-			return this.activeService[method].apply(
-				this.activeService,
-				args
-			)
+		if (!this.config || !this.config.service || !this.activeService) {
+			return false;
 		}
+
+		// Set the active service's config
+		this.activeService.setConfig(this.config);
+
+		// Run the service method with supplied arguments
+		return this.activeService[method].apply(
+			this.activeService,
+			args
+		);
 	}
 
 	stop() {

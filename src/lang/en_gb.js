@@ -1,6 +1,10 @@
 module.exports = {
-	'comm_push_settings1': 'Push settings file - first generated on ${1}\n',
-	'comm_push_settings2': 'Note: Optional items are commented out and can be uncommented if you wish to set them\n',
+	'date_format_short': 'yy-m-d',
+	'today': 'Today',
+	'yesterday': 'Yesterday',
+	'comm_push_settings1': 'Push settings file - first generated on ${1}.',
+	'comm_push_settings2': 'Note: Optional items are commented out and can be uncommented if you wish to set them.',
+	'comm_push_settings3': 'Preset environments are: prod, dev, stage. Custom environments (and their colours) can be created in settings.',
 	'comm_add_service_config': 'Add service configuration here...',
 	'comm_settings_imported': 'Settings imported from ${1}\n',
 	'no_locale': 'Locale "${1}" does not exist. Has a .js file been created for it?',
@@ -42,6 +46,7 @@ module.exports = {
 	'transfer_cancelled': 'Transfer cancelled',
 	'no_service_file': 'A settings file could not be found within your project. Have you created a file matching "${1}" yet?',
 	'service_not_defined': 'A transfer service was not defined within the settings file at "${1}".',
+	'service_out_of_workspace': 'The service file was found outside of the current workspace (${1}). The remote root path will be based on the location of this file. Do you want to continue?',
 	'service_defined_but_no_config_exists': 'A transfer service was defined but no configuration could be found within the file at "${1}".',
 	'active_service_not_found': 'The active service "${1}" could not be found within the settings file at "${2}"',
 	'no_service_env': 'The service file at "${1}" isn’t configured for environments. Please see the README on configuring services for multiple environments.',
@@ -97,5 +102,10 @@ module.exports = {
 	'dir_read_error': 'The directory "${1}" could not be read.',
 	'dir_read_error_with_error': 'The directory "${1}" could not be read. The full error was: "${2}".',
 	'push_upgraded': 'Push has been upgraded to version ${1}.',
-	'show_changelog': 'Show Changelog'
+	'show_changelog': 'Show Changelog',
+	'no_host_defined': '(No host defined)',
+	'commit_no_files': 'The selected commit (${1}) did not contain any uploadable files.',
+	'commit_no_files_with_ignore': 'The selected commit (${1}) did not contain any uploadable files. (${2} p{2:file:files} ignored.)',
+	'server_v_local': 'Server vs. Local',
+	'continue': 'Continue'
 };

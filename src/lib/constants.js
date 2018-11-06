@@ -1,41 +1,54 @@
+const fs = require('fs');
+const path = require('path');
+
 const i18n = require('../lang/i18n');
 
 module.exports = {
-    CONFIG_FORMATS: {
-        'SSFTP': /sftp-config\.json/i
-    },
+	DEBUG: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
-    DEFAULT_SERVICE_CONFIG: [
-        '{',
-            '\t"env": "default",',
-            '\t"default": {',
-                '\t\t"service": "[ServiceName]",',
-                '\t\t"options": {',
-                    '\t\t\t\/\/ ' + i18n.t('comm_add_service_config'),
-                '\t\t}',
-            '\t}',
-        '}'
-    ].join('\n'),
+	CONFIG_FORMATS: {
+		'SSFTP': /sftp-config\.json/i
+	},
 
-    STATUS_PRIORITIES: {
-        ENV: 1,
-        UPLOAD_QUEUE: 2,
-        WATCH: 3,
-        UPLOAD_STATUS: 4
-    },
+	DEFAULT_SERVICE_CONFIG: [
+		'{',
+		'\t"env": "default",',
+		'\t"default": {',
+		'\t\t"service": "[ServiceName]",',
+		'\t\t"options": {',
+		'\t\t\t// ' + i18n.t('comm_add_service_config'),
+		'\t\t}',
+		'\t}',
+		'}'
+	].join('\n'),
 
-    ENV_DEFAULT_STATUS_COLOR: 'statusBar.foreground',
+	STATUS_PRIORITIES: {
+		ENV: 1,
+		UPLOAD_QUEUE: 2,
+		WATCH: 3,
+		UPLOAD_STATUS: 4
+	},
 
-    TRANSFER_TYPES: {
-        PUT: 0,
-        GET: 1
-    },
+	ENV_DEFAULT_STATUS_COLOR: 'statusBar.foreground',
 
-    QUEUE_LOG_TYPES: {
-        success: 0,
-        fail: 1,
-        skip: 2
-    },
+	TRANSFER_TYPES: {
+		PUT: 0,
+		GET: 1
+	},
 
-    TMP_FILE_PREFIX: 'vscode-push-tmp-'
+	/**
+	 * File/folder cache source locations (Used manily by PathCache)
+	 */
+	CACHE_SOURCES: {
+		remote: 'remote',
+		local: 'local'
+	},
+
+	QUEUE_LOG_TYPES: {
+		success: 0,
+		fail: 1,
+		skip: 2
+	},
+
+	TMP_FILE_PREFIX: 'vscode-push-tmp-'
 };

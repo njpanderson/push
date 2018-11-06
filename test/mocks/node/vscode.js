@@ -1,3 +1,5 @@
+const path = require('path');
+
 const counter = require('../../helpers/counter');
 
 class Uri {
@@ -15,6 +17,12 @@ Uri.file = (uri) => {
 class ExtensionContext {
 	constructor() {
 		this.globalState = new StateMachine();
+	}
+}
+
+class StatusBarItem {
+	constructor() {
+		this.show = counter.attach('vscode.StatusBarItem.show');
 	}
 }
 
@@ -53,6 +61,9 @@ module.exports = {
 			},
 			this
 		),
+		createStatusBarItem: () => {
+			return new StatusBarItem();
+		},
 		showInformationMessage: () => {
 			return Promise.resolve('');
 		}
@@ -60,7 +71,11 @@ module.exports = {
 
 	workspace: {
 		onDidSaveTextDocument: () => { },
-		onDidChangeConfiguration: () => { }
+		onDidChangeConfiguration: () => { },
+		workspaceFolders: [{
+			name: 'Mocked Workspace Folder',
+			uri: Uri.file(path.dirname(path.dirname(__dirname)) + '/fixtures/transfer')
+		}]
 	},
 
 	ProgressLocation: {
@@ -68,5 +83,11 @@ module.exports = {
 	},
 
 	Uri,
-	ExtensionContext
+	ExtensionContext,
+	StatusBarItem,
+
+	StatusBarAlignment: {
+		Left: 1,
+		Right: 2
+	}
 };

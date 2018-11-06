@@ -156,7 +156,7 @@ class Queue {
 	/**
 	 * Starts queue execution, returning a promise.
 	 * @param {function} fnProgress - Function to call when requesting progress updates.
-	 * @returns {promise} Resolving when the queue is complete.
+	 * @returns {Promise<object>} Resolving when the queue is complete.
 	 */
 	exec(fnProgress) {
 		let lastState;
@@ -165,6 +165,8 @@ class Queue {
 		if (this.running) {
 			return Promise.reject(i18n.t('queue_running'));
 		}
+
+		utils.trace('Queue#exec', 'Queue start', true);
 
 		this._setContext(Queue.contexts.running, true);
 
@@ -226,7 +228,7 @@ class Queue {
 					}, 10);
 
 					// Execute all queue items in serial
-					this._execQueueItems(
+					this.execQueueItems(
 						(results) => {
 							clearInterval(this.progressInterval);
 							this._updateStatus(false);
@@ -245,7 +247,7 @@ class Queue {
 	 * @param {function} fnCallback - Callback to invoke once the queue is empty.
 	 * @private
 	 */
-	_execQueueItems(fnCallback) {
+	execQueueItems(fnCallback) {
 		let task;
 
 		if (this._tasks.length) {
@@ -254,6 +256,11 @@ class Queue {
 
 			// Get the first task in the queue
 			task = this._tasks[0];
+
+			utils.trace(
+				'Queue#execQueueItems',
+				`Invoking task 0 of ${this._tasks.length} task(s)`
+			);
 
 			// Invoke the function for this task, then get the result from its promise
 			this.currentTask = task.fn()
@@ -283,7 +290,7 @@ class Queue {
 					}
 
 					// Loop
-					this._loop(fnCallback);
+					this.loop(fnCallback);
 				})
 				.catch((error) => {
 					this.currentTask = null;
@@ -308,14 +315,14 @@ class Queue {
 	}
 
 	/**
-	 * Looper function for #_execQueueItems
-	 * @param {function} fnCallback - Callback function, as supplied to #_execQueueItems.
-	 * @param {object} results - Results object, as supplied to #_execQueueItems.
+	 * Looper function for #execQueueItems
+	 * @param {function} fnCallback - Callback function, as supplied to #execQueueItems.
+	 * @param {object} results - Results object, as supplied to #execQueueItems.
 	 * @private
 	 */
-	_loop(fnCallback) {
+	loop(fnCallback) {
 		this._tasks.shift();
-		this._execQueueItems(fnCallback);
+		this.execQueueItems(fnCallback);
 	}
 
 	/**
@@ -323,7 +330,7 @@ class Queue {
 	 * @param {boolean} [silent=false] - Use to prevent messaging channel.
 	 * @param {boolean} [clearQueue=true] - Empty the queue of all its tasks.
 	 * @param {boolean} [force=false] - Force stop, instead of waiting for a currently running task.
-	 * @returns {promise} - A promise, eventually resolving when the current task
+	 * @returns {Promise} A promise, eventually resolving when the current task
 	 * has completed, or immediately resolved if there is no current task.
 	 */
 	stop(silent = false, clearQueue = true, force = false) {
@@ -368,7 +375,7 @@ class Queue {
 
 	/**
 	 * Invoked on queue completion (regardless of success).
-	 * @returns {Promise} - Resolved on completion.
+	 * @returns {Promise<object>} Resolved on completion, passing results.
 	 */
 	complete() {
 		return new Promise((resolve) => {

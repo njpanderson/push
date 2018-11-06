@@ -1,17 +1,19 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
-const path = require('path');
+const dateFormat = require('dateformat');
 
 const config = require('./config');
-const constants = require('./constants');
 const PushError = require('./PushError');
 const i18n = require('../lang/i18n');
+const {
+	TMP_FILE_PREFIX,
+	DEBUG
+} = require('./constants');
 
 const utils = {
 	_timeouts: {},
 	_sb: null,
-	_debug: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
 	/**
 	 * Show an informational message using the VS Code interface
@@ -128,11 +130,11 @@ const utils = {
 		placeHolder
 	) {
 		let options = [
-				utils.collisionOpts.skip,
-				utils.collisionOpts.rename,
-				utils.collisionOpts.stop,
-				utils.collisionOpts.overwrite,
-			];
+			utils.collisionOpts.skip,
+			utils.collisionOpts.rename,
+			utils.collisionOpts.stop,
+			utils.collisionOpts.overwrite,
+		];
 
 		placeHolder = placeHolder || i18n.t('filename_exists', name);
 
@@ -175,12 +177,12 @@ const utils = {
 				}
 			).then((option) => {
 				resolve({ option, type: 'mismatch_type' });
-			})
+			});
 		});
 	},
 
 	trimSeparators: function(pathname, separator = '/') {
-		const re = new RegExp(`^\${separator}+|\${separator}+$`, 'g');
+		const re = new RegExp('^' + separator + '+|\\' + separator + '+$', 'g');
 		return pathname.trim(re, '');
 	},
 
@@ -214,7 +216,7 @@ const utils = {
 	 * @param {string} filename - Absolute filename to write to.
 	 * @param {boolean} useTmpFile - Whether to use a temporary file or write
 	 * directly to the target file.
-	 * @returns {promise} Resolving on success, rejecting on failure
+	 * @returns {Promise} Resolving on success, rejecting on failure
 	 */
 	writeFileFromStream(read, writeFilename, readFilename = '', useTmpFile = true) {
 		return new Promise((resolve, reject) => {
@@ -287,7 +289,7 @@ const utils = {
 	 */
 	getTmpFile(getUri = true) {
 		let tmpobj = tmp.fileSync({
-			prefix: constants.TMP_FILE_PREFIX
+			prefix: TMP_FILE_PREFIX
 		});
 
 		if (getUri) {
@@ -298,12 +300,106 @@ const utils = {
 	},
 
 	trace(id) {
-		if (this._debug) {
+		let args = [...arguments];
+
+		if (this.traceCounter > 100000) {
+			this.traceCounter = 0;
+			console.log('# (Counter reset)');
+		}
+
+		if (DEBUG) {
+			args = args.slice(1);
+
+			if (args[args.length - 1] === true) {
+				console.log('##########################');
+				args = args.slice(0, args.length - 1);
+			}
+
 			console.log(
-				(new Date).toLocaleTimeString() +
-				`[${id}] - "${[...arguments].slice(1).join(', ')}"`
+				`#${++this.traceCounter} ` +
+				dateFormat((new Date), 'H:MM:ss.l') +
+				` [${id}] ${args.join(', ')}`
 			);
 		}
+	},
+
+	/**
+	 * @param {string} fnName - Identifiable name of the Class#function calling this method.
+	 * @param {*} args - The arguments as provided to the function.
+	 * @param {array} asserts - Array of objects to compare to the arguments.
+	 * @description
+	 * Asserts that a function's arguments are of a specific type. Typescript on
+	 * a budget :D Supply an arguments object as the second argument, and an array
+	 * of Objects, Classes or strings as the third. The nth element in the third array
+	 * will be used to compare to the second. In the case that a string is supplied,
+	 * it will be passed to the `typeof` operator. Use `null` to ignore that index
+	 * of argument.
+	 * @example
+	 * utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
+	 * // Assert File#put has two args of type: vscode.Uri and typeof 'string'.
+	 * @returns {undefined} Returns nothing, but throws on assertion errors.
+	 */
+	assertFnArgs(fnName, args, asserts) {
+		asserts.forEach((assertable, index) => {
+			if (
+				(args.length > index && typeof args[index] !== 'undefined') && (
+					(typeof assertable === 'string' && (typeof args[index] !== assertable)) ||
+					(typeof assertable !== 'string' && (
+						assertable !== null && !(args[index] instanceof assertable)
+					))
+				)
+			) {
+				throw new Error(`${fnName}: Argument ${index} type mismatch.`);
+			}
+		});
+	},
+
+	/**
+	 * @param {Date} date - The date to format.
+	 * @param {string} format - The format. See dateformat docs.
+	 * @param {string} relativeFallback - The fallback format string for when the date
+	 * is outwith the boundaries of being relative. Defaults to the localised
+	 * date_format_short value.
+	 * @description
+	 * Formats a date with an optional relative format for the day. Uses
+	 * dateformat from NPM.
+	 *
+	 * Use the extended `R` key to return a relative day if needed.
+	 * @see https://www.npmjs.com/package/dateformat
+	 * @returns {string} The formatted date.
+	 */
+	dateFormat(date, format, relativeFallback) {
+		const now = new Date();
+
+		if (!format) {
+			format = 'R h:MM tt';
+		}
+
+		if (!relativeFallback) {
+			relativeFallback = i18n.strings.localised.date_format_short;
+		}
+
+		if (dateFormat(now, 'yyyy-dd-mm') === dateFormat(date, 'yyyy-dd-mm')) {
+			// Today
+			return dateFormat(
+				date,
+				format.replace('R', `"${i18n.strings.localised.today}"`)
+			);
+		}
+
+		if (dateFormat(
+			now.setDate(now.getDate() - 1),
+			'yyyy-dd-mm'
+		) === dateFormat(date, 'yyyy-dd-mm')) {
+			// Yesterday
+			return dateFormat(
+				date,
+				format.replace('R', `"${i18n.strings.localised.yesterday}"`)
+			);
+		}
+
+		// Fallback
+		return dateFormat(date, format.replace('R', relativeFallback));
 	}
 };
 

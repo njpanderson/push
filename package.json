@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.22.0"
@@ -128,6 +128,16 @@
           "type": "boolean",
           "default": true,
           "description": "Shows a changelog if Push upgrades either its minor or major version."
+        },
+        "njpPush.showTitleMenuUpload": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show an upload button on the title menu."
+        },
+        "njpPush.limitServiceTraversal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Limits how far Push will traverse before giving up when looking for a service settings file. If enabled, Push will stop at the workspace root (or a hard limit of 50 ancestors)."
         }
       }
     },
@@ -155,7 +165,11 @@
       {
         "command": "push.upload",
         "title": "Upload File",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/data-transfer-upload.svg",
+          "light": "resources/light/data-transfer-upload.svg"
+        }
       },
       {
         "command": "push.download",
@@ -208,6 +222,16 @@
       {
         "command": "push.uploadGitChangedFiles",
         "title": "Upload all Git working files",
+        "category": "Push"
+      },
+      {
+        "command": "push.queueGitCommit",
+        "title": "Add files from a Git commit to the Push queue",
+        "category": "Push"
+      },
+      {
+        "command": "push.uploadGitCommit",
+        "title": "Upload files from a Git commit",
         "category": "Push"
       },
       {
@@ -332,6 +356,13 @@
           "group": "njp-push-watch@8"
         }
       ],
+      "editor/title": [
+        {
+          "when": "push:initialised && push:showTitleMenuUpload && push:hasServiceContext",
+          "command": "push.upload",
+          "group": "navigation"
+        }
+      ],
       "editor/title/context": [
         {
           "when": "push:initialised && !explorerResourceIsFolder",
@@ -361,43 +392,59 @@
       ],
       "editor/context": [
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.upload",
           "group": "njp-push@1"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.download",
           "group": "njp-push@2"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.diff",
           "group": "njp-push@3"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.addWatchFile",
           "group": "njp-push-watch@7"
         },
         {
-          "when": "push:initialised && !explorerResourceIsFolder",
+          "when": "push:initialised && push:hasServiceContext",
           "command": "push.removeWatchFile",
           "group": "njp-push-watch@8"
         }
       ],
       "commandPalette": [
         {
+          "command": "push.editServiceConfig",
+          "when": "push:hasServiceContext"
+        },
+        {
           "command": "push.setServiceEnv",
           "when": "editorIsOpen && push:hasServiceContext"
+        },
+        {
+          "command": "push.upload",
+          "when": "push:hasServiceContext"
         },
         {
           "command": "push.uploadFolder",
           "when": "false"
         },
         {
+          "command": "push.download",
+          "when": "push:hasServiceContext"
+        },
+        {
           "command": "push.downloadFolder",
           "when": "false"
+        },
+        {
+          "command": "push.diff",
+          "when": "push:hasServiceContext"
         },
         {
           "command": "push.addWatchFolder",
@@ -429,19 +476,39 @@
         },
         {
           "command": "push.uploadQueuedItems",
-          "when": "push:hasUploadQueue"
+          "when": "push:hasUploadQueue && push:hasServiceContext"
         },
         {
           "command": "push.clearUploadQueue",
-          "when": "push:hasUploadQueue"
+          "when": "push:hasUploadQueue && push:hasServiceContext"
         },
         {
           "command": "push.removeQueuedItem",
-          "when": "push:hasUploadQueue && push:activeEditorInUploadQueue"
+          "when": "push:hasUploadQueue && push:activeEditorInUploadQueue && push:hasServiceContext"
         },
         {
           "command": "push.queueGitChangedFiles",
-          "when": "push:hasUploadQueue"
+          "when": "push:hasUploadQueue && push:hasServiceContext"
+        },
+        {
+          "command": "push.uploadGitChangedFiles",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.removeWatchFile",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.addWatchFile",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.uploadGitCommit",
+          "when": "push:hasServiceContext"
+        },
+        {
+          "command": "push.queueGitCommit",
+          "when": "push:hasUploadQueue && push:hasServiceContext"
         }
       ],
       "view/title": [
@@ -519,9 +586,11 @@
     "istanbul": "^0.4.5",
     "jsdoc": "^3.5.5",
     "mocha": "^5.2.0",
-    "typescript": "^2.8.3"
+    "typescript": "^2.8.3",
+    "vsce": "^1.53.0"
   },
   "dependencies": {
+    "dateformat": "^3.0.3",
     "jsonc-parser": "^2.0.1",
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
@@ -530,7 +599,6 @@
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",
     "url-parse": "^1.4.1",
-    "vsce": "^1.46.0",
     "vscode": "^1.1.18"
   }
 }

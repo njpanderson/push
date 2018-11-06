@@ -1,6 +1,7 @@
 module.exports = {
-	'comm_push_settings1': 'プッシュ設定ファイルは${1}に生成されました\n',
-	'comm_push_settings2': '注：コメントはプッシュ設定ファイルでサポートされています\n',
+	'comm_push_settings1': 'プッシュ設定ファイルは${1}に生成されました',
+	'comm_push_settings2': '注：コメントはプッシュ設定ファイルでサポートされています',
+	'comm_push_settings3': 'プリセット環境ラベルは、prod、dev、stageです。 カスタム環境（およびその色）を設定で作成できます。',
 	'comm_add_service_config': 'ここにサービス設定を追加...',
 	'comm_settings_imported': '${1}からインポートされた設定\n',
 	'no_locale': 'ロケール "${1}"は存在しません。 .jsファイルが作成されていますか？',

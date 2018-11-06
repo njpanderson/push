@@ -3,6 +3,7 @@ const semver = require('semver');
 
 const packageJson = require('../package.json');
 const Service = require('./lib/Service');
+const PushError = require('./lib/PushError');
 const PushBase = require('./lib/PushBase');
 const Explorer = require('./lib/explorer/Explorer');
 const Paths = require('./lib/Paths');
@@ -16,7 +17,8 @@ const i18n = require('./lang/i18n');
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
-	ENV_DEFAULT_STATUS_COLOR
+	ENV_DEFAULT_STATUS_COLOR,
+	DEBUG
 } = require('./lib/constants');
 
 /**
@@ -26,7 +28,10 @@ class Push extends PushBase {
 	constructor(context) {
 		super();
 
+		utils.trace('Push', 'Begin instantiation', true);
+
 		this.context = context;
+		this.allowExternalServiceFiles = false;
 
 		this.didSaveTextDocument = this.didSaveTextDocument.bind(this);
 		this.setContexts = this.setContexts.bind(this);
@@ -54,6 +59,8 @@ class Push extends PushBase {
 		this.watch.onChange = this.onWatchChange;
 		this.watch.recallByWorkspaceFolders(vscode.workspace.workspaceFolders);
 
+		utils.trace('Push', 'Libraries initialised');
+
 		this.queues = {};
 
 		// Set initial contexts
@@ -70,14 +77,18 @@ class Push extends PushBase {
 			this.event('onDidChangeActiveTextEditor', textEditor);
 		});
 
-		// Once initialised, do the new version check
-		this.checkNewVersion();
+		utils.trace('Push', 'Events bound');
+
+		if (!DEBUG) {
+			// Once initialised, do the new version check
+			this.checkNewVersion();
+		}
 	}
 
 	/**
 	 * @description
 	 * Checks for a major/minor version, and if found, loads the changelog,
-	 * based on the users preferences.
+	 * based on the users preferences. Also sets the current version into storage.
 	 */
 	checkNewVersion() {
 		const currentVersion = this.context.globalState.get(
@@ -88,6 +99,11 @@ class Push extends PushBase {
 			// Let's do nothing for new installs
 			return;
 		}
+
+		utils.trace(
+			'Push',
+			`Current version: ${currentVersion}, Package version: ${packageJson.version}`
+		);
 
 		if (
 			['major', 'minor'].indexOf(
@@ -146,6 +162,7 @@ class Push extends PushBase {
 	 */
 	setContexts(initial) {
 		this.setContext(Push.contexts.hasUploadQueue, this.config.uploadQueue);
+		this.setContext(Push.contexts.showTitleMenuUpload, this.config.showTitleMenuUpload);
 
 		if (initial === true) {
 			this.setContext(Push.contexts.initialised, true);
@@ -173,22 +190,86 @@ class Push extends PushBase {
 	 * @param {boolean} [exec=`false`] - `true` to immediately upload, `false` to queue.
 	 */
 	queueGitChangedFiles(uri, exec = false) {
-		this.scm.exec(
+		return this.scm.exec(
 			SCM.providers.git,
-			this.paths.getCurrentWorkspaceRootPath(
-				uri,
-				true
-			),
+			this.paths.getCurrentWorkspaceRootPath(uri, true),
 			'listWorkingUris'
-		).then((files) => {
+		).then((uris) => {
 			if (exec) {
 				// Immediately execute uploads
-				this.transfer(files, 'put');
-			} else {
-				// Queue uploads
-				this.queueForUpload(files);
+				return this.transfer(uris, 'put');
 			}
+
+			// Queue uploads
+			return this.queueForUpload(uris);
 		});
+	}
+
+	queueGitCommitChanges(uri, exec = false) {
+		let dir = this.paths.getCurrentWorkspaceRootPath(uri, true);
+
+		return this.scm.exec(
+			SCM.providers.git,
+			dir,
+			'listCommits',
+			10
+		)
+			.then((commits) => vscode.window.showQuickPick(commits, {
+				placeholder: 'placeholder'
+			}))
+			.then((option) => {
+				// Get Uris from the selected commit
+				let result = { option };
+
+				if (!option) {
+					throw undefined;
+				}
+
+				return this.scm.exec(
+					SCM.providers.git,
+					dir,
+					'urisFromCommit',
+					option.baseOption
+				).then((uris) => {
+					result.uris = uris;
+					return result;
+				});
+			})
+			.then((result) => {
+				// Filter Uris by ignoreGlobs
+				return this.paths.filterUrisByGlobs(
+					result.uris,
+					this.config.ignoreGlobs
+				).then(({ uris, ignored }) => {
+					result.uris = uris;
+					result.ignored = ignored;
+					return result;
+				});
+			})
+			.then((result) => {
+				if (!result.uris.length) {
+					if (result.ignored) {
+						return utils.showLocalisedWarning(
+							'commit_no_files_with_ignore',
+							result.option.shortCommit,
+							result.ignored
+						);
+					}
+
+					return utils.showLocalisedWarning(
+						'commit_no_files',
+						result.option.shortCommit
+					);
+				}
+
+				if (exec) {
+					// Immediately execute uploads
+					return this.transfer(result.uris, 'put');
+				}
+
+				// Queue uploads
+				return this.queueForUpload(result.uris);
+			});
 	}
 
 	/**
@@ -201,28 +282,33 @@ class Push extends PushBase {
 		let uri, method, args, settings;
 
 		switch (eventType) {
-			case 'onDidSaveTextDocument':
-				uri = data && data.uri;
-				method = 'didSaveTextDocument';
-				args = [data];
-				break;
+		case 'onDidSaveTextDocument':
+			if (!this.paths.pathInWorkspaceFolder(data.uri)) {
+				// Do nothing with files outside of the workspace
+				return;
+			}
 
-			case 'onDidChangeActiveTextEditor':
-				if (!data) {
-					data = vscode.window.activeTextEditor;
-				}
+			uri = data && data.uri;
+			method = 'didSaveTextDocument';
+			args = [data];
+			break;
 
-				uri = (data && data.document && data.document.uri);
-				method = 'didChangeActiveTextEditor'
-				args = [data];
-				break;
+		case 'onDidChangeActiveTextEditor':
+			if (!data) {
+				data = vscode.window.activeTextEditor;
+			}
 
-			case 'onServiceFileUpdate':
-				uri = data;
-				break;
+			uri = (data && data.document && data.document.uri);
+			method = 'didChangeActiveTextEditor';
+			args = [data];
+			break;
 
-			default:
-				throw new Error('Unrecognised event type');
+		case 'onServiceFileUpdate':
+			uri = data;
+			break;
+
+		default:
+			throw new Error('Unrecognised event type');
 		}
 
 		utils.trace('Push#event', eventType);
@@ -233,17 +319,21 @@ class Push extends PushBase {
 			return;
 		}
 
-		// Get current server settings for the editor
-		settings = this.service.settings.getServerJSON(
-			uri,
-			this.config.settingsFileGlob,
-			true,
-			true
-		);
+		if (!this.service.settings.isSettingsFile(uri)) {
+			// Get current server settings for the editor
+			settings = this.service.settings.getServerJSON(
+				uri,
+				this.config.settingsFileGlob,
+				true,
+				true
+			);
 
-		if (this.config.useEnvLabel && settings && settings.data.env) {
-			// Check env state and add to status
-			this.setEnvStatus(settings.data.env);
+			if (this.config.useEnvLabel && settings && settings.data.env) {
+				// Check env state and add to status
+				this.setEnvStatus(settings.data.env);
+			} else {
+				this.setEnvStatus(false);
+			}
 		} else {
 			this.setEnvStatus(false);
 		}
@@ -284,7 +374,11 @@ class Push extends PushBase {
 	didChangeActiveTextEditor(textEditor, settings) {
 		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
 
-		if (!textEditor || !textEditor.document) {
+		if (
+			!textEditor ||
+			!textEditor.document ||
+			!this.paths.isValidScheme(textEditor.document.uri)
+		) {
 			// Bail if there's still no editor, or no document
 			return;
 		}
@@ -314,36 +408,14 @@ class Push extends PushBase {
 	/**
 	 * Adds the current service settings based on the contextual URI to the
 	 * current configuration, then returns the configuration.
-	 * @param {uri} uriContext
+	 * @param {Uri} uriContext
 	 */
 	configWithServiceSettings(uriContext) {
-		const settings = this.service.settings.getServerJSON(
+		return this.service.settings.mergeWithServiceSettings(
 			uriContext,
-			this.config.settingsFileGlob
+			this.config.settingsFileGlob,
+			this.config
 		);
-
-		// Make a duplicate to avoid changing the original config
-		let newConfig = Object.assign({}, this.config);
-
-		if (settings) {
-			// Settings retrieved from JSON file within context
-			newConfig.env = settings.data.env;
-			newConfig.serviceName = settings.data.service;
-			newConfig.serviceFilename = settings.file;
-			newConfig.serviceUri = settings.uri;
-			newConfig.service = settings.data[newConfig.serviceName];
-			newConfig.serviceSettingsHash = settings.hash;
-
-			// Expand environment variables
-			newConfig.service.root = newConfig.service.root.replace(/%([^%]+)%/g, function(_, n) {
-				return process.env[n] || _;
-			});
-
-			return newConfig;
-		} else {
-			// No settings for this context
-			return false;
-		}
 	}
 
 	/**
@@ -372,7 +444,7 @@ class Push extends PushBase {
 	) {
 		const queue = this.getQueue(queueDef, queueOptions);
 
-		utils.trace('Push#queue', 'Adding {tasks.length} task(s)');
+		utils.trace('Push#queue', `Adding ${tasks.length} task(s)`);
 
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
@@ -393,26 +465,19 @@ class Push extends PushBase {
 			queue.addTask(
 				new QueueTask(
 					(() => {
-						let config;
+						// Execute the service method, returning any results and/or promises
+						return this.service.exec(
+							task.method,
+							this.configWithServiceSettings(task.uriContext),
+							task.args
+						)
+							.then((result) => {
+								if (typeof task.onTaskComplete === 'function') {
+									task.onTaskComplete.call(this, result);
+								}
 
-						if (task.uriContext) {
-							// Add service settings to the current configuration
-							config = this.configWithServiceSettings(task.uriContext);
-						} else {
-							throw new Error('No uriContext set from queue source.');
-						}
-
-						if (config) {
-							// Execute the service method, returning any results and/or promises
-							return this.service.exec(task.method, config, task.args)
-								.then((result) => {
-									if (typeof task.onTaskComplete === 'function') {
-										task.onTaskComplete.call(this, result);
-									}
-
-									return result;
-								});
-						}
+								return result;
+							});
 					}),
 					task.id,
 					{
@@ -489,7 +554,7 @@ class Push extends PushBase {
 	 * Copies the "upload" queue over to the default queue and runs the default queue.
 	 * The upload queue is then emptied once the default queue has completed without
 	 * errors.
-	 * @returns promise - Promise, resolving when the queue is complete.
+	 * @returns {Promise} Promise, resolving when the queue is complete.
 	 */
 	execUploadQueue() {
 		return new Promise((resolve, reject) => {
@@ -503,13 +568,13 @@ class Push extends PushBase {
 			uploadQueue = this.getQueue(Push.queueDefs.upload);
 
 			if (uploadQueue.tasks.length) {
-				queue = this.queue(uploadQueue.tasks, true)
+				queue = this.queue(uploadQueue.tasks, true);
 
 				if (queue instanceof Promise) {
 					queue.then(() => {
 						uploadQueue.empty();
 					})
-					.then(resolve);
+						.then(resolve);
 				}
 			} else {
 				utils.showWarning(i18n.t('queue_empty'));
@@ -524,14 +589,13 @@ class Push extends PushBase {
 	 */
 	diffRemote(uri) {
 		return new Promise((resolve, reject) => {
-			let config, tmpFile, remotePath;
+			let tmpFile, remotePath;
 
 			tmpFile = utils.getTmpFile();
-			config = this.configWithServiceSettings(uri);
 
 			remotePath = this.service.execSync(
 				'convertUriToRemote',
-				config,
+				this.configWithServiceSettings(uri),
 				[uri]
 			);
 
@@ -546,16 +610,20 @@ class Push extends PushBase {
 					'overwrite'
 				],
 				id: tmpFile + remotePath,
-				onTaskComplete: () => {
+				onTaskComplete: (result) => {
+					if (result.error) {
+						return;
+					}
+
 					vscode.commands.executeCommand(
 						'vscode.diff',
 						tmpFile,
 						uri,
-						'Diff: ' + this.paths.getBaseName(uri)
+						`${i18n.t('server_v_local')} (${this.paths.getBaseName(uri)})`
 					);
 				}
 			}], true, Push.queueDefs.diff).then(resolve, reject);
-		})
+		});
 	}
 
 	/**
@@ -587,15 +655,14 @@ class Push extends PushBase {
 	/**
 	 * Execute a queue (by running its #exec method).
 	 * @param {object} queueDef - One of the {@link Push.queueDefs} queue definitions.
-	 * @returns {promise} A promise, eventually resolving once the queue is complete.
+	 * @returns {Promise<object>} A promise, eventually resolving once the queue
+	 * is complete, containing a result object.
 	 */
 	execQueue(queueDef) {
 		const queue = this.getQueue(queueDef);
 
 		if (queue.running) {
-			// Reject now - not necessarily a problem but remind functions not to
-			// start the queue while it's running
-			return Promise.reject(`The queue "${queue.id}" is already running.`);
+			return Promise.resolve();
 		}
 
 		// TODO: make channel clearing an option to turn on
@@ -725,7 +792,7 @@ class Push extends PushBase {
 	 * @param {mixed} value - Context value
 	 */
 	setContext(context, value) {
-		utils.trace('Push#setContext', context, value);
+		utils.trace('Push#setContext', `${context}: "${value}"`);
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
@@ -892,7 +959,7 @@ class Push extends PushBase {
 	 * Transfers a single file or array of single files.
 	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to transfer.
 	 * @param {string} method - Either 'get' or 'put'.
-	 * @returns {promise} - A promise, resolving when the file has transferred.
+	 * @returns {Promise} A promise, resolving when the file has transferred.
 	 */
 	transfer(uris, method) {
 		let ignoreGlobs = [],
@@ -999,7 +1066,7 @@ class Push extends PushBase {
 	 * Transfers a directory of files.
 	 * @param {Uri} uri - Uri of the directory to transfer.
 	 * @param {*} method - Either 'get' or 'put'.
-	 * @returns {promise} - A promise, resolving when the directory has transferred.
+	 * @returns {Promise} A promise, resolving when the directory has transferred.
 	 */
 	transferDirectory(uri, method) {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;
@@ -1123,12 +1190,10 @@ class Push extends PushBase {
 				.then((files) => {
 					if (files.length > 1) {
 						// More than one settings file found within the current directory
-						channel.appendLocalisedError('multiple_service_files_no_transfer');
-
-						reject();
+						reject(new PushError(i18n.t('multiple_service_files_no_transfer')));
 					} else {
 						// 1 or less file found
-						resolve();
+						resolve(uri);
 					}
 				});
 		});
@@ -1183,7 +1248,8 @@ Push.contexts = {
 	hasUploadQueue: 'hasUploadQueue',
 	initialised: 'initialised',
 	activeEditorInUploadQueue: 'activeEditorInUploadQueue',
-	hasServiceContext: 'hasServiceContext'
+	hasServiceContext: 'hasServiceContext',
+	showTitleMenuUpload: 'showTitleMenuUpload'
 };
 
 module.exports = Push;

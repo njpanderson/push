@@ -1,3 +1,6 @@
+/**
+ * Tools with no external dependencies.
+ */
 module.exports = {
 	/**
 	 * Returns an array with only unique values.

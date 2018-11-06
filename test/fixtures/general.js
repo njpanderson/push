@@ -9,16 +9,19 @@ module.exports = {
 	mockUriSubFile: vscode.Uri.file(__dirname + '/transfer/test-folder/test-subfile.txt'),
 	mockUriMissingFile: vscode.Uri.file(__dirname + '/transfer/nofile.txt'),
 	mockUriIgnoredFile: vscode.Uri.file(__dirname + '/transfer/desktop.ini'),
+	mockUriMissingDir: vscode.Uri.file(__dirname + '/transfer/missing-folder/'),
+	mockUriFileWithoutWorkspace: vscode.Uri.file('/test-file.txt'),
 	mockWorkspace: {
 		rootPath: __dirname + '/transfer'
 	},
 
 	servers: {
 		SFTP: {
-			file: '/fake/path/to/.push.settings.json',
-			fileContents: '[none]',
+			file: vscode.Uri.file('/fake/path/to/.push.settings.json'),
+			contents: '[none]',
 			newFile: true,
 			data: {
+				env: 'dev',
 				service: 'SFTP',
 				SFTP: {
 					host: 'neilinscotland.net',
@@ -39,5 +42,25 @@ module.exports = {
 		nonCancellable: {
 			id: 'testNonCancellableQueue'
 		}
+	},
+
+	pathCache: {
+		list1: [
+			{ name: 'filename1.txt' },
+			{ name: 'filename2.txt' },
+			{ name: 'filename3.txt' },
+			{ name: 'filename4.txt' },
+			{ name: 'filename5.txt' }
+		],
+		list2: [
+			{ name: 'filename1.txt' },
+			{ name: 'filename1-2.txt' },
+			{ name: 'filename-1-20-2009.ogg' },
+			{ name: 'filename-1-20-2009-2.ogg' },
+			{ name: 'filename4.jpg' },
+			{ name: 'filename4-2.jpg' },
+			{ name: 'filename4-3.jpg' },
+			{ name: 'filename5.mvk' }
+		]
 	}
 };

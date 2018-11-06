@@ -3,16 +3,29 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const glob = require('glob');
+const micromatch = require('micromatch');
 
 const ExtendedStream = require('./ExtendedStream');
-const PathCache = require('../lib/PathCache');
+const PathCache = require('./pathcache/Index');
+const utils = require('../lib/utils');
 
+/**
+ * Provides Path utilities within the VSCode environment.
+ */
 class Paths {
-	fileExists(file) {
-		file = this.getNormalPath(file, 'file');
-		return fs.existsSync(file);
+	/**
+	 * Checks if a Uri exists on the filesystem.
+	 * @param {Uri} uri - Uri to check.
+	 */
+	fileExists(uri) {
+		utils.assertFnArgs('Paths#fileExists', arguments, [vscode.Uri]);
+		return fs.existsSync(this.getNormalPath(uri, 'file'));
 	}
 
+	/**
+	 * Returns a current or new instance of PathCache.
+	 * @returns {PathCache} An instance of PathCache.
+	 */
 	getPathCache() {
 		if (!this.pathCache) {
 			this.pathCache = new PathCache();
@@ -22,11 +35,13 @@ class Paths {
 	}
 
 	/**
-	 * Tests whether the first Uri or path is within the second.
-	 * @param {Uri|string} path - Uri/Path to find.
-	 * @param {Uri|string} rootUri - Uri/Path to find within.
+	 * Tests whether the first Uri is within the second.
+	 * @param {Uri} path - Uri to find.
+	 * @param {Uri} rootUri - Uri to find within.
 	 */
 	pathInUri(path, rootUri) {
+		utils.assertFnArgs('Paths#pathInUri', arguments, [vscode.Uri, vscode.Uri]);
+
 		if (!path || !rootUri) {
 			return false;
 		}
@@ -35,7 +50,20 @@ class Paths {
 	}
 
 	/**
+	 * Tests whether the supplied path is within an active workspace folder.
+	 * @param {Uri} uri - The path to test.
+	 * @returns {boolean} `true` if the path is within the workspace.
+	 */
+	pathInWorkspaceFolder(uri) {
+		return (this.getWorkspaceFolders().findIndex((workspaceFolder) => {
+			return this.pathInUri(uri, workspaceFolder.uri);
+		}) !== -1);
+	}
+
+	/**
 	 * Retrieves the active workspace folders.
+	 * @returns {array} Either an array of workspace folders, or an empty array if
+	 * nothing was found.
 	 */
 	getWorkspaceFolders() {
 		if (
@@ -50,11 +78,13 @@ class Paths {
 	}
 
 	/**
-	 *
-	 * @param {*} dir
-	 * @param {*} workspaceFolders
+	 * Checks if the supplied folder Uri is within one of the supplied workspace roots.
+	 * @param {Uri} dir
+	 * @param {WorkspaceFolder[]} workspaceFolders
 	 */
 	isWorkspaceFolderRoot(dir, workspaceFolders = []) {
+		utils.assertFnArgs('Paths#isWorkspaceFolderRoot', arguments, [vscode.Uri]);
+
 		dir = this.getNormalPath(dir);
 
 		return (workspaceFolders.findIndex((folder) => {
@@ -69,15 +99,23 @@ class Paths {
 	 * @returns {mixed} Either a Uri or a string path of the workspace root.
 	 */
 	getCurrentWorkspaceRootPath(uri, normalise = false) {
+		utils.assertFnArgs('Paths#getCurrentWorkspaceRootPath', arguments, [vscode.Uri]);
+
 		let workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
 
 		return (
 			normalise ?
-			this.getNormalPath(workspaceFolder.uri) :
-			workspaceFolder.uri
+				this.getNormalPath(workspaceFolder.uri) :
+				workspaceFolder.uri
 		);
 	}
 
+	/**
+	 * Gets a string representation of a Uri.
+	 * @param {string|Uri} uri - The Uri to parse.
+	 * @param {string} requiredScheme - If required, the scheme the supplied Uri
+	 * must follow.
+	 */
 	getNormalPath(uri, requiredScheme) {
 		if (typeof uri === 'string' ||
 			uri === null ||
@@ -92,19 +130,33 @@ class Paths {
 		return uri.fsPath || uri.path;
 	}
 
+	/**
+	 * Gets a path (Uri) without the workspace root.
+	 * @param {Uri} uri - The path to strip from.
+	 * @param {Workspace} workspace - The workspace to strip.
+	 * @param {string} [requiredScheme] - The required scheme of the path.
+	 * @returns {Uri} The path without the workspace
+	 */
 	getPathWithoutWorkspace(uri, workspace, requiredScheme) {
-		let pathName = this.getNormalPath(uri, requiredScheme);
+		utils.assertFnArgs('Paths#getPathWithoutWorkspace', arguments, [vscode.Uri]);
 
 		if (workspace) {
-			return pathName.replace(
-				workspace.rootPath,
-				''
-			)
+			return vscode.Uri.file(
+				this.getNormalPath(uri, requiredScheme).replace(
+					workspace.rootPath,
+					''
+				)
+			);
 		}
 
-		return pathName;
+		return uri;
 	}
 
+	/**
+	 * UNUSED
+	 * @param {*} src
+	 * @private
+	 */
 	getPathFromStreamOrUri(src) {
 		if (src instanceof vscode.Uri) {
 			return this.getNormalPath(src);
@@ -119,32 +171,49 @@ class Paths {
 
 	/**
 	 * Return a path without a trailing slash.
-	 * @param {string} dir - Dir to remove trailing slash
+	 * @param {string} pathName - Path to remove a trailing slash from.
+	 * @returns {string} The path without a trailing slash.
 	 */
-	stripTrailingSlash(dir) {
-		return dir.replace(/\/$/, '');
+	stripTrailingSlash(pathName) {
+		return pathName.replace(/\/$/, '');
 	}
 
 	/**
 	 * Return a path with a trailing slash.
-	 * @param {string} dir - Dir to ensure a trailing slash
+	 * @param {string} pathName - Path on which to ensure a trailing slash.
+	 * @returns {string} The path with a trailing slash.
 	 */
-	addTrailingSlash(dir) {
-		return this.stripTrailingSlash(dir) + '/';
+	addTrailingSlash(pathName) {
+		return this.stripTrailingSlash(pathName) + '/';
+	}
+
+	/**
+	 * Joins a path using the built in node Path method, returns a Uri.
+	 * @param {...Uri|string} - Path components to join.
+	 * @returns {Uri} The resulting Uri.
+	 */
+	join() {
+		let parts = [...arguments].map((item) =>
+			(item instanceof vscode.Uri ? this.getNormalPath(item) : item)
+		);
+
+		return vscode.Uri.file(path.join.apply(path, parts));
 	}
 
 	/**
 	 * Returns whether the supplied path is a directory. A shortcut for the fs.statSync method.
-	 * @param {string|Uri} dir - Directory to validate
+	 * @param {Uri} uri - Directory to validate
 	 * @returns {boolean} `true` if the path is a directory, `false` otherwise.
 	 */
-	isDirectory(dir) {
-		dir = this.getNormalPath(dir, 'file');
+	isDirectory(uri) {
+		utils.assertFnArgs('Paths#isDirectory', arguments, [vscode.Uri]);
 
-		if (dir) {
+		uri = this.getNormalPath(uri, 'file');
+
+		if (uri) {
 			// Use a try block to suppress statSync exceptions
 			try {
-				const stats = fs.statSync(dir);
+				const stats = fs.statSync(uri);
 				return stats.isDirectory();
 			} catch(e) {
 				return false;
@@ -154,6 +223,11 @@ class Paths {
 		return false;
 	}
 
+	/**
+	 * Obtain a consistent set of Glob options.
+	 * @param {object} [extend] - Optionally extend the options with further options.
+	 * @returns {object} A set of options, for use with Glob.
+	 */
 	getGlobOptions(extend = {}) {
 		return Object.assign({
 			// Match dotfiles (".filename")
@@ -166,26 +240,23 @@ class Paths {
 	}
 
 	/**
-	 * @description
 	 * List the contents of a single filesystem-accessible directory.
-	 *
-	 * `loc` provides a mechanism for distinguishing between multiple "sets" of
-	 * caches. The distinction is arbitrary but generally recommended to use one
-	 * of the `PathCache.sources` options for consistent recall.
-	 *
+	 * @param {string} dir - Directory to list.
+	 * @param {PathCache} [cache] - PathCache instance. Will use an internal instance
+	 * if not specified.
+	 * @description
 	 * An existing `cache` instance (of PathCache) may be supplied. Otherwise,
-	 * an instance specific to the Paths class is created.
-	 * @param {string} dir - Directory to list
-	 * @param {number} [loc=PathCache.sources.LOCAL] - `PathCache.sources` locations.
-	 * @param {class} [cache] - Cache class instance
+	 * a generic cache instance is created.
+	 * @returns {Promise<PathCacheList>} A promise resolving to a directory list.
 	 */
-	listDirectory(dir, loc = PathCache.sources.LOCAL, cache) {
-		// Use supplied cache or fall back to class instance
+	listDirectory(dir, cache) {
 		dir = this.stripTrailingSlash(dir);
+
+		// Use supplied cache or fall back to class instance
 		cache = cache || this.getPathCache();
 
-		if (cache.dirIsCached(loc, dir)) {
-			return Promise.resolve(cache.getDir(loc, dir));
+		if (cache.dirIsCached(dir)) {
+			return Promise.resolve(cache.getDir(dir));
 		} else {
 			return new Promise((resolve, reject) => {
 				fs.readdir(dir, (error, list) => {
@@ -197,15 +268,14 @@ class Paths {
 						let pathname = dir + Paths.sep + filename,
 							stats = fs.statSync(pathname);
 
-						cache.addCachedFile(
-							loc,
+						cache.addFilePath(
 							pathname,
 							(stats.mtime.getTime() / 1000),
 							(stats.isDirectory() ? 'd' : 'f')
 						);
 					});
 
-					resolve(cache.getDir(loc, dir));
+					resolve(cache.getDir(dir));
 				});
 			});
 		}
@@ -213,9 +283,12 @@ class Paths {
 
 	/**
 	 * Recursively returns the file contents of a directory.
-	 * @param {uri|string|array} include - Uri of directory to glob for paths, a glob string,
-	 * or an array of path components.
+	 * @param {uri|string|array} include - Uri of directory to glob for paths, a
+	 * glob string, or an array of path components.
 	 * @param {array} [ignoreGlobs] - List of globs to ignore.
+	 * @param {boolean} [followSymlinks=false] - Set `true` to follow symlinked
+	 * directories when scanning for files.
+	 * @returns {Promose<array>} Resolving to an array of files.
 	 */
 	getDirectoryContentsAsFiles(include, ignoreGlobs = [], followSymlinks = false) {
 		if (include instanceof vscode.Uri) {
@@ -246,7 +319,48 @@ class Paths {
 		});
 	}
 
+	/**
+	 * Filters a bunch of Uris by the provided globs
+	 * @param {Uri[]} uris - An array of Uris to check.
+	 * @param {string[]} ignoreGlobs - An array of globs to match against.
+	 * @returns {Promise<Object>} resolving to an object containing the
+	 * remaining Uris and a count of ignored Uris.
+	 */
+	filterUrisByGlobs(uris, ignoreGlobs = []) {
+		return new Promise((resolve, reject) => {
+			let matches;
+
+			if (!Array.isArray(ignoreGlobs) || !ignoreGlobs.length) {
+				resolve(uris);
+			}
+
+			try {
+				// Get uris not matching from micromatch
+				matches = micromatch.not(
+					Array.from(uris, uri => uri.fsPath), ignoreGlobs
+				);
+
+				// Convert back to Uris and resolve
+				resolve({
+					uris: Array.from(matches, match => vscode.Uri.file(match)),
+					ignored: (uris.length - matches.length)
+				});
+			} catch(e) {
+				reject(e);
+			}
+		});
+	}
+
+	/**
+	 * Filters a Uri by the array of ignoreGlobs globs.
+	 * @param {Uri} uri - The Uri to check.
+	 * @param {string[]} [ignoreGlobs] - An array of globs to match against.
+	 * @returns {Promise<Uri>|Promise<false>} resolving to either the original Uri,
+	 * or `false` in the case that one of the `ignoreGlobs` globs matched.
+	 */
 	filterUriByGlobs(uri, ignoreGlobs = []) {
+		utils.assertFnArgs('Paths#filterUriByGlobs', arguments, [vscode.Uri]);
+
 		return new Promise((resolve, reject) => {
 			if (!Array.isArray(ignoreGlobs) || !ignoreGlobs.length) {
 				resolve(uri);
@@ -268,40 +382,23 @@ class Paths {
 						resolve(false);
 					}
 				}
-			)
-		});
-	}
-
-	/**
-	 * Iterates over each segment of a path, invoking an iterator function with
-	 * a cumulative portion of that path.
-	 * @param {string} dir
-	 * @param {function} iterator
-	 */
-	iterateDirectoryPath(dir, iterator) {
-		let segment_dir = '';
-
-		dir = path.dirname(dir);
-		dir = dir.replace(/^\//, '')
-		dir = dir.split('/');
-
-		dir.forEach((segment) => {
-			segment_dir += `/${segment}`;
-			iterator(segment_dir);
+			);
 		});
 	}
 
 	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
 	 * the root of the active workspace is reached.
-	 * @param {string} file - The filename to look for. Supports globs.
-	 * @param {string} startDir - The directory to start looking in.
-	 * @returns {Uri|null} - Either the matched Uri, or `null`.
+	 * @param {string} fileName - The filename to look for. Supports globs.
+	 * @param {Uri} start - The directory to start looking in.
+	 * @param {boolean} [limitToWorkspace=true] - Limit traversal to the workspace
+	 * root.
+	 * @returns {Uri|null} Either the matched Uri, or `null`.
 	 */
-	findFileInAncestors(file, startDir) {
+	findFileInAncestors(fileName, start, limitToWorkspace = true) {
 		let matches,
 			loop = 0,
-			prevDir = '',
+			prev = '',
 			folders = this.getWorkspaceFolders(),
 			globOptions = {
 				matchBase: true,
@@ -309,26 +406,41 @@ class Paths {
 				nosort: true
 			};
 
-		// while (!fs.existsSync(startDir + path.sep + file)) {
+		utils.assertFnArgs('Paths#findFileInAncestors', arguments, ['string', vscode.Uri]);
+
+		start = this.getDirName(start, true);
+
+		utils.trace(
+			'Paths#findFileInAncestors',
+			`Looking for settings file in: ${start}`
+		);
+
 		while (!(matches = (glob.sync(
-				this.ensureGlobPath(startDir + path.sep + file),
-				globOptions
-			))).length) {
-			if (this.isWorkspaceFolderRoot(startDir, folders) || loop === 50) {
-				// dir matches any root paths or hard loop limit reached
+			this.ensureGlobPath(start, fileName),
+			globOptions
+		))).length) {
+			if (
+				// Dir matches a root path
+				(limitToWorkspace && this.isWorkspaceFolderRoot(start, folders)) ||
+				// Loop limit reached
+				loop === 50 ||
+				// Dir matches FS root
+				start.fsPath === prev.fsPath
+			) {
 				return null;
 			}
 
 			// Strip off directory basename
-			prevDir = startDir;
-			startDir = path.dirname(startDir);
-
-			if (startDir === prevDir) {
-				return null;
-			}
+			prev = start;
+			start = this.getDirName(start);
 
 			// startDir = startDir.substring(0, startDir.lastIndexOf('/'));
 			loop += 1;
+
+			utils.trace(
+				'Paths#findFileInAncestors',
+				`Looking for settings file in: ${start}`
+			);
 		}
 
 		return vscode.Uri.file(matches[0]);
@@ -336,24 +448,28 @@ class Paths {
 
 	/**
 	 * Retrieves a source file based on the workspace of the command.
-	 * @param {object} [uri] - Source file Uri.
+	 * @param {object} [uri] - Source file Uri. In the case that a Uri is not
+	 * supplied, a contextual Uri may be returned.
+	 * @returns {Uri|null} A Uri, or null if a contextual Uri could not be found.
 	 */
 	getFileSrc(uri) {
 		let folders;
 
 		if (uri && uri instanceof vscode.Uri) {
+			// Return contextual Uri
 			return uri;
 		}
 
-		// uri is not set or does not exist. attempt to get from the editor
 		if (vscode.window.activeTextEditor) {
+			// Return active editor Uri
 			return vscode.window.activeTextEditor &&
 				vscode.window.activeTextEditor.document.uri;
 		} else if ((folders = this.getWorkspaceFolders()).length) {
+			// Return base workspace Uri
 			return folders[0].uri;
 		}
 
-		return '';
+		return null;
 	}
 
 	/**
@@ -361,6 +477,7 @@ class Paths {
 	 * @param {Uri} uri - Uri to check.
 	 */
 	isValidScheme(uri) {
+		utils.assertFnArgs('Paths#isValidScheme', arguments, [vscode.Uri]);
 		return (uri.scheme === 'file' || uri.scheme === '' || !uri.scheme);
 	}
 
@@ -372,9 +489,12 @@ class Paths {
 	 * - Has at least one directory
 	 * - Contains a "root" path (e.g. / or c:\)
 	 * - Doesn't contain "bad" characters (e.g. traversal characters)
-	 * @param {Uri|string} uri
+	 * @param {Uri} uri
+	 * @returns	{boolean} `true` if the path validates, `false` otherwise.
 	 */
 	isValidPath(uri) {
+		utils.assertFnArgs('Paths#isValidPath', arguments, [vscode.Uri]);
+
 		uri = path.parse(this.getNormalPath(uri));
 
 		return !(
@@ -387,31 +507,44 @@ class Paths {
 	/**
 	 * Process a Uri and retrieve the basename component.
 	 * @param {Uri} uri - Uri to process.
+	 * @returns {string} The basename of the file.
 	 */
 	getBaseName(uri) {
+		utils.assertFnArgs('Paths#getBaseName', arguments, [vscode.Uri]);
 		return path.basename(this.getNormalPath(uri));
 	}
 
 	/**
 	 *
-	 * @param {string|Uri} uri - Uri or pathname.
+	 * @param {Uri} uri - Uri or pathname.
 	 * @param {boolean} [returnIfDirectory=false] - If the path supplied is already a
 	 * directory, just return it.
+	 * @returns {Uri} the original path's directory name, or the same path if it's
+	 * already a directory and `returnIfDirectory` is `true`.
 	 */
 	getDirName(uri, returnIfDirectory = false) {
+		utils.assertFnArgs('Paths#getDirName', arguments, [vscode.Uri, 'boolean']);
+
 		if (returnIfDirectory && this.isDirectory(uri)) {
-			return this.getNormalPath(uri);
+			return uri;
 		}
 
-		return path.dirname(this.getNormalPath(uri));
+		return vscode.Uri.file(path.dirname(this.getNormalPath(uri)));
 	}
 
-	ensureDirExists(dir) {
+	/**
+	 * Checks for the existence of a directory.
+	 * @param {Uri} uri - The path to check.
+	 * @returns {Promise} Resolving if the directory exists, rejecting otherwise.
+	 */
+	ensureDirExists(uri) {
 		return new Promise((resolve, reject) => {
-			this.getFileStats(dir)
+			utils.assertFnArgs('Paths#ensureDirExists', arguments, [vscode.Uri]);
+
+			this.getFileStats(this.getNormalPath(uri))
 				.then(stats => {
 					if (!stats) {
-						mkdirp(dir, function (error) {
+						mkdirp(uri, function (error) {
 							if (error) {
 								reject(error);
 							} else {
@@ -425,10 +558,17 @@ class Paths {
 		});
 	}
 
-	writeFile(contents, fileName) {
+	/**
+	 * Writes a file to disk using UTF8 encoding.
+	 * @param {string} contents - File contents.
+	 * @param {Uri} uri - Filename Uri.
+	 */
+	writeFile(contents, uri) {
 		return new Promise((resolve, reject) => {
+			utils.assertFnArgs('Paths#writeFile', arguments, [null, vscode.Uri]);
+
 			fs.writeFile(
-				fileName,
+				this.getNormalPath(uri),
 				contents,
 				{
 					encoding: 'utf8'
@@ -437,16 +577,22 @@ class Paths {
 					if (error) {
 						reject(error);
 					} else {
-						resolve(fileName);
+						resolve(uri);
 					}
 				}
 			);
 		});
 	}
 
-	readFile(fileName) {
+	/**
+	 * Reads a file and returns its contents
+	 * @param {Uri} uri - Uri of the file to read.
+	 */
+	readFile(uri) {
+		utils.assertFnArgs('Paths#readFile', arguments, [vscode.Uri]);
+
 		return new Promise((resolve, reject) => {
-			fs.readFile(fileName, (error, data) => {
+			fs.readFile(this.getNormalPath(uri), (error, data) => {
 				if (error) {
 					reject(error);
 				} else {
@@ -484,13 +630,19 @@ class Paths {
 	}
 
 	/**
-	 * Ensures a path can be used with glob (even on windows)
-	 * @param {string} pathName - The path to make glob 'friendly'
+	 * @param {...Uri|string} pathName - The path to make glob 'friendly'
+	 * @description
+	 * Ensures a path can be used with glob (even on windows). Each argument is
+	 * joined by a glob compatible separator (/).
 	 */
-	ensureGlobPath(pathName) {
-		pathName = this.getNormalPath(pathName);
-		pathName = pathName.replace(/\\/g, '/');
-		return pathName;
+	ensureGlobPath() {
+		return [...arguments].reduce(
+			(acc, part) => acc + '/' + this
+				.getNormalPath(part)
+				.replace(/\\/g, '/')
+				.replace(/^\//, ''),
+			''
+		);
 	}
 }
 

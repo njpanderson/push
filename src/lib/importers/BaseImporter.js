@@ -7,8 +7,12 @@ class BaseImporter {
 		this.paths = new Paths();
 	}
 
-	loadFile(file) {
-		return this.paths.readFile(file);
+	/**
+	 * Load a single file into the base importer.
+	 * @param {Uri} uri - Uri of file to read.
+	 */
+	loadFile(uri) {
+		return this.paths.readFile(uri);
 	}
 
 	parseJSON(fileContents) {

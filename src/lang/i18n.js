@@ -83,10 +83,10 @@ class i18n {
 				this,
 				(
 					params && params[key] ?
-					[object[key]].concat(
-						params[key] || []
-					) :
-					[object[key]]
+						[object[key]].concat(
+							params[key] || []
+						) :
+						[object[key]]
 				)
 			);
 		}
@@ -99,7 +99,7 @@ class i18n {
 	 * Returns the localised string for a key. Will return the base key with markings if a localised
 	 * or the base key cannot be found.
 	 * @param {string} key - String key to fetch.
-	 * @returns {string} - The found localised string.
+	 * @returns {string} The found localised string.
 	 */
 	getLocalisedString(key) {
 		if (this.strings.localised[key]) {

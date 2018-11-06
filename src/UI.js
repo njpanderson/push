@@ -36,7 +36,7 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			super.queueGitChangedFiles(uri);
+			return super.queueGitChangedFiles(uri).catch(this.catchError);
 		}
 	}
 
@@ -44,7 +44,23 @@ class UI extends Push {
 		let uri;
 
 		if ((uri = this.getValidUri(uri))) {
-			super.queueGitChangedFiles(uri, true);
+			return super.queueGitChangedFiles(uri, true).catch(this.catchError);
+		}
+	}
+
+	queueGitCommit() {
+		let uri;
+
+		if ((uri = this.getValidUri(uri))) {
+			return this.queueGitCommitChanges(uri).catch(this.catchError);
+		}
+	}
+
+	uploadGitCommit() {
+		let uri;
+
+		if ((uri = this.getValidUri(uri))) {
+			return this.queueGitCommitChanges(uri, true).catch(this.catchError);
 		}
 	}
 
@@ -59,9 +75,8 @@ class UI extends Push {
 
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
-				.then(() => {
-					return this.transferDirectory(uri, 'put').catch(this.catchError);
-				});
+				.then(() => this.transferDirectory(uri, 'put'))
+				.catch (this.catchError);
 		}
 
 		return this.transfer(uri, 'put').catch(this.catchError);
@@ -78,9 +93,8 @@ class UI extends Push {
 
 		if (this.paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
-				.then(() => {
-					return this.transferDirectory(uri, 'get').catch(this.catchError);
-				});
+				.then(() => this.transferDirectory(uri, 'get'))
+				.catch(this.catchError);
 		}
 
 		return this.transfer(uri, 'get').catch(this.catchError);
@@ -109,7 +123,7 @@ class UI extends Push {
 			return false;
 		}
 
-		this.watch.add(uri);
+		return this.watch.add(uri).catch(this.catchError);
 	}
 
 	/**
@@ -124,7 +138,7 @@ class UI extends Push {
 		}
 
 		if ((uri = this.paths.getFileSrc(context))) {
-			this.watch.remove(uri);
+			this.watch.remove(uri).catch(this.catchError);
 		}
 	}
 
@@ -176,7 +190,7 @@ class UI extends Push {
 	 */
 	createServiceConfig(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			this.service.editServiceConfig(uri, true);
+			return this.service.editServiceConfig(uri, true).catch(this.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -187,7 +201,7 @@ class UI extends Push {
 	 */
 	editServiceConfig(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			return this.service.editServiceConfig(uri);
+			return this.service.editServiceConfig(uri).catch(this.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -206,7 +220,7 @@ class UI extends Push {
 	 */
 	importConfig(uri) {
 		if (this.getValidUri(uri)) {
-			this.service.importConfig(uri);
+			return this.service.importConfig(uri).catch(this.catchError);
 		}
 	}
 }

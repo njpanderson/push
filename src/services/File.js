@@ -6,13 +6,9 @@ const ServiceBase = require('./Base');
 const TransferResult = require('./TransferResult');
 const utils = require('../lib/utils');
 const ExtendedStream = require('../lib/ExtendedStream');
-const PathCache = require('../lib/PathCache');
 const PushError = require('../lib/PushError');
 const i18n = require('../lang/i18n');
-const { TRANSFER_TYPES } = require('../lib/constants');
-
-const SRC_REMOTE = PathCache.sources.REMOTE;
-const SRC_LOCAL = PathCache.sources.LOCAL;
+const { TRANSFER_TYPES, CACHE_SOURCES } = require('../lib/constants');
 
 /**
  * Filesystem based uploading.
@@ -25,7 +21,6 @@ class File extends ServiceBase {
 		this.checkServiceRoot = this.checkServiceRoot.bind(this);
 
 		this.type = 'File';
-		this.pathCache = new PathCache();
 		this.writeStream = null;
 		this.readStream = null;
 	}
@@ -33,9 +28,8 @@ class File extends ServiceBase {
 	init(queueLength) {
 		return super.init(queueLength)
 			.then(this.checkServiceRoot)
-			.then(() => {
-				return this.pathCache.clear();
-			});
+			.then(() => this.pathCache.local.clear())
+			.then(() => this.pathCache.remote.clear());
 	}
 
 	/**
@@ -55,10 +49,12 @@ class File extends ServiceBase {
 
 	/**
 	 * Put a single file to the remote location.
-	 * @param {uri} local - Local Uri or Readable stream instance.
-	 * @param {uri} remote - Remote Uri.
+	 * @param {Uri} local - Local Uri or Readable stream instance.
+	 * @param {string} remote - Remote path.
 	 */
 	put(local, remote) {
+		utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
+
 		if (!this.paths.fileExists(local)) {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
@@ -80,12 +76,17 @@ class File extends ServiceBase {
 
 	/**
 	 * Get a single file from the remote location.
-	 * @param {uri} local - Local Uri.
-	 * @param {uri} remote - Remote Uri.
+	 * @param {Uri} local - Local Uri.
+	 * @param {string} remote - Remote path.
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
 	 */
 	get(local, remote, collisionAction) {
+		utils.assertFnArgs('File#get', arguments, [vscode.Uri, 'string']);
+
+		// Convert remote into a Uri
+		remote = vscode.Uri.file(remote);
+
 		collisionAction = collisionAction ||
 			this.config.service.collisionDownloadAction;
 
@@ -101,9 +102,9 @@ class File extends ServiceBase {
 		// Perform transfer from remote to local, setting root as base of service file
 		return this.transfer(
 			TRANSFER_TYPES.GET,
-			vscode.Uri.file(remote),
+			remote,
 			local,
-			vscode.Uri.file(path.dirname(this.config.serviceFilename)),
+			this.paths.getDirName(this.config.serviceUri),
 			collisionAction
 		);
 	}
@@ -120,7 +121,10 @@ class File extends ServiceBase {
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
 			rootDir = this.paths.getNormalPath(root),
-			srcType = (transferType === TRANSFER_TYPES.PUT ? SRC_REMOTE : SRC_LOCAL);
+			srcType = (
+				transferType === TRANSFER_TYPES.PUT ?
+					CACHE_SOURCES.remote : CACHE_SOURCES.local
+			);
 
 		this.setProgress(`${destFilename}...`);
 
@@ -145,36 +149,35 @@ class File extends ServiceBase {
 					this.setCollisionOption(collision);
 
 					switch (collision.option) {
-						case utils.collisionOpts.stop:
-							throw utils.errors.stop;
+					case utils.collisionOpts.stop:
+						throw utils.errors.stop;
 
-						case utils.collisionOpts.skip:
-							return new TransferResult(src, false, transferType, {
-								srcLabel: destPath
+					case utils.collisionOpts.overwrite:
+						return this.copy(src, destPath, transferType);
+
+					case utils.collisionOpts.rename:
+						return this.list(destDir, srcType)
+							.then((dirContents) => {
+								// Re-invoke transfer with new filename
+								destPath = destDir + '/' + this.getNonCollidingName(
+									destFilename,
+									dirContents
+								);
+
+								return this.transfer(
+									transferType,
+									src,
+									destPath,
+									rootDir
+								);
 							});
 
-						case utils.collisionOpts.overwrite:
-							return this.copy(src, destPath, transferType);
-
-						case utils.collisionOpts.rename:
-							return this.list(destDir, srcType)
-								.then((dirContents) => {
-									// Re-invoke transfer with new filename
-									destPath = destDir + '/' + this.getNonCollidingName(
-										destFilename,
-										dirContents
-									);
-
-									return this.transfer(
-										transferType,
-										src,
-										destPath,
-										rootDir
-									);
-								});
+					case utils.collisionOpts.skip:
+					default:
+						return new TransferResult(src, false, transferType, {
+							srcLabel: destPath
+						});
 					}
-
-					return false;
 				}
 			})
 			.then((result) => {
@@ -215,7 +218,7 @@ class File extends ServiceBase {
 	mkDir(dir) {
 		return this.list(path.dirname(dir))
 			.then(() => {
-				let existing = this.pathCache.getFileByPath(SRC_REMOTE, dir);
+				let existing = this.pathCache.remote.getFileByPath(dir);
 
 				if (existing === null) {
 					return new Promise((resolve, reject) => {
@@ -225,8 +228,7 @@ class File extends ServiceBase {
 							}
 
 							// Add dir to cache
-							this.pathCache.addCachedFile(
-								SRC_REMOTE,
+							this.pathCache.remote.addFilePath(
 								dir,
 								((new Date()).getTime() / 1000),
 								'd'
@@ -246,10 +248,10 @@ class File extends ServiceBase {
 	/**
 	 * Return a list of the remote directory.
 	 * @param {string} dir - Remote directory to list
-	 * @param {string} loc - One of the {@link PathCache.sources} types.
+	 * @param {string} loc - One of the {@link CACHE_SOURCES} types.
 	 */
-	list(dir, loc = SRC_REMOTE) {
-		return this.paths.listDirectory(dir, loc, this.pathCache);
+	list(dir, loc = CACHE_SOURCES.remote) {
+		return this.paths.listDirectory(dir, this.pathCache[loc]);
 	}
 
 	/**
@@ -259,7 +261,7 @@ class File extends ServiceBase {
 	 * Returns a promise either resolving to a recursive file list in the format
 	 * given by {@link PathCache#getRecursiveFiles}, or rejects if `dir` is not
 	 * found.
-	 * @returns {promise}
+	 * @returns {Promise<array>} Resolving to an array of files.
 	 */
 	listRecursiveFiles(dir, ignoreGlobs) {
 		return this.paths.getDirectoryContentsAsFiles(
@@ -277,10 +279,10 @@ class File extends ServiceBase {
 		const remotePath = this.paths.getNormalPath(remote),
 			remoteDir = path.dirname(remotePath);
 
-		return this.list(remoteDir, SRC_REMOTE)
+		return this.list(remoteDir, CACHE_SOURCES.remote)
 			.then(() => ({
 				// Get remote stats
-				remote: this.pathCache.getFileByPath(SRC_REMOTE, remotePath)
+				remote: this.pathCache.remote.getFileByPath(remotePath)
 			}))
 			.then(stats => (new Promise(resolve => {
 				// Get local stats
@@ -303,7 +305,9 @@ class File extends ServiceBase {
 		return new Promise((resolve, reject) => {
 			function fnError(error) {
 				this.stop(() => reject(error));
-			};
+			}
+
+			utils.trace('File#copy', dest);
 
 			// Create write stream & attach events
 			this.writeStream = fs.createWriteStream(dest);
@@ -337,7 +341,7 @@ class File extends ServiceBase {
 			}
 		});
 	}
-};
+}
 
 File.description = i18n.t('file_class_description');
 
