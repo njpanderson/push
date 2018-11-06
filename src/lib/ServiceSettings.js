@@ -236,7 +236,10 @@ class ServiceSettings extends Configurable {
 				// Return entry as cached
 				return this.settingsCache[uriPath];
 			} catch(error) {
-				channel.appendError(error.message);
+				if (!quiet) {
+					channel.appendError(error.message);
+				}
+
 				return null;
 			}
 		}
