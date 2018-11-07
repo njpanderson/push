@@ -412,7 +412,7 @@ class Paths {
 
 		utils.trace(
 			'Paths#findFileInAncestors',
-			`Looking for settings file in: ${start}`
+			`Looking for file in: ${start}`
 		);
 
 		while (!(matches = (glob.sync(
@@ -439,7 +439,7 @@ class Paths {
 
 			utils.trace(
 				'Paths#findFileInAncestors',
-				`Looking for settings file in: ${start}`
+				`Looking for file in: ${start}`
 			);
 		}
 
@@ -637,10 +637,10 @@ class Paths {
 	 */
 	ensureGlobPath() {
 		return [...arguments].reduce(
-			(acc, part) => acc + '/' + this
-				.getNormalPath(part)
-				.replace(/\\/g, '/')
-				.replace(/^\//, ''),
+			(acc, part) => acc + (acc ? '/' : '') +
+				this
+					.getNormalPath(part)
+					.replace(/\\/g, '/'),
 			''
 		);
 	}
