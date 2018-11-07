@@ -1,6 +1,9 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.6.1
+ - Fix to path globbing in Windows.
+
 ## 0.6.0
  - Added "Upload/queue from commit hash" feature. You can now upload files changed in a specific Git commit.
  - Added nicer icons for uploading, added a title menu upload button.
