@@ -14,6 +14,7 @@ const {
 const utils = {
 	_timeouts: {},
 	_sb: null,
+	traceCounter: 0,
 
 	/**
 	 * Show an informational message using the VS Code interface
