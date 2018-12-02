@@ -405,7 +405,7 @@ const utils = {
 };
 
 utils.collisionOpts = {
-	skip: i18n.o({ label: 'skip', detail: 'skip_uploading_default' }),
+	skip: i18n.o({ label: 'skip', detail: 'skip_transferring_default' }),
 	stop: i18n.o({ label: 'stop', detail: 'stop_transfer_empty_queue' }),
 	overwrite: i18n.o({ label: 'overwrite', detail: 'replace_target_with_source' }),
 	rename: i18n.o({ label: 'rename', detail: 'keep_both_files_by_rename' })
@@ -414,7 +414,7 @@ utils.collisionOpts = {
 utils.collisionOptsAll = {
 	skip: Object.assign(i18n.o({
 		label: 'skip_all',
-		detail: 'skip_uploading_all_existing'
+		detail: 'skip_transferring_all_existing'
 	}), {
 		baseOption: utils.collisionOpts.skip
 	}),
