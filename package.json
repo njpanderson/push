@@ -575,7 +575,7 @@
     "test": "mocha",
     "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
     "publish": "npm run t && vsce publish",
-    "package": "vsce package"
+    "vsce": "vsce"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",

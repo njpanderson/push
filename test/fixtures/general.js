@@ -2,6 +2,7 @@ const vscode = require('../mocks/node/vscode');
 
 module.exports = {
 	mockFolder: __dirname + '/transfer/test-folder/',
+	mockFolder2: __dirname + '/transfer/test-folder-2/',
 	mockUriFile: vscode.Uri.file(__dirname + '/transfer/test-file.txt'),
 	mockUriFile2: vscode.Uri.file(__dirname + '/transfer/test-file-2.txt'),
 	mockForeignSchemeFile: new vscode.Uri('foreign-scheme', '', __dirname + '/transfer/test-file.txt'),
