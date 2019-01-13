@@ -319,7 +319,10 @@ class Push extends PushBase {
 			return;
 		}
 
-		if (!this.service.settings.isSettingsFile(uri)) {
+		if (
+			eventType === 'onServiceFileUpdate' ||
+			!this.service.settings.isSettingsFile(uri)
+		) {
 			// Get current server settings for the editor
 			settings = this.service.settings.getServerJSON(
 				uri,
