@@ -208,7 +208,7 @@ class Service extends PushBase {
 
 					// File exists but forceDialog is false - just keep going
 					if (this.paths.fileExists(uri) && !forceDialog) {
-						return resolve(ServicePromptResult(uri));
+						return resolve(new ServicePromptResult(uri));
 					}
 
 					// Show a prompt, asking the user where the settings file should go
