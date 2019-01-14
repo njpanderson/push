@@ -1208,9 +1208,16 @@ class Push extends PushBase {
 	 * Push will attempt to detect one from the current context.
 	 * Will produce an error message if the Uri is not valid.
 	 * @param {Uri} uri - Uri to test.
+	 * @returns {Uri} The Uri uri, if. Will throw a PushError otherwise.
 	 */
 	getValidUri(uri) {
 		uri = this.paths.getFileSrc(uri);
+
+		if (uri === null) {
+			// Uri could not be found *at all*
+			utils.showError(i18n.t('invalid_path_anonymous'));
+			return false;
+		}
 
 		if (!this.paths.isValidPath(uri)) {
 			utils.showError(i18n.t('invalid_path', uri.scheme));

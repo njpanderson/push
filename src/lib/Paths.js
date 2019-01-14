@@ -453,17 +453,32 @@ class Paths {
 	 * @returns {Uri|null} A Uri, or null if a contextual Uri could not be found.
 	 */
 	getFileSrc(uri) {
-		let folders;
+		let folders, editorUri;
 
 		if (uri && uri instanceof vscode.Uri) {
-			// Return contextual Uri
+			// Uri is already valid - just return it
 			return uri;
 		}
 
 		if (vscode.window.activeTextEditor) {
-			// Return active editor Uri
-			return vscode.window.activeTextEditor &&
+			// Get active editor Uri
+			editorUri = vscode.window.activeTextEditor &&
 				vscode.window.activeTextEditor.document.uri;
+
+			if (this.isValidScheme(editorUri)) {
+				// Uri is valid, return it
+				return editorUri;
+			}
+
+			// Try to find a valid TextEditor/Uri in the active list
+			editorUri = vscode.window.visibleTextEditors.find((editor) => {
+				return editor.document && this.isValidScheme(editor.document.uri);
+			});
+
+			if (editorUri) {
+				// Found a valid editor Uri! return it...
+				return editorUri.document.uri;
+			}
 		} else if ((folders = this.getWorkspaceFolders()).length) {
 			// Return base workspace Uri
 			return folders[0].uri;
