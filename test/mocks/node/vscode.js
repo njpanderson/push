@@ -12,7 +12,7 @@ class Uri {
 
 Uri.file = (uri) => {
 	return new Uri('file', '', uri);
-}
+};
 
 class ExtensionContext {
 	constructor() {
@@ -40,7 +40,7 @@ class StateMachine {
 	}
 }
 
-module.exports = {
+let vscode = {
 	commands: {
 		executeCommand: counter.attach('vscode.commands.executeCommand')
 	},
@@ -72,10 +72,15 @@ module.exports = {
 	workspace: {
 		onDidSaveTextDocument: () => { },
 		onDidChangeConfiguration: () => { },
+		rootPath: path.join(path.dirname(path.dirname(__dirname)), 'fixtures', 'transfer'),
 		workspaceFolders: [{
+			index: 0,
 			name: 'Mocked Workspace Folder',
-			uri: Uri.file(path.dirname(path.dirname(__dirname)) + '/fixtures/transfer')
-		}]
+			uri: Uri.file(path.join(path.dirname(path.dirname(__dirname)), 'fixtures', 'transfer'))
+		}],
+		getWorkspaceFolder: () => {
+			return vscode.workspace.workspaceFolders[0];
+		}
 	},
 
 	ProgressLocation: {
@@ -91,3 +96,5 @@ module.exports = {
 		Right: 2
 	}
 };
+
+module.exports = vscode;

@@ -1,16 +1,7 @@
 /* global suite, test */
-
-//
-// Note: This example test is leveraging the Mocha test framework.
-// Please refer to their documentation on https://mochajs.org/ for help.
-//
-
-// The module 'assert' provides assertion methods from node
-const assert = require('assert');
 const expect = require('chai').expect;
+const path = require('path');
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
 const useMockery = require('../helpers/mockery');
 const counter = require('../helpers/counter');
 const fixtures = require('../fixtures/general');
@@ -18,7 +9,6 @@ const fixtures = require('../fixtures/general');
 // Mocks
 const vscode = require('../mocks/node/vscode');
 
-// Defines a Mocha test suite to group tests of similar kind together
 describe('Paths', function() {
 	let Paths, paths;
 
@@ -39,87 +29,150 @@ describe('Paths', function() {
 		paths = new Paths();
 	});
 
-	// Defines a Mocha unit test
 	describe('#fileExists', () => {
 		it('should return whether a Uri exists', () => {
-			assert(paths.fileExists(fixtures.mockUriFile) === true);
+			expect(paths.fileExists(fixtures.mockUriFile)).to.be.true;
 		});
 		it('should return false if a non-file Uri is passed', () => {
-			assert(paths.fileExists(fixtures.mockForeignSchemeFile) === false);
+			expect(paths.fileExists(fixtures.mockForeignSchemeFile)).to.be.false;
 		});
 	});
 
 	describe('#pathInUri', () => {
 		it('should return true for a Uri within a Uri', () => {
-			assert(paths.pathInUri(
+			expect(paths.pathInUri(
 				fixtures.mockUriSubFile,
 				fixtures.mockUriFolder
-			) === true);
+			)).to.be.true;
 		});
 
 		it('should return false for a Uri not within a Uri', () => {
-			assert(paths.pathInUri(
+			expect(paths.pathInUri(
 				fixtures.mockUriFile2,
 				fixtures.mockUriFolder
-			) === false);
+			)).to.be.false;
 		});
 	});
 
 
 	describe('#getNormalPath', () => {
 		it('should return a normalised (string) version of a Uri', () => {
-			assert(typeof paths.getNormalPath(
+			expect(typeof paths.getNormalPath(
 				fixtures.mockUriFile
-			) === 'string');
+			)).to.equal('string');
 
-			assert(/test-file.txt/.test(paths.getNormalPath(
+			expect(paths.getNormalPath(
 				fixtures.mockUriFile
-			)));
+			)).to.have.string('test-file.txt');
 		});
 	});
 
 	describe('#getPathWithoutWorkspace', () => {
-		it('should return a Uri normalised without workspace path', () => {
+		it(`should return a path without the workspace path (${fixtures.mockPathWithoutWorkspace})`, () => {
 			expect(paths.getPathWithoutWorkspace(
 				fixtures.mockUriFile,
 				fixtures.mockWorkspace
-			)).to.eql(fixtures.mockUriFileWithoutWorkspace);
+			)).to.equal(fixtures.mockPathWithoutWorkspace);
+		});
+
+		it(`should return a path without the workspace path (${fixtures.mockSubPathWithoutWorkspace})`, () => {
+			expect(paths.getPathWithoutWorkspace(
+				fixtures.mockUriSubFile,
+				fixtures.mockWorkspace
+			)).to.equal(fixtures.mockSubPathWithoutWorkspace);
+		});
+
+		it(`should return the original path outside of the workspace path (${fixtures.mockPathWithoutWorkspace})`, () => {
+			expect(paths.getPathWithoutWorkspace(
+				fixtures.mockUriWithoutWorkspace,
+				fixtures.mockWorkspace
+			)).to.equal(fixtures.mockPathWithoutWorkspace);
 		});
 	});
 
 	describe('#stripTrailingSlash', () => {
 		it('should strip a trailing slash', () => {
-			assert(paths.stripTrailingSlash(
-				'/path/with/trailing/slash/'
-			) === '/path/with/trailing/slash');
+			expect(paths.stripTrailingSlash(fixtures.mockFolderWithTrailingSlash)).to.equal(
+				fixtures.mockFolder
+			);
 		});
 
 		it('should ignore if no trailing slash exists', () => {
-			assert(paths.stripTrailingSlash(
-				'/path/without/trailing/slash'
-			) === '/path/without/trailing/slash');
+			expect(paths.stripTrailingSlash(fixtures.mockFolder)).to.equal(
+				fixtures.mockFolder
+			);
+		});
+
+		it('should strip a custom trailing slash (/)', () => {
+			expect(paths.stripTrailingSlash('/test/forward/slash/', '/')).to.equal(
+				'/test/forward/slash'
+			);
+		});
+
+		it('should ignore if no custom trailing slash exists (/)', () => {
+			expect(paths.stripTrailingSlash('/test/forward/slash', '/')).to.equal(
+				'/test/forward/slash'
+			);
+		});
+
+		it('should strip a custom trailing slash (\\)', () => {
+			expect(paths.stripTrailingSlash('\\test\\forward\\slash\\', '\\')).to.equal(
+				'\\test\\forward\\slash'
+			);
+		});
+
+		it('should ignore if no custom trailing slash exists (\\)', () => {
+			expect(paths.stripTrailingSlash('\\test\\forward\\slash', '\\')).to.equal(
+				'\\test\\forward\\slash'
+			);
 		});
 	});
 
 	describe('#addTrailingSlash', () => {
 		it('should add exactly one trailing slash', () => {
-			assert(paths.addTrailingSlash(
-				'/path/without/trailing/slash'
-			) === '/path/without/trailing/slash/');
+			expect(paths.addTrailingSlash(
+				fixtures.mockFolder
+			)).to.equal(
+				fixtures.mockFolderWithTrailingSlash
+			);
 		});
 
 		it('should ignore if a trailing slash exists', () => {
-			assert(paths.addTrailingSlash(
-				'/path/with/trailing/slash/'
-			) === '/path/with/trailing/slash/');
+			expect(paths.addTrailingSlash(
+				fixtures.mockFolderWithTrailingSlash
+			)).to.equal(fixtures.mockFolderWithTrailingSlash);
+		});
+
+		it('should add a custom trailing slash (/)', () => {
+			expect(paths.addTrailingSlash('/test/forward/slash', '/')).to.equal(
+				'/test/forward/slash/'
+			);
+		});
+
+		it('should ignore if a custom trailing slash exists (/)', () => {
+			expect(paths.addTrailingSlash('/test/forward/slash/', '/')).to.equal(
+				'/test/forward/slash/'
+			);
+		});
+
+		it('should add a custom trailing slash (\\)', () => {
+			expect(paths.addTrailingSlash('\\test\\forward\\slash', '\\')).to.equal(
+				'\\test\\forward\\slash\\'
+			);
+		});
+
+		it('should ignore if a custom trailing slash exists (\\)', () => {
+			expect(paths.addTrailingSlash('\\test\\forward\\slash\\', '\\')).to.equal(
+				'\\test\\forward\\slash\\'
+			);
 		});
 	});
 
 	describe('#isDirectory', () => {
 		it('should not fault with a non-existent directory, but return false', () => {
-			assert(paths.isDirectory(
+			expect(paths.isDirectory(
 				fixtures.mockUriMissingDir
-			) === false);
+			)).to.be.false;
 		});
 	});
 
@@ -127,17 +180,35 @@ describe('Paths', function() {
 		it('should list a directory', () => {
 			return paths.listDirectory(fixtures.mockFolder)
 				.then((list) => {
-					expect(list[0].name).to.equal('.hidden-file');
-					expect(list[0].pathName).to.have.string('/transfer/test-folder/.hidden-file');
-					expect(list[0].type).to.equal('f');
+					let test = [];
 
-					expect(list[1].name).to.equal('another-test-subfile.txt');
-					expect(list[1].pathName).to.have.string('/transfer/test-folder/another-test-subfile.txt');
-					expect(list[1].type).to.equal('f');
+					list.forEach((item) => {
+						test.push({
+							name: item.name,
+							pathName: item.pathName,
+							type: item.type
+						});
+					});
 
-					expect(list[2].name).to.equal('test-subfile.txt');
-					expect(list[2].pathName).to.have.string('/transfer/test-folder/test-subfile.txt');
-					expect(list[2].type).to.equal('f');
+					expect(test).to.include.deep.members([{
+						name: '.hidden-file',
+						pathName: path.join(
+							path.dirname(__dirname), 'fixtures', 'transfer', 'test-folder', '.hidden-file'
+						),
+						type: 'f'
+					}, {
+						name: 'another-test-subfile.txt',
+						pathName: path.join(
+							path.dirname(__dirname), 'fixtures', 'transfer', 'test-folder', 'another-test-subfile.txt'
+						),
+						type: 'f'
+					}, {
+						name: 'test-subfile.txt',
+						pathName: path.join(
+							path.dirname(__dirname), 'fixtures', 'transfer', 'test-folder', 'test-subfile.txt'
+						),
+						type: 'f'
+					}]);
 				});
 		});
 	});

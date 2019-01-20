@@ -13,6 +13,7 @@ const {
 
 const utils = {
 	_timeouts: {},
+	_filenameRegexCache: {},
 	_sb: null,
 	traceCounter: 0,
 
@@ -401,6 +402,31 @@ const utils = {
 
 		// Fallback
 		return dateFormat(date, format.replace('R', relativeFallback));
+	},
+
+	/**
+	 * Escapes a string for safe use in a regular expression.
+	 * @param {string} str - String to escape
+	 */
+	regexEscape(str) {
+		// http://kevin.vanzonneveld.net
+		// +   original by: booeyOH
+		// +   improved by: Ates Goral (http://magnetiq.com)
+		// +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+		// +   bugfixed by: Onno Marsman
+		return (str + '').replace(/([\\.+*?[^\]$(){}=!<>|:])/g, '\\$1');
+	},
+
+	filePathRegex(filePath) {
+		if (this._filenameRegexCache[filePath]) {
+			return this._filenameRegexCache[filePath];
+		}
+
+		return this._filenameRegexCache[filePath] = new RegExp(this.regexEscape(filePath), 'i');
+	},
+
+	filePathReplace(filePath, searchFor, replaceWith) {
+		return filePath.replace(this.filePathRegex(searchFor), replaceWith)
 	}
 };
 

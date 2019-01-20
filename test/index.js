@@ -8,7 +8,11 @@ describe('Push', function () {
 	// debugger;
 
 	// require individual test specs
-	glob.sync('./spec/**/test.*.js*', {
+	glob.sync('./spec/**/test.**.js*', {
 		cwd: './test'
 	}).map(require);
+	// // require individual test specs
+	// glob.sync('./spec/**/test.*.js*', {
+	// 	cwd: './test'
+	// }).map(require);
 });

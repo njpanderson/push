@@ -33,9 +33,8 @@ class File extends ServiceBase {
 	}
 
 	/**
-	 * Attempt to list the root path to ensure it exists
-	 * @param {SFTP} client - SFTP client object.
-	 * @param {function} resolve - Promise resolver function.
+	 * Attempt to list the root path to ensure it exists. Throws a PushError if not.
+	 * @returns {boolean} `true` if the root exists.
 	 */
 	checkServiceRoot() {
 		if (fs.existsSync(this.config.service.root)) {
@@ -303,8 +302,11 @@ class File extends ServiceBase {
 	 */
 	copy(src, dest, transferType) {
 		return new Promise((resolve, reject) => {
+			let errorOccured = false;
+
 			function fnError(error) {
-				this.stop(() => reject(error));
+				errorOccured = true;
+				this.stop().then(() => reject(error));
 			}
 
 			utils.trace('File#copy', dest);
@@ -315,6 +317,10 @@ class File extends ServiceBase {
 			this.writeStream.on('error', fnError.bind(this));
 
 			this.writeStream.on('finish', () => {
+				if (errorOccured) {
+					return;
+				}
+
 				resolve(new TransferResult(
 					src,
 					true,
@@ -340,6 +346,36 @@ class File extends ServiceBase {
 				));
 			}
 		});
+	}
+
+	/**
+	 * Converts a local path to a remote path given the local `uri` Uri object.
+	 * @param {uri} uri - VSCode URI to perform replacement on.
+	 */
+	convertUriToRemote(uri) {
+		let file = this.paths.getNormalPath(uri),
+			remotePath;
+
+		remotePath = this.paths.stripTrailingSlash(this.config.service.root) +
+			utils.filePathReplace(file, path.dirname(this.config.serviceFile), '');
+
+		return remotePath;
+	}
+
+	/**
+	 * Converts a remote path to a local path given the remote `file` pathname.
+	 * @param {string} remotePath - Remote path to perform replacement on.
+	 * @returns {uri} A qualified Uri object.
+	 */
+	convertRemoteToUri(remotePath) {
+		return this.paths.join(
+			path.dirname(this.config.serviceFile),
+			utils.filePathReplace(
+				remotePath,
+				this.paths.stripTrailingSlash(this.config.service.root) + path.sep,
+				''
+			)
+		);
 	}
 }
 

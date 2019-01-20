@@ -1,0 +1,9 @@
+{
+	"env": "default",
+	"default": {
+		"service": "File",
+		"options": {
+			"root": "__ROOT_PATH__"
+		}
+	}
+}

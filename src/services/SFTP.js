@@ -739,8 +739,6 @@ class SFTP extends ServiceBase {
 					default:
 						return new TransferResult(local, false, TRANSFER_TYPES.GET);
 					}
-
-					return false;
 				}
 			})
 			.catch((error) => {
@@ -939,7 +937,7 @@ class SFTP extends ServiceBase {
 							.then(() => {
 								// Change path mode
 								return this.setRemotePathMode(
-									this.paths.addTrailingSlash(dir),
+									this.paths.addTrailingSlash(dir, '/'),
 									this.config.service.fileMode
 								);
 							})
@@ -1258,6 +1256,36 @@ class SFTP extends ServiceBase {
 			(
 				client.options.privateKey ? ' [KEY]' : ' [NO KEY]'
 			);
+	}
+
+	/**
+	 * Converts a local path to a remote path given the local `uri` Uri object.
+	 * @param {uri} uri - VSCode URI to perform replacement on.
+	 */
+	convertUriToRemote(uri) {
+		let file = this.paths.getNormalPath(uri),
+			remotePath;
+
+		remotePath = this.paths.stripTrailingSlash(this.config.service.root) +
+			utils.filePathReplace(file, path.dirname(this.config.serviceFile), '');
+
+		remotePath = (path.join(remotePath).split(path.sep)).join('/');
+
+		return remotePath;
+	}
+
+	/**
+	 * Converts a remote path to a local path given the remote `file` pathname.
+	 * @param {string} remotePath - Remote path to perform replacement on.
+	 * @returns {uri} A qualified Uri object.
+	 */
+	convertRemoteToUri(remotePath) {
+		return this.paths.join(
+			path.dirname(this.config.serviceFile),
+			remotePath.replace(
+				this.paths.stripTrailingSlash(this.config.service.root, '/') + '/', ''
+			)
+		);
 	}
 }
 

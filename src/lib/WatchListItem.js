@@ -21,7 +21,7 @@ const WatchListItem = function (uri, callback, enable = true) {
 	this.callback = callback;
 
 	enable && this.initWatcher();
-}
+};
 
 /**
  * Starts the internal watch process for this item.
@@ -36,7 +36,7 @@ WatchListItem.prototype.initWatcher = function () {
 
 	this.watcher.onDidChange(this._watcherChangeApplied.bind(this));
 	this.watcher.onDidCreate(this._watcherChangeApplied.bind(this));
-}
+};
 
 /**
  * Handle watch change/create events.
@@ -45,7 +45,7 @@ WatchListItem.prototype.initWatcher = function () {
 WatchListItem.prototype._watcherChangeApplied = function (uri) {
 	this.data.triggers += 1;
 	this.callback(uri);
-}
+};
 
 /**
  * Removes the internal watch process
@@ -55,7 +55,7 @@ WatchListItem.prototype.removeWatcher = function () {
 		this.watcher.dispose();
 		this.watcher = null;
 	}
-}
+};
 
 /**
  * Creates a watch glob given the provided Uri.
@@ -68,6 +68,6 @@ WatchListItem.prototype._createWatchGlob = function (uri) {
 	}
 
 	return paths.getNormalPath(uri);
-}
+};
 
 module.exports = WatchListItem;

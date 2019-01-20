@@ -1,0 +1,9 @@
+{
+	"env": "default",
+	"default": {
+		"service": "SFTP",
+		"options": {
+			"root": "__ROOT_PATH__"
+		}
+	}
+}
