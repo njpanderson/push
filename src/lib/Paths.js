@@ -133,23 +133,24 @@ class Paths {
 	/**
 	 * Gets a path (Uri) without the workspace root.
 	 * @param {Uri} uri - The path to strip from.
-	 * @param {Workspace} workspace - The workspace to strip.
+	 * @param {Workspace} workspace - The workspace to look for root folders to strip.
 	 * @param {string} [requiredScheme] - The required scheme of the path.
 	 * @returns {Uri} The path without the workspace
 	 */
 	getPathWithoutWorkspace(uri, workspace, requiredScheme) {
+		let workspaceFolder;
+
 		utils.assertFnArgs('Paths#getPathWithoutWorkspace', arguments, [vscode.Uri]);
 
-		if (workspace) {
-			return vscode.Uri.file(
-				this.getNormalPath(uri, requiredScheme).replace(
-					workspace.rootPath,
-					''
-				)
+		if (workspace && (workspaceFolder = workspace.getWorkspaceFolder(uri))) {
+			return utils.filePathReplace(
+				this.getNormalPath(uri, requiredScheme),
+				this.getNormalPath(workspaceFolder.uri) + path.sep,
+				''
 			);
 		}
 
-		return uri;
+		return this.getNormalPath(uri);
 	}
 
 	/**
@@ -172,19 +173,21 @@ class Paths {
 	/**
 	 * Return a path without a trailing slash.
 	 * @param {string} pathName - Path to remove a trailing slash from.
+	 * @param {string} [sep] - Separator slash. Defaults to system preference.
 	 * @returns {string} The path without a trailing slash.
 	 */
-	stripTrailingSlash(pathName) {
-		return pathName.replace(/\/$/, '');
+	stripTrailingSlash(pathName, sep = path.sep) {
+		return pathName.endsWith(sep) ? pathName.slice(0, -1) : pathName;
 	}
 
 	/**
 	 * Return a path with a trailing slash.
 	 * @param {string} pathName - Path on which to ensure a trailing slash.
+	 * @param {string} [sep] - Separator slash. Defaults to system preference.
 	 * @returns {string} The path with a trailing slash.
 	 */
-	addTrailingSlash(pathName) {
-		return this.stripTrailingSlash(pathName) + '/';
+	addTrailingSlash(pathName, sep = path.sep) {
+		return this.stripTrailingSlash(pathName, sep) + sep;
 	}
 
 	/**
@@ -309,8 +312,17 @@ class Paths {
 					follow: followSymlinks
 				}),
 				(error, matches) => {
+					let a;
+
 					if (error) {
 						reject(error);
+					}
+
+					if (matches.length) {
+						// Ensure paths match the OS requirements by resolving them
+						for (a = (matches.length - 1); a > -1; a -= 1) {
+							matches[a] = path.resolve(matches[a]);
+						}
 					}
 
 					resolve(matches);
@@ -377,7 +389,7 @@ class Paths {
 					}
 
 					if (matches.length) {
-						resolve(vscode.Uri.file(matches[0]));
+						resolve(vscode.Uri.file(path.resolve(matches[0])));
 					} else {
 						resolve(false);
 					}

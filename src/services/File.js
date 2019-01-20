@@ -347,6 +347,36 @@ class File extends ServiceBase {
 			}
 		});
 	}
+
+	/**
+	 * Converts a local path to a remote path given the local `uri` Uri object.
+	 * @param {uri} uri - VSCode URI to perform replacement on.
+	 */
+	convertUriToRemote(uri) {
+		let file = this.paths.getNormalPath(uri),
+			remotePath;
+
+		remotePath = this.paths.stripTrailingSlash(this.config.service.root) +
+			utils.filePathReplace(file, path.dirname(this.config.serviceFile), '');
+
+		return remotePath;
+	}
+
+	/**
+	 * Converts a remote path to a local path given the remote `file` pathname.
+	 * @param {string} remotePath - Remote path to perform replacement on.
+	 * @returns {uri} A qualified Uri object.
+	 */
+	convertRemoteToUri(remotePath) {
+		return this.paths.join(
+			path.dirname(this.config.serviceFile),
+			utils.filePathReplace(
+				remotePath,
+				this.paths.stripTrailingSlash(this.config.service.root) + path.sep,
+				''
+			)
+		);
+	}
 }
 
 File.description = i18n.t('file_class_description');

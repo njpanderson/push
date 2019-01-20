@@ -17,11 +17,11 @@ class ServiceSettings {
  */
 class ServiceSettingsSFTP extends ServiceSettings {
 	getServerJSON() {
-		return fixtures.servers.SFTP
+		return fixtures.services.SFTP.serviceData;
 	}
 
 	mergeWithServiceSettings(uri, glob, config) {
-		return Object.assign({}, config, fixtures.servers.SFTP.data);
+		return Object.assign({}, config, fixtures.services.SFTP.serviceData.data);
 	}
 }
 

@@ -123,26 +123,16 @@ class ServiceBase {
 	 * @param {uri} uri - VSCode URI to perform replacement on.
 	 */
 	convertUriToRemote(uri) {
-		let file = this.paths.getNormalPath(uri);
-
-		file = this.paths.stripTrailingSlash(this.config.service.root) +
-			file.replace(path.dirname(this.config.serviceFile), '');
-
-		file = (path.join(file).split(path.sep)).join('/');
-
-		return file;
+		return this.paths.getNormalPath(uri);
 	}
 
 	/**
 	 * Converts a remote path to a local path given the remote `file` pathname.
-	 * @param {string} file - Remote pathname to perform replacement on.
+	 * @param {string} remotePath - Remote path to perform replacement on.
 	 * @returns {uri} A qualified Uri object.
 	 */
-	convertRemoteToUri(file) {
-		return vscode.Uri.file(
-			path.dirname(this.config.serviceFile) + '/' +
-			file.replace(this.paths.stripTrailingSlash(this.config.service.root) + '/', '')
-		);
+	convertRemoteToUri(remotePath) {
+		return vscode.Uri.file(remotePath);
 	}
 
 	/**
