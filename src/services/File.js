@@ -306,7 +306,14 @@ class File extends ServiceBase {
 
 			function fnError(error) {
 				errorOccured = true;
-				this.stop().then(() => reject(error));
+				// this.stop().then(() => reject(error));
+				this.stop().then(() => resolve(
+					new TransferResult(
+						src,
+						new PushError(error.message),
+						transferType
+					)
+				));
 			}
 
 			utils.trace('File#copy', dest);
