@@ -4,7 +4,6 @@ module.exports = {
 	'comm_push_settings3': 'Le etichette di ambiente predefinite sono: prod, dev, stage. Gli ambienti personalizzati (e i loro colori) possono essere creati nelle impostazioni.',
 	'comm_add_service_config': 'Aggiungi la configurazione del servizio qui ...',
 	'comm_settings_imported': 'Impostazioni importate da ${1}\n',
-	'no_locale': 'L’impostazione "${1}" locale non esiste.È stato creato un file.js per questo ?',
 	'upload_queue_disabled': 'La coda di caricamento è disabilitata - controlla le impostazioni dell’area di lavoro.',
 	'upload_queue_cleared': 'La coda di caricamento è stata cancellata',
 	'select_workspace_root': 'Seleziona un percorso root dell’area di lavoro:',

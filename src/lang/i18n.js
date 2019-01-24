@@ -1,7 +1,9 @@
 const vscode = require('vscode');
 
 const config = require('../lib/config');
-const PushError = require('../lib/PushError');
+const {
+	PUSH_MESSAGE_PREFIX
+} = require('../lib/constants');
 
 /**
  * Internationalisation (i18n) class.
@@ -11,11 +13,12 @@ const PushError = require('../lib/PushError');
  */
 class i18n {
 	constructor() {
-		// Set default locale
+		// Set default, current locale
+		this._default_locale = 'en_gb';
 		this._locale = 'en_gb';
 
 		this.strings = {
-			base: require(`./en_gb`),
+			base: require('./en_gb'),
 			localised: {}
 		};
 
@@ -37,9 +40,14 @@ class i18n {
 		try {
 			this.strings.localised = require(fileName);
 			this._locale = locale;
+
 			return;
 		} catch(e) {
-			throw new PushError(this.t('no_locale', locale));
+			this.strings.localised = {...this.strings.base};
+			this._locale = this._default_locale;
+
+			// Display an error
+			vscode.window.showErrorMessage(PUSH_MESSAGE_PREFIX + this.t('no_locale', locale));
 		}
 	}
 

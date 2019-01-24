@@ -4,7 +4,6 @@ module.exports = {
 	'comm_push_settings3': 'プリセット環境ラベルは、prod、dev、stageです。 カスタム環境（およびその色）を設定で作成できます。',
 	'comm_add_service_config': 'ここにサービス設定を追加...',
 	'comm_settings_imported': '${1}からインポートされた設定\n',
-	'no_locale': 'ロケール "${1}"は存在しません。 .jsファイルが作成されていますか？',
 	'upload_queue_disabled': 'アップロードキューが無効です - ワークスペースの設定を確認してください。',
 	'upload_queue_cleared': 'アップロードキューがクリアされました',
 	'select_workspace_root': 'ワークスペースのルートディレクトリを選択します。',
