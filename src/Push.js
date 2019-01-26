@@ -453,8 +453,9 @@ class Push extends PushBase {
 		if (queue.tasks.length === 0 && !queue.running) {
 			utils.trace('Push#queue', 'Adding initial queue task');
 			queue.addTask(new QueueTask(() => {
+				// Run init with length - 1 (allowing for init task which is always first)
 				return this.service.activeService &&
-					this.service.activeService.init(queue.tasks.length);
+					this.service.activeService.init((queue.tasks.length - 1));
 			}));
 		}
 
