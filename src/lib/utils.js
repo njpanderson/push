@@ -449,7 +449,7 @@ utils.collisionOptsAll = {
 	}),
 	rename: Object.assign(i18n.o({
 		label: 'rename_all',
-		detail: 'keep_all_existing_by_renaming_uploaded'
+		detail: 'keep_all_existing_by_renaming_all'
 	}), {
 		baseOption: utils.collisionOpts.rename
 	})

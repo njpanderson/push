@@ -38,7 +38,7 @@ module.exports = {
 	'overwrite_all': 'Sovrascrivere tutto',
 	'replace_all_existing': 'Sostituisci tutti i file esistenti',
 	'rename_all': 'Rinominare tutto',
-	'keep_all_existing_by_renaming_uploaded': 'Mantieni tutti i file esistenti rinominando i file caricati',
+	'keep_all_existing_by_renaming_all': 'Conserva tutti i file esistenti rinominando tutti i file sorgente',
 	'transfer_cancelled': 'Trasferimento annullato',
 	'no_service_file': 'Non è stato possibile trovare un file di impostazioni nel tuo progetto. Hai già creato un file con il nome "${1}"?',
 	'service_not_defined': 'Un servizio di trasferimento non è stato definito all’interno del file delle impostazioni in "${1}".',

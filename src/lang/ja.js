@@ -38,7 +38,7 @@ module.exports = {
 	'overwrite_all': 'すべてを上書きする',
 	'replace_all_existing': '既存のファイルをすべて置換する',
 	'rename_all': 'すべての名前を変更する',
-	'keep_all_existing_by_renaming_uploaded': 'アップロードされたファイルの名前を変更して既存のファイルをすべて保持する',
+	'keep_all_existing_by_renaming_all': 'すべてのソースファイルの名前を変更して、既存のファイルをすべて残します',
 	'transfer_cancelled': '転送がキャンセルされた',
 	'no_service_file': 'プロジェクト内で設定ファイルが見つかりませんでした。 "${1}"という名前のファイルを作成しましたか？',
 	'service_not_defined': '転送ファイルが設定ファイル内で "${1}"に定義されていませんでした。',
