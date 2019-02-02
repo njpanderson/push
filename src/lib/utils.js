@@ -8,6 +8,7 @@ const PushError = require('./PushError');
 const i18n = require('../lang/i18n');
 const {
 	TMP_FILE_PREFIX,
+	PUSH_MESSAGE_PREFIX,
 	DEBUG
 } = require('./constants');
 
@@ -115,13 +116,9 @@ const utils = {
 	 */
 	displayErrorOrString(method, data) {
 		if (data instanceof Error) {
-			vscode.window[method](
-				`Push: ${data.message}`
-			);
+			vscode.window[method](PUSH_MESSAGE_PREFIX + data.message);
 		} else {
-			vscode.window[method](
-				`Push: ${data}`
-			);
+			vscode.window[method](PUSH_MESSAGE_PREFIX + data);
 		}
 	},
 
@@ -452,7 +449,7 @@ utils.collisionOptsAll = {
 	}),
 	rename: Object.assign(i18n.o({
 		label: 'rename_all',
-		detail: 'keep_all_existing_by_renaming_uploaded'
+		detail: 'keep_all_existing_by_renaming_all'
 	}), {
 		baseOption: utils.collisionOpts.rename
 	})

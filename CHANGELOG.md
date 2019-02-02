@@ -1,6 +1,17 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.6.2
+ - Improved localisation handling, especially regarding invalid locales.
+ - Improved messaging in various places (commands, collission picker).
+ - Fixed issue with collission picker not detecting single file uploads.
+ - Many Windows path handling improvements.
+ - Fixed issue with the environment label not updating in certain scenarios.
+ - Fixed issue with environment changes sometimes not registering with the "Compare" command.
+ - Improved file error handling in some transfer types.
+ - Improved handling of transfer commands when the output window is focused.
+ - Various other smaller bugfixes and improvements.
+
 ## 0.6.1
  - Fix to path globbing in Windows.
 

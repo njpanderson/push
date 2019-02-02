@@ -137,7 +137,9 @@ class ServiceSettings extends Configurable {
 			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) + '\n' +
 			'// ' + i18n.t('comm_push_settings2') + '\n' +
 			'// ' + i18n.t('comm_push_settings3') + '\n' +
-		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG);
+		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG.replace(
+			'{{PLACACEHOLDER_EMPTY_CONFIG}}', i18n.t('comm_add_service_config')
+		));
 
 		return content;
 	}
@@ -361,7 +363,7 @@ class ServiceSettings extends Configurable {
 				channel.appendLocalisedError(
 					'single_env',
 					this.paths.getNormalPath(settings.uri),
-					environments[0]
+					environments[0].label
 				);
 
 				return reject();

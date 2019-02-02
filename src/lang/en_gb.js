@@ -7,7 +7,7 @@ module.exports = {
 	'comm_push_settings3': 'Preset environments are: prod, dev, stage. Custom environments (and their colours) can be created in settings.',
 	'comm_add_service_config': 'Add service configuration here...',
 	'comm_settings_imported': 'Settings imported from ${1}\n',
-	'no_locale': 'Locale "${1}" does not exist. Has a .js file been created for it?',
+	'no_locale': 'The Push language "${1}" does not exist. Push will use English (British) for now. Please see the README for a full list of supported languages.',
 	'upload_queue_disabled': 'Upload queue is disabled. Please check workspace your current settings for njpPush.uploadQueue.',
 	'upload_queue_cleared': 'Upload queue cleared',
 	'select_workspace_root': 'Select a workspace root path:',

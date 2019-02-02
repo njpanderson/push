@@ -80,6 +80,13 @@ let vscode = {
 		}],
 		getWorkspaceFolder: () => {
 			return vscode.workspace.workspaceFolders[0];
+		},
+		asRelativePath: (uri) => {
+			if (uri.path.startsWith(vscode.workspace.rootPath)) {
+				return uri.path.replace(vscode.workspace.rootPath + path.sep, '');
+			}
+
+			return uri;
 		}
 	},
 

@@ -134,23 +134,17 @@ class Paths {
 	 * Gets a path (Uri) without the workspace root.
 	 * @param {Uri} uri - The path to strip from.
 	 * @param {Workspace} workspace - The workspace to look for root folders to strip.
-	 * @param {string} [requiredScheme] - The required scheme of the path.
-	 * @returns {Uri} The path without the workspace
+	 * @returns {Uri} The path without the workspace, or the original path, in
+	 * case that the path falls outside of the workspace.
 	 */
-	getPathWithoutWorkspace(uri, workspace, requiredScheme) {
-		let workspaceFolder;
+	getPathWithoutWorkspace(uri, workspace) {
+		let filePath = workspace.asRelativePath(uri);
 
-		utils.assertFnArgs('Paths#getPathWithoutWorkspace', arguments, [vscode.Uri]);
-
-		if (workspace && (workspaceFolder = workspace.getWorkspaceFolder(uri))) {
-			return utils.filePathReplace(
-				this.getNormalPath(uri, requiredScheme),
-				this.getNormalPath(workspaceFolder.uri) + path.sep,
-				''
-			);
-		}
-
-		return this.getNormalPath(uri);
+		return (
+			!(filePath instanceof vscode.Uri) ?
+				filePath :
+				this.getNormalPath(uri)
+		);
 	}
 
 	/**
