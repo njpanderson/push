@@ -363,7 +363,7 @@ class ServiceSettings extends Configurable {
 				channel.appendLocalisedError(
 					'single_env',
 					this.paths.getNormalPath(settings.uri),
-					environments[0]
+					environments[0].label
 				);
 
 				return reject();
