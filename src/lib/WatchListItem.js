@@ -28,7 +28,10 @@ const WatchListItem = function (uri, callback, enable = true) {
  */
 WatchListItem.prototype.initWatcher = function () {
 	this.watcher = vscode.workspace.createFileSystemWatcher(
-		this.glob,
+		new vscode.RelativePattern(
+			vscode.workspace.getWorkspaceFolder(this.uri),
+			paths.ensureGlobPath(this.glob)
+		),
 		false,
 		false,
 		true
@@ -63,11 +66,12 @@ WatchListItem.prototype.removeWatcher = function () {
  */
 WatchListItem.prototype._createWatchGlob = function (uri) {
 	if (paths.isDirectory(uri)) {
-		return paths.stripTrailingSlash(paths.getNormalPath(uri)) +
-			'/**/*';
+		return paths.stripTrailingSlash(
+			paths.getPathWithoutWorkspace(uri, vscode.workspace)
+		) + '/**/*';
 	}
 
-	return paths.getNormalPath(uri);
+	return paths.getPathWithoutWorkspace(uri, vscode.workspace);
 };
 
 module.exports = WatchListItem;
