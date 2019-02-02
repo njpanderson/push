@@ -190,7 +190,7 @@ class Service extends PushBase {
 	 * If `false`, will not display a dialog even if the file exists.
 	 * @param {boolean} fromTemplate - Produce a list of service templates with which
 	 * to fill the file.
-	 * @returns {Promise<ServicePromptResult} Resolving to an instance of
+	 * @returns {Promise.ServicePromptResult} Resolving to an instance of
 	 * ServicePromptResult with the relevant properties.
 	 */
 	getFileNamePrompt(exampleFileName, folders, forceDialog = false, fromTemplate = true) {
