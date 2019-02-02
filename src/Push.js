@@ -821,6 +821,7 @@ class Push extends PushBase {
 
 			this.statusEnv.text = '$(versions) ' + env;
 			this.statusEnv.tooltip = i18n.t('env_tooltip', env);
+			this.statusEnv.command = 'push.setServiceEnv';
 
 			if (this.config.envColours[env]) {
 				this.statusEnv.color = this.config.envColours[env];
