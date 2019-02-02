@@ -1,0 +1,11 @@
+{
+	"env": "default",
+	"default": {
+		"service": "SFTP",
+		"options": {
+			"host": "fake-hostname.com",
+			"username": "username",
+			"root": "__ROOT_PATH__"
+		}
+	}
+}

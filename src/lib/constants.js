@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const i18n = require('../lang/i18n');
-
 module.exports = {
 	DEBUG: fs.existsSync(path.dirname(path.dirname(__dirname)) + path.sep + '.debug'),
 
@@ -16,7 +14,7 @@ module.exports = {
 		'\t"default": {',
 		'\t\t"service": "[ServiceName]",',
 		'\t\t"options": {',
-		'\t\t\t// ' + i18n.t('comm_add_service_config'),
+		'\t\t\t// {{PLACACEHOLDER_EMPTY_CONFIG}}',
 		'\t\t}',
 		'\t}',
 		'}'
@@ -50,5 +48,6 @@ module.exports = {
 		skip: 2
 	},
 
-	TMP_FILE_PREFIX: 'vscode-push-tmp-'
+	TMP_FILE_PREFIX: 'vscode-push-tmp-',
+	PUSH_MESSAGE_PREFIX: 'Push: '
 };

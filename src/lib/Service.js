@@ -190,7 +190,7 @@ class Service extends PushBase {
 	 * If `false`, will not display a dialog even if the file exists.
 	 * @param {boolean} fromTemplate - Produce a list of service templates with which
 	 * to fill the file.
-	 * @returns {Promise<ServicePromptResult} Resolving to an instance of
+	 * @returns {Promise.ServicePromptResult} Resolving to an instance of
 	 * ServicePromptResult with the relevant properties.
 	 */
 	getFileNamePrompt(exampleFileName, folders, forceDialog = false, fromTemplate = true) {
@@ -208,7 +208,7 @@ class Service extends PushBase {
 
 					// File exists but forceDialog is false - just keep going
 					if (this.paths.fileExists(uri) && !forceDialog) {
-						return resolve(ServicePromptResult(uri));
+						return resolve(new ServicePromptResult(uri));
 					}
 
 					// Show a prompt, asking the user where the settings file should go

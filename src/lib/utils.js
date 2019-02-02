@@ -8,11 +8,13 @@ const PushError = require('./PushError');
 const i18n = require('../lang/i18n');
 const {
 	TMP_FILE_PREFIX,
+	PUSH_MESSAGE_PREFIX,
 	DEBUG
 } = require('./constants');
 
 const utils = {
 	_timeouts: {},
+	_filenameRegexCache: {},
 	_sb: null,
 	traceCounter: 0,
 
@@ -114,13 +116,9 @@ const utils = {
 	 */
 	displayErrorOrString(method, data) {
 		if (data instanceof Error) {
-			vscode.window[method](
-				`Push: ${data.message}`
-			);
+			vscode.window[method](PUSH_MESSAGE_PREFIX + data.message);
 		} else {
-			vscode.window[method](
-				`Push: ${data}`
-			);
+			vscode.window[method](PUSH_MESSAGE_PREFIX + data);
 		}
 	},
 
@@ -401,11 +399,36 @@ const utils = {
 
 		// Fallback
 		return dateFormat(date, format.replace('R', relativeFallback));
+	},
+
+	/**
+	 * Escapes a string for safe use in a regular expression.
+	 * @param {string} str - String to escape
+	 */
+	regexEscape(str) {
+		// http://kevin.vanzonneveld.net
+		// +   original by: booeyOH
+		// +   improved by: Ates Goral (http://magnetiq.com)
+		// +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+		// +   bugfixed by: Onno Marsman
+		return (str + '').replace(/([\\.+*?[^\]$(){}=!<>|:])/g, '\\$1');
+	},
+
+	filePathRegex(filePath) {
+		if (this._filenameRegexCache[filePath]) {
+			return this._filenameRegexCache[filePath];
+		}
+
+		return this._filenameRegexCache[filePath] = new RegExp(this.regexEscape(filePath), 'i');
+	},
+
+	filePathReplace(filePath, searchFor, replaceWith) {
+		return filePath.replace(this.filePathRegex(searchFor), replaceWith)
 	}
 };
 
 utils.collisionOpts = {
-	skip: i18n.o({ label: 'skip', detail: 'skip_uploading_default' }),
+	skip: i18n.o({ label: 'skip', detail: 'skip_transferring_default' }),
 	stop: i18n.o({ label: 'stop', detail: 'stop_transfer_empty_queue' }),
 	overwrite: i18n.o({ label: 'overwrite', detail: 'replace_target_with_source' }),
 	rename: i18n.o({ label: 'rename', detail: 'keep_both_files_by_rename' })
@@ -414,7 +437,7 @@ utils.collisionOpts = {
 utils.collisionOptsAll = {
 	skip: Object.assign(i18n.o({
 		label: 'skip_all',
-		detail: 'skip_uploading_all_existing'
+		detail: 'skip_transferring_all_existing'
 	}), {
 		baseOption: utils.collisionOpts.skip
 	}),
@@ -426,7 +449,7 @@ utils.collisionOptsAll = {
 	}),
 	rename: Object.assign(i18n.o({
 		label: 'rename_all',
-		detail: 'keep_all_existing_by_renaming_uploaded'
+		detail: 'keep_all_existing_by_renaming_all'
 	}), {
 		baseOption: utils.collisionOpts.rename
 	})

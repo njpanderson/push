@@ -319,7 +319,10 @@ class Push extends PushBase {
 			return;
 		}
 
-		if (!this.service.settings.isSettingsFile(uri)) {
+		if (
+			eventType === 'onServiceFileUpdate' ||
+			!this.service.settings.isSettingsFile(uri)
+		) {
 			// Get current server settings for the editor
 			settings = this.service.settings.getServerJSON(
 				uri,
@@ -450,8 +453,9 @@ class Push extends PushBase {
 		if (queue.tasks.length === 0 && !queue.running) {
 			utils.trace('Push#queue', 'Adding initial queue task');
 			queue.addTask(new QueueTask(() => {
+				// Run init with length - 1 (allowing for init task which is always first)
 				return this.service.activeService &&
-					this.service.activeService.init(queue.tasks.length);
+					this.service.activeService.init((queue.tasks.length - 1));
 			}));
 		}
 
@@ -817,6 +821,7 @@ class Push extends PushBase {
 
 			this.statusEnv.text = '$(versions) ' + env;
 			this.statusEnv.tooltip = i18n.t('env_tooltip', env);
+			this.statusEnv.command = 'push.setServiceEnv';
 
 			if (this.config.envColours[env]) {
 				this.statusEnv.color = this.config.envColours[env];
@@ -1205,9 +1210,16 @@ class Push extends PushBase {
 	 * Push will attempt to detect one from the current context.
 	 * Will produce an error message if the Uri is not valid.
 	 * @param {Uri} uri - Uri to test.
+	 * @returns {Uri} The Uri uri, if. Will throw a PushError otherwise.
 	 */
 	getValidUri(uri) {
 		uri = this.paths.getFileSrc(uri);
+
+		if (uri === null) {
+			// Uri could not be found *at all*
+			utils.showError(i18n.t('invalid_path_anonymous'));
+			return false;
+		}
 
 		if (!this.paths.isValidPath(uri)) {
 			utils.showError(i18n.t('invalid_path', uri.scheme));

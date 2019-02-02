@@ -13,7 +13,16 @@ const utils = require('../lib/utils');
 const i18n = require('../lang/i18n');
 const constants = require('./constants');
 
+/**
+ * @typedef {object} ServiceSettingsOptions
+ * @property {function} onServiceFileUpdate - Invoked whenever a service file is updated.
+ */
+
 class ServiceSettings extends Configurable {
+	/**
+	 * Constructor
+	 * @param {ServiceSettingsOptions} [options]
+	 */
 	constructor(options) {
 		super();
 
@@ -34,9 +43,16 @@ class ServiceSettings extends Configurable {
 
 	/**
 	 * Completely clear the cache by trashing the old object.
+	 * @param {Uri} [uri] - Optional Uri of cached item to clear.
 	 */
-	clear() {
-		this.settingsCache = {};
+	clear(uri) {
+		let uriPath = this.paths.getNormalPath(uri);
+
+		if (uriPath && this.settingsCache[uriPath]) {
+			this.settingsCache[uriPath]
+		} else {
+			this.settingsCache = {};
+		}
 	}
 
 	/**
@@ -121,7 +137,9 @@ class ServiceSettings extends Configurable {
 			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) + '\n' +
 			'// ' + i18n.t('comm_push_settings2') + '\n' +
 			'// ' + i18n.t('comm_push_settings3') + '\n' +
-		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG);
+		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG.replace(
+			'{{PLACACEHOLDER_EMPTY_CONFIG}}', i18n.t('comm_add_service_config')
+		));
 
 		return content;
 	}
@@ -187,7 +205,7 @@ class ServiceSettings extends Configurable {
 	 * @param {boolean} [refresh=false] - Set `true` to ensure a fresh copy of the JSON.
 	 */
 	getServerJSON(uri, settingsFilename, quiet = false, refresh = false) {
-		let uriPath, settings, newFile, data, hash, digest;
+		let uriPath, settings, data, hash, digest;
 
 		if (!this.paths.isDirectory(uri)) {
 			// If the path isn't a directory, get its directory name
@@ -197,15 +215,14 @@ class ServiceSettings extends Configurable {
 			uriPath = this.paths.getNormalPath(uri);
 		}
 
-		if (!refresh && this.settingsCache[uriPath]) {
+		if (!refresh && (settings = this.getCachedSetting(uriPath))) {
 			// Return a cached version
 			utils.trace(
 				'ServiceSettings#getServerJSON',
 				`Using cached settings for ${uriPath}`
 			);
 
-			this.settingsCache[uriPath].newFile = false;
-			return this.settingsCache[uriPath];
+			return settings;
 		}
 
 		if ((settings = this.getServerFile(uri, settingsFilename))) {
@@ -220,21 +237,11 @@ class ServiceSettings extends Configurable {
 				hash.update(settings.file + '\n' + settings.contents);
 				digest = hash.digest('hex');
 
-				// Check file is new by comparing existing hash
-				newFile = (
-					!this.settingsCache[uriPath] ||
-					digest !== this.settingsCache[uriPath].hash
-				);
-
-				// Cache entry, with extra properties
-				this.settingsCache[uriPath] = Object.assign({}, settings, {
-					newFile,
+				// Cache entry with extra properties and return
+				return this.addCachedSetting(uriPath, Object.assign({}, settings, {
 					data,
 					hash: digest
-				});
-
-				// Return entry as cached
-				return this.settingsCache[uriPath];
+				}));
 			} catch(error) {
 				if (!quiet) {
 					channel.appendError(error.message);
@@ -249,6 +256,21 @@ class ServiceSettings extends Configurable {
 		}
 
 		return null;
+	}
+
+	getCachedSetting(uriPath) {
+		if (this.settingsCache[uriPath]) {
+			this.settingsCache[uriPath].newFile = false;
+			return this.settingsCache[uriPath];
+		}
+
+		return false;
+	}
+
+	addCachedSetting(uriPath, settings) {
+		this.settingsCache[uriPath] = settings;
+		this.settingsCache[uriPath].newFile = true;
+		return this.settingsCache[uriPath];
 	}
 
 	/**
@@ -316,6 +338,7 @@ class ServiceSettings extends Configurable {
 			jsonData = jsonc.parse(settings.contents);
 
 			if (!jsonData.env) {
+				// There's no "env" property in the JSON
 				channel.appendLocalisedError('no_service_env', settings.file);
 				return reject();
 			}
@@ -340,12 +363,13 @@ class ServiceSettings extends Configurable {
 				channel.appendLocalisedError(
 					'single_env',
 					this.paths.getNormalPath(settings.uri),
-					environments[0]
+					environments[0].label
 				);
 
 				return reject();
 			}
 
+			// Show the picker to choose an environment
 			vscode.window.showQuickPick(
 				environments,
 				{
@@ -379,6 +403,10 @@ class ServiceSettings extends Configurable {
 						'UTF-8'
 					);
 
+					// Clear the cached settings for this path
+					this.clear(settings.uri);
+
+					// Fire callback
 					if (this.options.onServiceFileUpdate) {
 						this.options.onServiceFileUpdate(settings.uri);
 					}

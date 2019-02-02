@@ -224,7 +224,7 @@ class SCM {
 				return false;
 			}
 
-			file.uri = vscode.Uri.parse(
+			file.uri = vscode.Uri.file(
 				this.paths.addTrailingSlash(dir) + this._cleanGitPath(file.path)
 			);
 
