@@ -134,7 +134,8 @@ class Paths {
 	 * Gets a path (Uri) without the workspace root.
 	 * @param {Uri} uri - The path to strip from.
 	 * @param {Workspace} workspace - The workspace to look for root folders to strip.
-	 * @returns {Uri} The path without the workspace
+	 * @returns {Uri} The path without the workspace, or the original path, in
+	 * case that the path falls outside of the workspace.
 	 */
 	getPathWithoutWorkspace(uri, workspace) {
 		let filePath = workspace.asRelativePath(uri);
