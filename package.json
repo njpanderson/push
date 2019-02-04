@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.6.21",
+  "version": "0.6.22",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.22.0"
