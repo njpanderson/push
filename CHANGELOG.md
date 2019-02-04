@@ -3,6 +3,7 @@ All notable changes to Push will be documented in this file. If this file has ap
 
 ## 0.6.21
  - Added `semver` dependency. Apologies to all those who found Push disabled this morning!
+ - Moved `glob` dependency. Apologies to all those who found Push disabled this morning!
 
 ## 0.6.2
  - Improved localisation handling, especially regarding invalid locales.
