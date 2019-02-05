@@ -423,7 +423,7 @@ const utils = {
 	},
 
 	filePathReplace(filePath, searchFor, replaceWith) {
-		return filePath.replace(this.filePathRegex(searchFor), replaceWith)
+		return filePath.replace(this.filePathRegex(searchFor), replaceWith);
 	}
 };
 

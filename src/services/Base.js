@@ -1,5 +1,4 @@
 const vscode = require('vscode');
-const path = require('path');
 const tmp = require('tmp');
 
 const utils = require('../lib/utils');
@@ -477,7 +476,7 @@ class ServiceBase {
 	listRecursiveFiles() {
 		throw new Error('Service #listRecursiveFiles method is not yet implemented!');
 	}
-};
+}
 
 ServiceBase.description = '';
 ServiceBase.detail = '';

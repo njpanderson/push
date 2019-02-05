@@ -50,7 +50,7 @@ class QueueTask {
 		hash.update(id);
 		return hash.digest('hex');
 	}
-};
+}
 
 QueueTask.anonPrefix = 'anonymous-';
 

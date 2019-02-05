@@ -1,6 +1,5 @@
 const vscode = require('vscode');
 
-const configService = require('./config');
 const i18n = require('../lang/i18n');
 const { TRANSFER_TYPES } = require('./constants');
 const Paths = require('./Paths');
@@ -87,11 +86,10 @@ class Channel {
 	 * @param {...mixed} $2 - Replacement arguments as needed.
 	 */
 	appendLocalisedError(error) {
-		let message, config,
+		let message,
 			placeHolders = [...arguments].slice(1);
 
 		if (error instanceof PushError) {
-			config = config.get();
 			message = i18n.t.apply(i18n, [error.message].concat(placeHolders));
 		} else {
 			message = i18n.t.apply(i18n, [error].concat(placeHolders));

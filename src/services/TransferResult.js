@@ -23,7 +23,7 @@ const { TRANSFER_TYPES, QUEUE_LOG_TYPES } = require('../lib/constants');
  */
 class TransferResult {
 	constructor(src, status = true, type = TRANSFER_TYPES.PUT, options = {}) {
-		if (!src instanceof vscode.Uri) {
+		if (!(src instanceof vscode.Uri)) {
 			throw new Error('src must be an instance of vscode.Uri');
 		}
 

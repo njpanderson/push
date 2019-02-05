@@ -150,7 +150,7 @@ class Queue {
 	getTask(id) {
 		return this._tasks.find((task) => {
 			return (task.id !== undefined && task.id === id);
-		})
+		});
 	}
 
 	/**
@@ -508,7 +508,7 @@ class Queue {
 
 		return this;
 	}
-};
+}
 
 Queue.contexts = {
 	itemCount: 'itemCount',

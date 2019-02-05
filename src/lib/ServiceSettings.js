@@ -49,7 +49,7 @@ class ServiceSettings extends Configurable {
 		let uriPath = this.paths.getNormalPath(uri);
 
 		if (uriPath && this.settingsCache[uriPath]) {
-			this.settingsCache[uriPath]
+			this.settingsCache[uriPath];
 		} else {
 			this.settingsCache = {};
 		}

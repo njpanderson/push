@@ -69,7 +69,6 @@ module.exports = {
 	'queue_force_stopped': 'La task force della coda ${1} si è arrestata dopo ${2} p{2:secondo:secondi}',
 	'queue_cancelled': 'Coda ${1} annullata',
 	'num_to_upload': '${1} p{1:oggetto:elementi} da caricare',
-	'upload_queue_disabled': 'La coda di caricamento è disabilitata - controlla le impostazioni dell’area di lavoro.',
 	'items_queued_for_upload': 'Elementi in coda per il caricamento:',
 	'no_current_upload_queue': 'Nessun elemento di coda di caricamento corrente',
 	'key_file_not_found': 'Non è stato possibile trovare il file di chiave privata "${1}". Esiste in questa posizione? Ricorda: le scorciatoie del percorso della shell come "~" non possono essere utilizzate.',
