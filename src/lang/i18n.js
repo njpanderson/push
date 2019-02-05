@@ -120,7 +120,7 @@ class i18n {
 
 		return `!!${key}!!`;
 	}
-};
+}
 
 i18n.tests = {
 	has_placeholders: /(\$|p)\{\d+\}/

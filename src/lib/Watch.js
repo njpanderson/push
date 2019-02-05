@@ -228,7 +228,7 @@ class Watch extends Configurable {
 	 */
 	list() {
 		if (this.watchList.length) {
-			channel.appendLocalisedInfo("watched_paths");
+			channel.appendLocalisedInfo('watched_paths');
 
 			this.watchList.forEach((item) => {
 				channel.appendLine(
@@ -301,17 +301,17 @@ class Watch extends Configurable {
 		vscode.commands.executeCommand('setContext', `push:${context}`, value);
 		return this;
 	}
-};
+}
 
 Watch.constants = {
 	WATCH_STORE: 'Watch:watchList',
 	WATCH_STORE_MAXLEN: 50
-}
+};
 
 Watch.contexts = {
 	hasRunningWatchers: 'hasRunningWatchers',
 	hasStoppedWatchers: 'hasStoppedWatchers',
 	hasWatchers: 'hasWatchers',
-}
+};
 
 module.exports = Watch;

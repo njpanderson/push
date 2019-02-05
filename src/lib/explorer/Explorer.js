@@ -85,7 +85,7 @@ class Explorer extends Configurable {
 							),
 							resourceUri: watch.uri
 						}
-					)
+					);
 				})
 			);
 		}

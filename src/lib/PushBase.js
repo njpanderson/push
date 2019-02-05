@@ -162,7 +162,7 @@ class PushBase extends Configurable {
 		// Set a timer
 		this.timers[id] = setTimeout(() => {
 			// Call function with context and arguments
-			fn.apply(context, args)
+			fn.apply(context, args);
 		}, timeout);
 
 		return this.timers[id];
@@ -179,6 +179,6 @@ class PushBase extends Configurable {
 			delete this.timers[id];
 		}
 	}
-};
+}
 
 module.exports = PushBase;

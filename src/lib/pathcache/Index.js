@@ -185,6 +185,6 @@ class PathCache {
 			);
 		}
 	}
-};
+}
 
 module.exports = PathCache;

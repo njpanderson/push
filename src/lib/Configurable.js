@@ -30,7 +30,7 @@ class Configurable {
 	 * @param {object} config - The new, current configuration.
 	 * @param {object|undefined} oldConfig - The previous configuration.
 	 */
-	onDidChangeConfiguration(config, oldConfig) {
+	onDidChangeConfiguration() {
 		// Does nothing in the base class
 	}
 }
