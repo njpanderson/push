@@ -142,20 +142,24 @@ class Watch extends Configurable {
 	 * @param {bool} [enabled=true] - Whether to enable the watcher.
 	 */
 	add(uri, enabled = true) {
-		let item;
+		return new Promise((resolve) => {
+			let item;
 
-		if ((item = this.find(uri)) === -1) {
-			// Watch doesn't already exist - add a new one
-			this.watchList.push(this._createWatch(uri, enabled));
-		} else {
-			// Watch for this Uri already exists - re-instantiate the watcher
-			this.watchList[item].initWatcher();
-		}
+			if ((item = this.find(uri)) === -1) {
+				// Watch doesn't already exist - add a new one
+				this.watchList.push(this._createWatch(uri, enabled));
+			} else {
+				// Watch for this Uri already exists - re-instantiate the watcher
+				this.watchList[item].initWatcher();
+			}
 
-		this.setInWatchStore(uri, true);
+			this.setInWatchStore(uri, true);
 
-		channel.appendLocalisedInfo('added_watch_for', this.paths.getNormalPath(uri));
-		this._updateStatus();
+			channel.appendLocalisedInfo('added_watch_for', this.paths.getNormalPath(uri));
+			this._updateStatus();
+
+			resolve();
+		});
 	}
 
 	/**
@@ -163,17 +167,21 @@ class Watch extends Configurable {
 	 * @param {Uri} uri - Uri to remove.
 	 */
 	remove(uri) {
-		let item;
+		return new Promise((resolve) => {
+			let item;
 
-		if ((item = this.find(uri)) !== -1) {
-			this.watchList[item].removeWatcher();
-			this.watchList.splice(item, 1);
-			channel.appendLocalisedInfo('removed_watch_for', this.paths.getNormalPath(uri));
-		}
+			if ((item = this.find(uri)) !== -1) {
+				this.watchList[item].removeWatcher();
+				this.watchList.splice(item, 1);
+				channel.appendLocalisedInfo('removed_watch_for', this.paths.getNormalPath(uri));
+			}
 
-		this.setInWatchStore(uri, false);
+			this.setInWatchStore(uri, false);
 
-		this._updateStatus();
+			this._updateStatus();
+
+			resolve();
+		});
 	}
 
 	/**

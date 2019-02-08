@@ -5,7 +5,8 @@ const packageJson = require('../package.json');
 const Service = require('./lib/Service');
 const PushError = require('./lib/PushError');
 const PushBase = require('./lib/PushBase');
-const Explorer = require('./lib/explorer/Explorer');
+const ExplorerWatchList = require('./lib/explorer/WatchList');
+const ExplorerUploadQueue = require('./lib/explorer/UploadQueue');
 const Paths = require('./lib/Paths');
 const Queue = require('./lib/queue/Queue');
 const QueueTask = require('./lib/queue/QueueTask');
@@ -50,7 +51,10 @@ class Push extends PushBase {
 		this.initService();
 
 		this.paths = new Paths();
-		this.explorer = new Explorer(this.config);
+		this.explorers = {
+			watchList: new ExplorerWatchList(this.config),
+			uploadQueue: new ExplorerUploadQueue(this.config)
+		};
 		this.scm = new SCM();
 
 		// Create watch class and set initial watchers
@@ -764,18 +768,14 @@ class Push extends PushBase {
 	 * Refresh the Push explorer queue data.
 	 */
 	refreshExplorerQueues() {
-		this.explorer.refresh({
-			queues: this.queues
-		});
+		this.explorers.uploadQueue.refresh(this.queues);
 	}
 
 	/**
 	 * Refresh the Push explorer watch list data.
 	 */
 	onWatchUpdate(watchList) {
-		this.explorer.refresh({
-			watchList: watchList
-		});
+		this.explorers.watchList.refresh(watchList);
 	}
 
 	/**
