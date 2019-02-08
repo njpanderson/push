@@ -18,7 +18,8 @@ describe('Push', function() {
 			.registerMultiple({
 				'vscode': vscode,
 				'./lib/Service': require('../mocks/lib/Service'),
-				'./lib/explorer/Explorer': require('../mocks/lib/Explorer'),
+				'./lib/explorer/WatchList': require('../mocks/lib/Explorer'),
+				'./lib/explorer/UploadQueue': require('../mocks/lib/Explorer'),
 				// './lib/Paths': require('../mocks/lib/Paths'),
 				'./lib/queue/Queue': Queue,
 				// './lib/queue/QueueTask': {},
