@@ -11,9 +11,11 @@
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
             "stopOnEntry": false,
+            "smartStep": true,
             "skipFiles": [
                 "${workspaceRoot}/node_modules/**/*",
-                "/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/**/*",
+                "**/extensions/**",
+                "**/node_modules/**",
                 "<node_internals>/**/*"
             ]
         },
@@ -27,9 +29,11 @@
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
             "stopOnEntry": false,
+            "smartStep": true,
             "skipFiles": [
                 "${workspaceRoot}/node_modules/**/*",
-                "/Applications/Visual Studio Code.app/Contents/Resources/app/extensions/**/*",
+                "**/extensions/**",
+                "**/node_modules/**",
                 "<node_internals>/**/*"
             ]
         },
