@@ -65,7 +65,15 @@ exports.activate = (context) => {
 		);
 	}
 
-	vscode.window.registerTreeDataProvider('push.pushExplorer', ui.explorer);
+	vscode.window.registerTreeDataProvider(
+		'push.watchListExplorer',
+		ui.explorers.watchList
+	);
+
+	vscode.window.registerTreeDataProvider(
+		'push.uploadQueueExplorer',
+		ui.explorers.uploadQueue
+	);
 };
 
 // this method is called when your extension is deactivated
