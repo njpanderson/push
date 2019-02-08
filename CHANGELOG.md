@@ -1,6 +1,9 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.6.24
+ - Minor dependency updates.
+
 ## 0.6.23
  - Updated vscode engine requirement.
  - Minor lint updates.
