@@ -15,8 +15,12 @@ describe('Service/providers/ProviderFile', function () {
 		useMockery
 			.registerMultiple({
 				'vscode': vscode,
+				'../../i18n': require('../../../mocks/lib/i18n'),
+				// '../../lib/utils': require('../../../mocks/lib/utils'),
+				// From ProviderBase.js
+				// './lib/utils': require('../../../mocks/lib/utils'),
 				'./lib/channel': require('../../../mocks/lib/channel'),
-				'../../i18n': require('../../../mocks/lib/i18n')
+				'./i18n': require('../../../mocks/lib/i18n'),
 			});
 	});
 

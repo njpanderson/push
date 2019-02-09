@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Push Service Settings</title>
+	</head>
+	<body>
+		<h1>Push Service Settings</h1>
+		<form>
+			<fieldset>
+				<label for="service-type">Service Type</label>
+				<select>
+					<option>Type 1</option>
+					<option>Type 2</option>
+				</select>
+			</fieldset>
+		</form>
+		<script type="text/javascript">
+			const vscode = acquireVsCodeApi();
+
+			vscode.postMessage("hello!");
+
+			window.addEventListener("message", function(event) {
+				console.log("Message received: " + event.data)
+				vscode.postMessage("hello host!");
+			}, false);
+		</script>
+	</body>
+</html>
