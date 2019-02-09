@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
+const path = require('path');
 const dateFormat = require('dateformat');
 
 const config = require('./config');
@@ -10,7 +11,8 @@ const channel = require('./channel');
 const {
 	TMP_FILE_PREFIX,
 	PUSH_MESSAGE_PREFIX,
-	DEBUG
+	DEBUG,
+	PATH_ASSETS
 } = require('./constants');
 
 const utils = {
@@ -297,6 +299,36 @@ const utils = {
 		}
 
 		return tmpobj.name;
+	},
+
+	/**
+	 * Returns the contents of an asset.
+	 * @param {string} assetPath - Path for the asset, relative to the assets path.
+	 */
+	getAsset(assetPath) {
+		let content = fs.readFileSync(path.join(PATH_ASSETS, assetPath), 'utf-8'),
+			assets = content.match(/{asset:[^}]+\}/g);
+
+		// Perform asset path replacements
+		assets.forEach((asset) => {
+			const assetSpec = asset.match(/(\{asset:(.*)\})/);
+
+			content = content.replace(
+				assetSpec[1],
+				this.getAssetPath(assetSpec[2])
+			);
+		});
+
+		return content;
+	},
+
+	/**
+	 * Returns the path to an asset, usable within a webview.
+	 * @param {string} assetPath - Path for the asset, relative to the assets path.
+	 */
+	getAssetPath(assetPath) {
+		const fullPath = vscode.Uri.file(path.join(PATH_ASSETS, assetPath));
+		return fullPath.with({ scheme: 'vscode-resource' });
 	},
 
 	trace(id) {

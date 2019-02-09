@@ -13,6 +13,7 @@ const Paths = require('../../Paths');
 const utils = require('../../lib/utils');
 const i18n = require('../../i18n');
 const constants = require('../../lib/constants');
+const SettingsUI = require('./SettingsUI');
 
 /**
  * @typedef {object} ServiceSettingsOptions
@@ -33,6 +34,7 @@ class ServiceSettings extends Configurable {
 		this.setOptions(options);
 		this.settingsCache = {};
 		this.paths = new Paths();
+		this.ui = new SettingsUI();
 	}
 
 	/**
@@ -168,8 +170,10 @@ class ServiceSettings extends Configurable {
 			 */
 			if (settingsFile && !forceCreate) {
 				// Edit the settings file found
-				utils.openDoc(settingsFile)
+				this.ui.show(settingsFile)
 					.then(resolve, reject);
+				// utils.openDoc(settingsFile)
+				// 	.then(resolve, reject);
 			} else {
 				// Produce a prompt to create a new settings file
 				this.getFileNamePrompt(this.config.settingsFilename, [{
