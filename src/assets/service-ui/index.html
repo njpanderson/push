@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<title>Push Service Settings</title>
+		<link rel="stylesheet" type="text/css" href="{asset:service-ui/css/main.css}">
 	</head>
 	<body>
 		<h1>Push Service Settings</h1>
@@ -14,15 +15,6 @@
 				</select>
 			</fieldset>
 		</form>
-		<script type="text/javascript">
-			const vscode = acquireVsCodeApi();
-
-			vscode.postMessage("hello!");
-
-			window.addEventListener("message", function(event) {
-				console.log("Message received: " + event.data)
-				vscode.postMessage("hello host!");
-			}, false);
-		</script>
+		<script type="text/javascript" src="{asset:service-ui/js/main.js}"></script>
 	</body>
 </html>
