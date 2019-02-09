@@ -1,8 +1,9 @@
 const vscode = require('vscode');
 
 const channel = require('./channel');
-const Paths = require('./Paths');
+const Paths = require('../Paths');
 const utils = require('./utils');
+
 
 class SCM {
 	constructor() {

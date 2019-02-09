@@ -1,9 +1,9 @@
 const vscode = require('vscode');
 
-const i18n = require('../lang/i18n');
+const i18n = require('../i18n');
+const Paths = require('../Paths');
+const PushError = require('../types/PushError');
 const { TRANSFER_TYPES } = require('./constants');
-const Paths = require('./Paths');
-const PushError = require('./PushError');
 
 class Channel {
 	constructor(name) {
