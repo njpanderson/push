@@ -1,4 +1,5 @@
 const counter = require('../../helpers/counter');
+const Task = require('./Task');
 
 class Queue {
 	constructor(id) {
@@ -27,5 +28,7 @@ class Queue {
 		return Promise.resolve();
 	}
 }
+
+Queue.Task = Task;
 
 module.exports = Queue;

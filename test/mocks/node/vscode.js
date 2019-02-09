@@ -66,6 +66,9 @@ let vscode = {
 		},
 		showInformationMessage: () => {
 			return Promise.resolve('');
+		},
+		showErrorMessage: () => {
+			return Promise.resolve('');
 		}
 	},
 
@@ -87,6 +90,9 @@ let vscode = {
 			}
 
 			return uri;
+		},
+		getConfiguration: () => {
+			return {};
 		}
 	},
 

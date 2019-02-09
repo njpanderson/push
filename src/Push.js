@@ -2,19 +2,20 @@ const vscode = require('vscode');
 const semver = require('semver');
 
 const packageJson = require('../package.json');
-const Service = require('./lib/Service');
-const PushError = require('./lib/PushError');
-const PushBase = require('./lib/PushBase');
-const ExplorerWatchList = require('./lib/explorer/WatchList');
-const ExplorerUploadQueue = require('./lib/explorer/UploadQueue');
-const Paths = require('./lib/Paths');
-const Queue = require('./lib/queue/Queue');
-const QueueTask = require('./lib/queue/QueueTask');
-const Watch = require('./lib/Watch');
+const Service = require('./Service');
+const PushError = require('./types/PushError');
+const PushBase = require('./PushBase');
+const WatchList = require('./explorer/views/WatchList');
+const UploadQueue = require('./explorer/views/UploadQueue');
+const Paths = require('./Paths');
+const Queue = require('./Queue');
+const Watch = require('./Watch');
 const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
-const i18n = require('./lang/i18n');
+const i18n = require('./i18n');
+
+
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
@@ -52,8 +53,8 @@ class Push extends PushBase {
 
 		this.paths = new Paths();
 		this.explorers = {
-			watchList: new ExplorerWatchList(this.config),
-			uploadQueue: new ExplorerUploadQueue(this.config)
+			watchList: new WatchList(this.config),
+			uploadQueue: new UploadQueue(this.config)
 		};
 		this.scm = new SCM();
 
@@ -456,7 +457,7 @@ class Push extends PushBase {
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
 			utils.trace('Push#queue', 'Adding initial queue task');
-			queue.addTask(new QueueTask(() => {
+			queue.addTask(new Queue.Task(() => {
 				// Run init with length - 1 (allowing for init task which is always first)
 				return this.service.activeService &&
 					this.service.activeService.init((queue.tasks.length - 1));
@@ -464,14 +465,14 @@ class Push extends PushBase {
 		}
 
 		tasks.forEach((task) => {
-			if (task instanceof QueueTask) {
+			if (task instanceof Queue.Task) {
 				// Add the task as-is
 				return queue.addTask(task);
 			}
 
 			// Add queue item with contextual config
 			queue.addTask(
-				new QueueTask(
+				new Queue.Task(
 					(() => {
 						// Execute the service method, returning any results and/or promises
 						return this.service.exec(

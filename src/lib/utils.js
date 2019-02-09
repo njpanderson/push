@@ -4,8 +4,8 @@ const fs = require('fs');
 const dateFormat = require('dateformat');
 
 const config = require('./config');
-const PushError = require('./PushError');
-const i18n = require('../lang/i18n');
+const PushError = require('../types/PushError');
+const i18n = require('../i18n');
 const {
 	TMP_FILE_PREFIX,
 	PUSH_MESSAGE_PREFIX,
