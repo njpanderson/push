@@ -69,6 +69,14 @@ let vscode = {
 		},
 		showErrorMessage: () => {
 			return Promise.resolve('');
+		},
+		createOutputChannel: () => {
+			return {
+				show: () => {},
+				hide: () => {},
+				clear: () => {},
+				appendLine: () => {}
+			};
 		}
 	},
 

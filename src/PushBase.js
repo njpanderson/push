@@ -1,11 +1,7 @@
-const vscode = require('vscode');
-
 const Configurable = require('./Configurable');
 const Paths = require('./Paths');
-const PushError = require('./types/PushError');
+const PushError = require('./lib/types/PushError');
 const channel = require('./lib/channel');
-const i18n = require('./i18n');
-
 
 class PushBase extends Configurable {
 	constructor() {
@@ -13,93 +9,6 @@ class PushBase extends Configurable {
 
 		this.paths = new Paths();
 		this.timers = {};
-	}
-
-	/**
-	 * Opens a text document and displays it within the editor window.
-	 * @param {string|Uri} file - File to open. Must be local.
-	 */
-	openDoc(file) {
-		let document;
-
-		// Shows the document as an editor tab
-		function show(document) {
-			return vscode.window.showTextDocument(
-				document,
-				{
-					preview: true,
-					preserveFocus: false
-				}
-			);
-		}
-
-		// Convert string (or invalid scheme) into a Uri with a scheme of "file"
-		if (!(file instanceof vscode.Uri) || file.scheme !== 'file') {
-			file = vscode.Uri.file(this.paths.getNormalPath(file));
-		}
-
-		// Find and open document
-		document = vscode.workspace.openTextDocument(file);
-
-		if (document instanceof Promise) {
-			// Document is opening, wait and display
-			return document.then(show)
-				.catch((error) => {
-					channel.appendError(error);
-					throw error;
-				});
-		} else {
-			// Display immediately
-			return show(document);
-		}
-	}
-
-	/**
-	 * Writes content to a file and then opens it for editing.
-	 * @param {string} content - Content to write to the file.
-	 * @param {Uri} uri - Uri of the filename to write to.
-	 */
-	writeAndOpen(content, uri) {
-		// Write the file...
-		return this.paths.writeFile(
-			content,
-			uri
-		)
-			.then((uri) => {
-				// Open it
-				this.openDoc(uri);
-			})
-			.catch((error) => {
-				// Append the error
-				channel.appendError(error);
-			});
-	}
-
-	/**
-	 * Will either prompt the user to select a root path, or in the case that
-	 * only one `folders` element exists, will resolve to its path Uri.
-	 * @param {vscode.WorkspaceFolder[]} folders
-	 * @returns {Promise<Uri>} A promise eventually resolving to a single Uri.
-	 */
-	getRootPathPrompt(folders) {
-		return new Promise((resolve) => {
-			if (typeof folders === 'string') {
-				resolve(folders);
-				return;
-			}
-
-			if (folders.length > 1) {
-				// First, select a root path
-				vscode.window.showQuickPick(
-					folders.map((item) => item.uri),
-					{
-						placeHolder: i18n.t('select_workspace_root')
-					}
-				).then(resolve);
-			} else {
-				resolve(folders[0].uri);
-			}
-		});
 	}
 
 	/**
