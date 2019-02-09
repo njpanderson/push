@@ -14,8 +14,6 @@ const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
 const i18n = require('./i18n');
-
-
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
