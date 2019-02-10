@@ -1,0 +1,20 @@
+// Base styles
+// @import './reset.css';
+
+// Bootstrap
+@import "custom";
+
+// Bootstrap - required components
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins";
+
+// Bootstrap - optional components
+@import "~bootstrap/scss/grid";
+
+// Layout, etc
+@import './layout';
+@import './colours';
+
+// Components
+@import './components/form';

@@ -33,11 +33,13 @@
   "main": "./extension",
   "contributes": {
     "viewsContainers": {
-      "activitybar": [{
-        "id": "njp-push",
-        "title": "Push",
-        "icon": "resources/cloud.svg"
-      }]
+      "activitybar": [
+        {
+          "id": "njp-push",
+          "title": "Push",
+          "icon": "resources/cloud.svg"
+        }
+      ]
     },
     "views": {
       "njp-push": [
@@ -596,27 +598,47 @@
     "test": "mocha",
     "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
     "publish": "npm run t && vsce publish",
-    "vsce": "vsce"
+    "vsce": "vsce",
+    "watch-assets": "webpack --watch --mode=development",
+    "build-assets": "webpack --mode=production",
+    "vscode:prepublish": "npm run build-assets"
   },
   "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/preset-react": "^7.0.0",
     "@types/mocha": "^2.2.48",
     "@types/node": "^6.0.106",
+    "babel-loader": "^8.0.5",
+    "bootstrap": "^4.2.1",
     "chai": "^4.1.2",
+    "copy-webpack-plugin": "^4.6.0",
+    "css-loader": "^2.1.0",
     "eslint": "^4.19.1",
     "istanbul": "^0.4.5",
+    "jquery": "^3.3.1",
     "jsdoc": "^3.5.5",
     "mocha": "^5.2.0",
+    "node-sass": "^4.11.0",
+    "popper.js": "^1.14.7",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1",
+    "react-redux": "^6.0.0",
+    "sass-loader": "^7.1.0",
+    "style-loader": "^0.23.1",
     "typescript": "^2.8.3",
     "vsce": "^1.55.0",
-    "vscode": "^1.1.18"
+    "vscode": "^1.1.18",
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.2.3"
   },
   "dependencies": {
     "dateformat": "^3.0.3",
+    "glob": "^7.1.3",
     "jsonc-parser": "^2.0.1",
     "micromatch": "^3.1.10",
-    "glob": "^7.1.3",
     "mkdirp": "^0.5.1",
     "mockery": "^2.1.0",
+    "redux": "^4.0.1",
     "semver": "^5.6.0",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^1.1.0",

@@ -22,14 +22,12 @@
 const vscode = require('vscode');
 const UI = require('./src/UI');
 
-let ui;
-
 exports.activate = (context) => {
-	let subscriptions, sub;
+	let sub;
 
-	ui = new UI(context);
+	const ui = new UI(context);
 
-	subscriptions = {
+	const subscriptions = {
 		'push.upload': 'upload',
 		'push.download': 'download',
 		'push.uploadFolder': 'upload',
@@ -74,6 +72,8 @@ exports.activate = (context) => {
 		'push.uploadQueueExplorer',
 		ui.explorers.uploadQueue
 	);
+
+	ui.editServiceConfig(vscode.Uri.file('/Users/neilanderson/Projects/push-test/sftp/jsonc/.push.settings.jsonc'));
 };
 
 // this method is called when your extension is deactivated

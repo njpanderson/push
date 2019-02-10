@@ -4,7 +4,7 @@ const path = require('path');
 module.exports = {
 	DEBUG: fs.existsSync(path.join(path.dirname(path.dirname(__dirname)), '.debug')),
 
-	PATH_ASSETS: path.join(path.dirname(__dirname), 'assets'),
+	PATH_ASSETS: path.join(path.dirname(path.dirname(__dirname)), 'assets'),
 
 	CONFIG_FORMATS: {
 		'SSFTP': /sftp-config\.json/i
