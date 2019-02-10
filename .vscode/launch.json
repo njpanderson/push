@@ -17,7 +17,8 @@
                 "**/extensions/**",
                 "**/node_modules/**",
                 "<node_internals>/**/*"
-            ]
+            ],
+            // "preLaunchTask": "npm: build-assets"
         },
         {
             "name": "Launch Extension (Solo)",

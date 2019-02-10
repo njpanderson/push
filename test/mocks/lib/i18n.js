@@ -8,4 +8,4 @@ module.exports = {
 		// Just return the same object passed
 		return object;
 	}
-}
+};
