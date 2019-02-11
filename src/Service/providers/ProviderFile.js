@@ -8,7 +8,7 @@ const i18n = require('../../i18n');
 const utils = require('../../lib/utils');
 const PushError = require('../../lib/types/PushError');
 const ExtendedStream = require('../../lib/types/ExtendedStream');
-const { TRANSFER_TYPES, CACHE_SOURCES } = require('../../lib/constants');
+const { TRANSFER_TYPES, CACHE_SOURCES } = require('../../lib/constants/static');
 
 /**
  * Filesystem based uploading.

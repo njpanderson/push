@@ -1,6 +1,6 @@
 const vscode = require('vscode');
 
-const { TRANSFER_TYPES, QUEUE_LOG_TYPES } = require('../lib/constants');
+const { TRANSFER_TYPES, QUEUE_LOG_TYPES } = require('../lib/constants/static');
 
 /**
  * @typedef {object} TransferResultOptions

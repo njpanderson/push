@@ -1,13 +1,22 @@
-import React from 'react';
+import { connect } from 'react-redux';
 
-class Form extends React.Component {
-	render() {
-		return (
-			<form>
-				<p>Form</p>
-			</form>
-		);
-	}
+import { getEnvsArray } from '../../lib/utils';
+import Form from '../views/Form';
+
+export function mapStateToProps(state) {
+	return {
+		currentEnv: state.env,
+		envs: getEnvsArray(state)
+	};
 }
 
-export default Form;
+export function mapDispatchToProps(dispatch) {
+	return {
+
+	};
+}
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(Form);

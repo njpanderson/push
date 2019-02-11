@@ -11,9 +11,11 @@ const channel = require('./channel');
 const {
 	TMP_FILE_PREFIX,
 	PUSH_MESSAGE_PREFIX,
+} = require('./constants/static');
+const {
 	DEBUG,
 	PATH_ASSETS
-} = require('./constants');
+} = require('./constants/dynamic');
 
 const utils = {
 	_timeouts: {},

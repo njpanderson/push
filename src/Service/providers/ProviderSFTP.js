@@ -12,7 +12,7 @@ const utils = require('../../lib/utils');
 const PushError = require('../../lib/types/PushError');
 const channel = require('../../lib/channel');
 const i18n = require('../../i18n');
-const { TRANSFER_TYPES } = require('../../lib/constants');
+const { TRANSFER_TYPES } = require('../../lib/constants/static');
 
 /**
  * ProviderSFTP transfers.
