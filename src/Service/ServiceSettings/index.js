@@ -12,8 +12,11 @@ const PushError = require('../../lib/types/PushError');
 const Paths = require('../../Paths');
 const utils = require('../../lib/utils');
 const i18n = require('../../i18n');
-const constants = require('../../lib/constants');
 const SettingsUI = require('./SettingsUI');
+const {
+	CONFIG_FORMATS,
+	DEFAULT_SERVICE_CONFIG
+} = require('../../lib/constants/static');
 
 /**
  * @typedef {object} ServiceSettingsOptions
@@ -34,7 +37,7 @@ class ServiceSettings extends Configurable {
 		this.setOptions(options);
 		this.settingsCache = {};
 		this.paths = new Paths();
-		this.ui = new SettingsUI();
+		this.ui = new SettingsUI(this);
 	}
 
 	/**
@@ -79,8 +82,8 @@ class ServiceSettings extends Configurable {
 		}
 
 		// Figure out which config type this is and import
-		for (className in constants.CONFIG_FORMATS) {
-			if (constants.CONFIG_FORMATS[className].test(basename)) {
+		for (className in CONFIG_FORMATS) {
+			if (CONFIG_FORMATS[className].test(basename)) {
 				className = require(`../importers/${className}`);
 				instance = new className();
 
@@ -146,14 +149,13 @@ class ServiceSettings extends Configurable {
 	 * if the service file is level with the contextual file.
 	 */
 	editServiceConfig(uri, forceCreate) {
-		return new Promise((resolve, reject) => {
-			let dir, settingsFile;
+		uri = this.paths.getFileSrc(uri);
 
-			uri = this.paths.getFileSrc(uri);
-			dir = this.paths.getDirName(uri, true);
+		return new Promise((resolve, reject) => {
+			const dir = this.paths.getDirName(uri, true);
 
 			// Find the nearest settings file
-			settingsFile = this.paths.findFileInAncestors(
+			const settingsFile = this.paths.findFileInAncestors(
 				this.config.settingsFileGlob,
 				dir
 			);
@@ -279,7 +281,7 @@ class ServiceSettings extends Configurable {
 			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) + '\n' +
 			'// ' + i18n.t('comm_push_settings2') + '\n' +
 			'// ' + i18n.t('comm_push_settings3') + '\n' +
-		((serviceJSON && serviceJSONLines.join('\n')) || constants.DEFAULT_SERVICE_CONFIG.replace(
+		((serviceJSON && serviceJSONLines.join('\n')) || DEFAULT_SERVICE_CONFIG.replace(
 			'{{PLACACEHOLDER_EMPTY_CONFIG}}', i18n.t('comm_add_service_config')
 		));
 
@@ -293,29 +295,19 @@ class ServiceSettings extends Configurable {
 	 * @param {string} settingsFileGlob - A glob for the settings file.
 	 * @returns {object|null}
 	 */
-	getServerFile(dir, settingsFileGlob) {
+	findServerFile(dir, settingsFileGlob) {
 		// Find the settings file
-		let uri = this.paths.findFileInAncestors(
+		const uri = this.paths.findFileInAncestors(
 				settingsFileGlob,
 				dir,
 				this.config.limitServiceTraversal
-			),
-			filename;
+			);
 
 		if (uri !== null && this.paths.fileExists(uri)) {
 			// File isn't empty and exists - read and return
-			filename = this.paths.getNormalPath(uri);
-
-			utils.trace(
-				'ServiceSettings#getServerFile',
-				`Service file found at ${filename}`
-			);
-
 			return {
 				uri: uri,
-				contents: (
-					fs.readFileSync(filename, 'utf8')
-				).toString().trim()
+				contents: this.getServerFile(uri)
 			};
 		}
 
@@ -367,13 +359,10 @@ class ServiceSettings extends Configurable {
 			return settings;
 		}
 
-		if ((settings = this.getServerFile(uri, settingsFilename))) {
+		if ((settings = this.findServerFile(uri, settingsFilename))) {
 			// File isn't empty and exists - read and set into cache
 			try {
-				data = this.normalise(
-					jsonc.parse(settings.contents),
-					settings.uri
-				);
+				data = this.parseServerFileContent(settings.contents, settings.uri);
 
 				hash = crypto.createHash('sha256');
 				hash.update(settings.file + '\n' + settings.contents);
@@ -398,6 +387,39 @@ class ServiceSettings extends Configurable {
 		}
 
 		return null;
+	}
+
+	getServerFile(uri) {
+		const filename = this.paths.getNormalPath(uri);
+
+		utils.trace(
+			'ServiceSettings#getServerFile',
+			`Service file read at ${filename}`
+		);
+
+		return fs.readFileSync(filename, 'utf8').toString().trim();
+	}
+
+	/**
+	 * Retrieves and parses a server file
+	 * @param {Uri} uri - File Uri
+	 * @param {boolean} [normalise=true] - Normalise the file.
+	 */
+	parseServerFile(uri, normalise=true) {
+		return this.parseServerFileContent(
+			this.getServerFile(uri),
+			normalise
+		);
+	}
+
+	/**
+	 * Retrieves and parses a server file
+	 * @param {Uri} uri - File Uri
+	 * @param {boolean} [normalise=true] - Normalise the file.
+	 */
+	parseServerFileContent(content, uri, normalise=true) {
+		const data = jsonc.parse(content);
+		return normalise ? this.normalise(data, uri) : data;
 	}
 
 	getCachedSetting(uriPath) {
@@ -471,13 +493,13 @@ class ServiceSettings extends Configurable {
 			uri = this.paths.getDirName(uri, true);
 
 			// Find the nearest settings file
-			if (!(settings = this.getServerFile(uri, settingsFileGlob))) {
+			if (!(settings = this.findServerFile(uri, settingsFileGlob))) {
 				channel.appendLocalisedError('no_service_file', settingsFileGlob);
 				return reject();
 			}
 
 			// Get JSON from file (as the actual JSON is required, not the computed settings)
-			jsonData = jsonc.parse(settings.contents);
+			jsonData = this.parseServerFileContent(settings.content, uri, false);
 
 			if (!jsonData.env) {
 				// There's no "env" property in the JSON

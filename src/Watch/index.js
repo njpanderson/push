@@ -4,9 +4,11 @@ const ListItem = require('./ListItem');
 const Configurable = require('../Configurable');
 const Paths = require('../Paths');
 const channel = require('../lib/channel');
-const constants = require('../lib/constants');
 const utils = require('../lib/utils');
 const i18n = require('../i18n');
+const {
+	STATUS_PRIORITIES
+} = require('../lib/constants/static');
 
 class Watch extends Configurable {
 	/**
@@ -40,7 +42,7 @@ class Watch extends Configurable {
 
 		this.status = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.Left,
-			constants.STATUS_PRIORITIES.WATCH
+			STATUS_PRIORITIES.WATCH
 		);
 
 		this.status.command = 'push.listWatchers';

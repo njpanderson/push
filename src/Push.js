@@ -18,8 +18,10 @@ const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
 	ENV_DEFAULT_STATUS_COLOR,
+} = require('./lib/constants/static');
+const {
 	DEBUG
-} = require('./lib/constants');
+} = require('./lib/constants/dynamic');
 
 /**
  * Provides the main controller for Push.

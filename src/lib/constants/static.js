@@ -1,11 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
 module.exports = {
-	DEBUG: fs.existsSync(path.join(path.dirname(path.dirname(__dirname)), '.debug')),
-
-	PATH_ASSETS: path.join(path.dirname(path.dirname(__dirname)), 'assets'),
-
 	CONFIG_FORMATS: {
 		'SSFTP': /sftp-config\.json/i
 	},
@@ -51,5 +44,9 @@ module.exports = {
 	},
 
 	TMP_FILE_PREFIX: 'vscode-push-tmp-',
-	PUSH_MESSAGE_PREFIX: 'Push: '
+	PUSH_MESSAGE_PREFIX: 'Push: ',
+
+	COMMS: {
+		TASK_INITIAL_STATE: 'TASK_INITIAL_STATE'
+	}
 };

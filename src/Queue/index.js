@@ -9,7 +9,7 @@ const i18n = require('../i18n');
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES
-} = require('../lib/constants');
+} = require('../lib/constants/static');
 
 class Queue {
 	/**

@@ -3,7 +3,7 @@ const vscode = require('vscode');
 const config = require('../lib/config');
 const {
 	PUSH_MESSAGE_PREFIX
-} = require('../lib/constants');
+} = require('../lib/constants/static');
 
 /**
  * Internationalisation (i18n) class.
