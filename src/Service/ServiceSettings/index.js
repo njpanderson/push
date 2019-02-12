@@ -405,9 +405,10 @@ class ServiceSettings extends Configurable {
 	 * @param {Uri} uri - File Uri
 	 * @param {boolean} [normalise=true] - Normalise the file.
 	 */
-	parseServerFile(uri, normalise=true) {
+	parseServerFile(uri, normalise = true) {
 		return this.parseServerFileContent(
 			this.getServerFile(uri),
+			uri,
 			normalise
 		);
 	}
@@ -417,7 +418,7 @@ class ServiceSettings extends Configurable {
 	 * @param {Uri} uri - File Uri
 	 * @param {boolean} [normalise=true] - Normalise the file.
 	 */
-	parseServerFileContent(content, uri, normalise=true) {
+	parseServerFileContent(content, uri, normalise = true) {
 		const data = jsonc.parse(content);
 		return normalise ? this.normalise(data, uri) : data;
 	}

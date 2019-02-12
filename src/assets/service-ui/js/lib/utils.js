@@ -4,5 +4,5 @@
  */
 export function getEnvsArray(state) {
 	const envs = Object.keys(state).filter(env => env !== 'env');
-	return envs.map(env => state[env]);
+	return envs.map(env => ({ ...state[env], id: env }));
 }

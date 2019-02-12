@@ -1,7 +1,7 @@
 const vscode = require('vscode');
 
 const utils = require('../../lib/utils');
-const messaging = require('../../lib/messaging');
+const VSCodeMessaging = require('../../messaging/VSCodeMessaging');
 const { COMMS } = require('../../lib/constants/static');
 
 class SettingsUI {
@@ -25,16 +25,17 @@ class SettingsUI {
 				}
 			);
 
+			this.messaging = new VSCodeMessaging(this.panel.webview);
+
 			// Set panel content
 			this.panel.webview.html = utils.getAsset('service-ui/index.html');
 
-			this.panel.webview.onDidReceiveMessage((event) => {
+			this.messaging.onReceive((type, data) => {
 				console.log('message from webview!');
-				console.log(event);
+				console.log(type, data);
 			});
 
-			messaging.postMessage(
-				this.panel.webview,
+			this.messaging.post(
 				COMMS.TASK_INITIAL_STATE,
 				{
 					contents: this.settings.parseServerFile(settingsFile, false)
