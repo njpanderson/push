@@ -1,9 +1,10 @@
 import { connect } from 'react-redux';
 
 import { getEnvsArray } from '../../lib/utils';
-import Form from '../views/Form';
+import Environments from '../views/Environments';
 
 export function mapStateToProps(state) {
+	console.log(getEnvsArray(state));
 	return {
 		currentEnv: state.env,
 		envs: getEnvsArray(state)
@@ -19,4 +20,4 @@ export function mapDispatchToProps(dispatch) {
 export default connect(
 	mapStateToProps,
 	mapDispatchToProps
-)(Form);
+)(Environments);

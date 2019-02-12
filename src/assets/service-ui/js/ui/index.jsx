@@ -8,13 +8,12 @@ import { Provider } from 'react-redux';
 import serviceFile from './state/reducers';
 import { setState } from './state/actions';
 import { COMMS } from '../../../../lib/constants/static';
-import messaging from '../../../../lib/messaging';
+import WebMessaging from '../../../../messaging/WebMessaging';
 
 // React
-import Form from './containers/Form';
+import Environments from './containers/Environments';
 
 const store = createStore(serviceFile);
-const vscode = acquireVsCodeApi();
 
 store.dispatch(setState({
 	env: 'dev',
@@ -44,28 +43,23 @@ class Root extends React.Component {
 	constructor() {
 		super();
 
-		// vscode.postMessage('hello!');
-
-		window.addEventListener('message', this.receiveMessage, false);
+		this.messaging = new WebMessaging(acquireVsCodeApi());
+		this.messaging.onReceive(this.receiveMessage.bind(this));
 	}
 
-	receiveMessage(event) {
-		switch (messaging.getMessageType(event.data)) {
+	receiveMessage(type, data) {
+		switch (type) {
 		case COMMS.TASK_INITIAL_STATE:
-			console.log(event.data);
-			// store.dispatch(setState(
-			// 	messaging.getMessageData(event.data)
-			// ));
+			console.log(data);
 			break;
 		}
-		// vscode.postMessage('hello host!');
 	}
 
 	render() {
 		return (
 			<div className='container'>
 				<h1>Push service settings</h1>
-				<Form />
+				<Environments />
 			</div>
 		);
 	}
