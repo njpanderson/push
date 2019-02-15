@@ -1,6 +1,5 @@
 /* global suite, test */
 const expect = require('chai').expect;
-const path = require('path');
 
 const useMockery = require('../../helpers/mockery');
 const counter = require('../../helpers/counter');
