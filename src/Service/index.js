@@ -71,14 +71,14 @@ class Service extends PushBase {
 				}
 			};
 
-			settingsPayload.default.options = this.getServiceDefaults(service);
+			settingsPayload.default.options = this.getServiceSchemaValues(service);
 
 			options.push(new ServiceType(
 				service,
 				this.services[service].description,
 				this.services[service].detail,
 				settingsPayload,
-				this.services[service].required
+				this.getServiceSchemaValues(service, 'required')
 			));
 		}
 
@@ -227,8 +227,8 @@ class Service extends PushBase {
 				{
 					onDisconnect: this.options.onDisconnect
 				},
-				this.getServiceDefaults(this.config.serviceName),
-				this.services[this.config.serviceName].required
+				this.getServiceSchemaValues(this.config.serviceName),
+				this.getServiceSchemaValues(this.config.serviceName, 'required')
 			);
 		}
 	}
@@ -237,11 +237,36 @@ class Service extends PushBase {
 	 * Get the default settings for a service, extended from the base defaults
 	 * @param {string} serviceName - Name of the service to retrieve defaults for.
 	 */
-	getServiceDefaults(serviceName) {
-		return Object.assign({},
-			ProviderBase.defaults,
-			this.services[serviceName].defaults
-		);
+	getServiceSchemaValues(serviceSchema, key = 'default') {
+		const values = {};
+
+		if (typeof serviceSchema === 'string') {
+			serviceSchema = this.services[serviceSchema].optionSchema;
+		}
+
+		// Get default values for each key from the options object
+		Object.entries(serviceSchema).forEach((option) => {
+			if (key === 'required' && option[1][key]) {
+				// Getting required value
+				values[option[0]] = true;
+			} else if (key !== 'required') {
+				// Getting default values
+				values[option[0]] = option[1][key] || '';
+			}
+
+			if (
+				option[1].fields &&
+				(key !== 'required' || (key === 'required' && values[option[0]]))
+			) {
+				// Nested fields — recurse and collect further items.
+				values[option[0]] = this.getServiceSchemaValues(
+					option[1].fields,
+					key
+				);
+			}
+		});
+
+		return values;
 	}
 }
 

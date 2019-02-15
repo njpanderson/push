@@ -46,27 +46,6 @@ class ProviderSFTP extends ProviderBase {
 	}
 
 	/**
-	 * @description
-	 * Merges the service specific default settings with supplied object.
-	 * ProviderSFTP variant that also detects and merges SSH gateway settings.
-	 * @param {object} settings
-	 */
-	mergeWithDefaults(settings) {
-		let newSettings = Object.assign({}, this.serviceDefaults, settings);
-
-		// If there is a gateway defined, merge that
-		if (newSettings.sshGateway) {
-			newSettings.sshGateway = Object.assign(
-				{},
-				ProviderSFTP.gatewayDefaults,
-				newSettings.sshGateway
-			);
-		}
-
-		return newSettings;
-	}
-
-	/**
 	 * Runs initialisation code (before each queue begins)
 	 */
 	init(queueLength) {
@@ -398,11 +377,11 @@ class ProviderSFTP extends ProviderBase {
 							sftp: new ProviderSFTPClient(),
 							options: this.getClientOptions(
 								this.config.service,
-								!(this.config.service.sshGateway)
+								!(this.config.service.sshGateway.host)
 							)
 						};
 
-						if (this.config.service.sshGateway) {
+						if (this.config.service.sshGateway.host) {
 							// Client is going to connect via a gateway - add its instance here
 							this.clients[hash].gatewayOptions = this.getClientOptions(
 								this.config.service.sshGateway
@@ -1291,35 +1270,104 @@ class ProviderSFTP extends ProviderBase {
 
 ProviderSFTP.description = i18n.t('sftp_class_description');
 
-ProviderSFTP.defaults = {
-	host: '',
-	port: 22,
-	username: '',
-	password: '',
-	privateKey: '',
-	keyPassphrase: '',
-	root: '/',
-	keepaliveInterval: 3000,
-	debug: false,
-	fileMode: '',
-	sshGateway: null
-};
-
-ProviderSFTP.required = {
-	host: true,
-	username: true,
-	root: true
-};
-
-ProviderSFTP.gatewayDefaults = {
-	host: '',
-	port: 22,
-	username: '',
-	password: '',
-	privateKey: '',
-	keyPassphrase: '',
-	keepaliveInterval: 3000,
-	debug: false
+ProviderSFTP.optionSchema = {
+	...ProviderBase.optionSchema,
+	host: {
+		label: i18n.t('opt_sftp_hostname'),
+		required: true
+	},
+	port: {
+		label: i18n.t('opt_sftp_port'),
+		description: i18n.t('opt_sftp_port_desc'),
+		default: 22
+	},
+	username: {
+		label: i18n.t('opt_sftp_username'),
+		required: true
+	},
+	password: {
+		label: i18n.t('opt_sftp_password'),
+		type: 'password'
+	},
+	privateKey: {
+		label: i18n.t('opt_sftp_keyfile'),
+		type: 'file'
+	},
+	keyPassphrase: {
+		label: i18n.t('opt_sftp_keyphrase')
+	},
+	root: {
+		label: i18n.t('opt_sftp_root'),
+		default: '/',
+		required: true
+	},
+	keepaliveInterval: {
+		label: i18n.t('opt_sftp_keepalive'),
+		default: 3000,
+		type: 'number',
+		min: 0,
+		max: 10000
+	},
+	fileMode: {
+		label: i18n.t('opt_sftp_filenmode'),
+		type: 'grid',
+		columns: {
+			glob: {
+				label: i18n.t('opt_sftp_glob'),
+				type: 'text'
+			},
+			mode: {
+				label: i18n.t('opt_sftp_mode'),
+				type: 'number'
+			}
+		}
+	},
+	sshGateway: {
+		label: i18n.t('opt_sftp_sshgateway'),
+		fields: {
+			host: {
+				label: i18n.t('opt_sftp_hostname'),
+				required: true
+			},
+			port: {
+				label: i18n.t('opt_sftp_post'),
+				description: i18n.t('opt_sftp_port_desc'),
+				default: 22
+			},
+			username: {
+				label: i18n.t('opt_sftp_username'),
+				required: true
+			},
+			password: {
+				label: i18n.t('opt_sftp_password'),
+				type: 'password'
+			},
+			privateKey: {
+				label: i18n.t('opt_sftp_keyfile'),
+				type: 'file'
+			},
+			keyPassphrase: {
+				label: i18n.t('opt_sftp_keyphrase')
+			},
+			keepaliveInterval: {
+				label: i18n.t('opt_sftp_keepalive'),
+				default: 3000,
+				type: 'number',
+				min: 0,
+				max: 10000
+			},
+			debug: {
+				label: i18n.t('opt_sftp_debug'),
+				default: false,
+				type: 'boolean'
+			}
+		}
+	},
+	debug: {
+		label: i18n.t('opt_sftp_debug'),
+		default: false,
+		type: 'boolean'
+	}
 };
 
 ProviderSFTP.encodingByExtension = {
