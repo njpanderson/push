@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const TreeItem = require('../TreeItem');
 const ExplorerBase = require('../../ExplorerBase');
+const paths = require('../../lib/paths');
 
 class WatchList extends ExplorerBase {
 	constructor() {
@@ -17,10 +18,10 @@ class WatchList extends ExplorerBase {
 		if (this.data && this.data.length) {
 			return Promise.resolve(
 				this.data.map((watch) => {
-					let isFolder = this.paths.isDirectory(watch.uri);
+					const isFolder = paths.isDirectory(watch.uri);
 
 					return new TreeItem(
-						this.paths.getPathWithoutWorkspace(
+						paths.getPathWithoutWorkspace(
 							watch.uri,
 							vscode.workspace
 						),

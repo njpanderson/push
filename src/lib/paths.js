@@ -5,34 +5,26 @@ const mkdirp = require('mkdirp');
 const glob = require('glob');
 const micromatch = require('micromatch');
 
-const Cache = require('./Cache');
 const ExtendedStream = require('../lib/types/ExtendedStream');
 const utils = require('../lib/utils');
-const channel = require('../lib/channel');
 
 /**
  * Provides Path utilities within the VSCode environment.
  */
-class Paths {
+const paths = {
+	sep: path.sep,
+
+	re: {
+		badPathChars: /\.\.\//
+	},
+
 	/**
 	 * Checks if a Uri exists on the filesystem.
 	 * @param {Uri} uri - Uri to check.
 	 */
 	fileExists(uri) {
 		return fs.existsSync(this.getNormalPath(uri, 'file'));
-	}
-
-	/**
-	 * Returns a current or new instance of Cache.
-	 * @returns {Cache} An instance of Cache.
-	 */
-	getCache() {
-		if (!this.pathCache) {
-			this.pathCache = new Cache();
-		}
-
-		return this.pathCache;
-	}
+	},
 
 	/**
 	 * Tests whether the first Uri is within the second.
@@ -45,7 +37,7 @@ class Paths {
 		}
 
 		return this.getNormalPath(path).startsWith(this.getNormalPath(rootUri));
-	}
+	},
 
 	/**
 	 * Tests whether the supplied path is within an active workspace folder.
@@ -53,10 +45,10 @@ class Paths {
 	 * @returns {boolean} `true` if the path is within the workspace.
 	 */
 	pathInWorkspaceFolder(uri) {
-		return (this.getWorkspaceFolders().findIndex((workspaceFolder) => {
+		return this.getWorkspaceFolders().findIndex((workspaceFolder) => {
 			return this.pathInUri(uri, workspaceFolder.uri);
-		}) !== -1);
-	}
+		}) !== -1;
+	},
 
 	/**
 	 * Retrieves the active workspace folders.
@@ -73,7 +65,7 @@ class Paths {
 		}
 
 		return [];
-	}
+	},
 
 	/**
 	 * Checks if the supplied folder Uri is within one of the supplied workspace roots.
@@ -83,10 +75,10 @@ class Paths {
 	isWorkspaceFolderRoot(dir, workspaceFolders = []) {
 		dir = this.getNormalPath(dir);
 
-		return (workspaceFolders.findIndex((folder) => {
+		return workspaceFolders.findIndex((folder) => {
 			return folder.uri.fsPath === dir;
-		}) !== -1);
-	}
+		}) !== -1;
+	},
 
 	/**
 	 * Finds the current workspace path, based on the Uri of a passed item.
@@ -95,14 +87,14 @@ class Paths {
 	 * @returns {mixed} Either a Uri or a string path of the workspace root.
 	 */
 	getCurrentWorkspaceRootPath(uri, normalise = false) {
-		let workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
 
 		return (
 			normalise ?
 				this.getNormalPath(workspaceFolder.uri) :
 				workspaceFolder.uri
 		);
-	}
+	},
 
 	/**
 	 * Gets a string representation of a Uri.
@@ -122,7 +114,7 @@ class Paths {
 		}
 
 		return uri.fsPath || uri.path;
-	}
+	},
 
 	/**
 	 * Gets a path (Uri) without the workspace root.
@@ -139,7 +131,7 @@ class Paths {
 				filePath :
 				this.getNormalPath(uri)
 		);
-	}
+	},
 
 	/**
 	 * UNUSED
@@ -154,9 +146,9 @@ class Paths {
 		} else if (typeof src === 'string') {
 			return src;
 		} else {
-			throw new Error('Paths#getPathFromStreamOrUri - src source could not be determined.');
+			throw new Error('paths.getPathFromStreamOrUri - src source could not be determined.');
 		}
-	}
+	},
 
 	/**
 	 * Return a path without a trailing slash.
@@ -164,9 +156,9 @@ class Paths {
 	 * @param {string} [sep] - Separator slash. Defaults to system preference.
 	 * @returns {string} The path without a trailing slash.
 	 */
-	stripTrailingSlash(pathName, sep = path.sep) {
+	stripTrailingSlash(pathName, sep = this.sep) {
 		return pathName.endsWith(sep) ? pathName.slice(0, -1) : pathName;
-	}
+	},
 
 	/**
 	 * Return a path with a trailing slash.
@@ -174,9 +166,9 @@ class Paths {
 	 * @param {string} [sep] - Separator slash. Defaults to system preference.
 	 * @returns {string} The path with a trailing slash.
 	 */
-	addTrailingSlash(pathName, sep = path.sep) {
+	addTrailingSlash(pathName, sep = this.sep) {
 		return this.stripTrailingSlash(pathName, sep) + sep;
-	}
+	},
 
 	/**
 	 * Joins a path using the built in node Path method, returns a Uri.
@@ -189,7 +181,7 @@ class Paths {
 		);
 
 		return vscode.Uri.file(path.join.apply(path, parts));
-	}
+	},
 
 	/**
 	 * Returns whether the supplied path is a directory. A shortcut for the fs.statSync method.
@@ -210,7 +202,7 @@ class Paths {
 		}
 
 		return false;
-	}
+	},
 
 	/**
 	 * Obtain a consistent set of Glob options.
@@ -226,49 +218,7 @@ class Paths {
 			// Don't follow symlinks
 			follow: false
 		}, extend);
-	}
-
-	/**
-	 * List the contents of a single filesystem-accessible directory.
-	 * @param {string} dir - Directory to list.
-	 * @param {Cache} [cache] - Cache instance. Will use an internal instance
-	 * if not specified.
-	 * @description
-	 * An existing `cache` instance (of Cache) may be supplied. Otherwise,
-	 * a generic cache instance is created.
-	 * @returns {Promise<CacheList>} A promise resolving to a directory list.
-	 */
-	listDirectory(dir, cache) {
-		dir = this.stripTrailingSlash(dir);
-
-		// Use supplied cache or fall back to class instance
-		cache = cache || this.getCache();
-
-		if (cache.dirIsCached(dir)) {
-			return Promise.resolve(cache.getDir(dir));
-		} else {
-			return new Promise((resolve, reject) => {
-				fs.readdir(dir, (error, list) => {
-					if (error) {
-						return reject(error);
-					}
-
-					list.forEach((filename) => {
-						let pathname = dir + Paths.sep + filename,
-							stats = fs.statSync(pathname);
-
-						cache.addFilePath(
-							pathname,
-							(stats.mtime.getTime() / 1000),
-							(stats.isDirectory() ? 'd' : 'f')
-						);
-					});
-
-					resolve(cache.getDir(dir));
-				});
-			});
-		}
-	}
+	},
 
 	/**
 	 * Recursively returns the file contents of a directory.
@@ -282,7 +232,7 @@ class Paths {
 	getDirectoryContentsAsFiles(include, ignoreGlobs = [], followSymlinks = false) {
 		if (include instanceof vscode.Uri) {
 			// Create path out of Uri
-			include = `${this.getNormalPath(include)}${path.sep}**`;
+			include = `${this.getNormalPath(include)}${this.sep}**`;
 		}
 
 		if (Array.isArray(include)) {
@@ -315,7 +265,7 @@ class Paths {
 				}
 			);
 		});
-	}
+	},
 
 	/**
 	 * Filters a bunch of Uris by the provided globs
@@ -347,7 +297,7 @@ class Paths {
 				reject(e);
 			}
 		});
-	}
+	},
 
 	/**
 	 * Filters a Uri by the array of ignoreGlobs globs.
@@ -380,7 +330,7 @@ class Paths {
 				}
 			);
 		});
-	}
+	},
 
 	/**
 	 * Attempts to look for a file within a directory, recursing up through the path until
@@ -405,7 +355,7 @@ class Paths {
 		start = this.getDirName(start, true);
 
 		utils.trace(
-			'Paths#findFileInAncestors',
+			'paths.findFileInAncestors',
 			`Looking for file in: ${start}`
 		);
 
@@ -432,13 +382,13 @@ class Paths {
 			loop += 1;
 
 			utils.trace(
-				'Paths#findFileInAncestors',
+				'paths.findFileInAncestors',
 				`Looking for file in: ${start}`
 			);
 		}
 
 		return vscode.Uri.file(matches[0]);
-	}
+	},
 
 	/**
 	 * Retrieves a source file based on the workspace of the command.
@@ -479,7 +429,7 @@ class Paths {
 		}
 
 		return null;
-	}
+	},
 
 	/**
 	 * Check that a Uri scheme is valid (i.e. Push can work with it)
@@ -487,7 +437,7 @@ class Paths {
 	 */
 	isValidScheme(uri) {
 		return (uri.scheme === 'file' || uri.scheme === '' || !uri.scheme);
-	}
+	},
 
 	/**
 	 * @description
@@ -506,9 +456,9 @@ class Paths {
 		return !(
 			uri.dir.length < 1 ||
 			uri.root === '' ||
-			Paths.re.badPathChars.test(uri.dir)
+			this.re.badPathChars.test(uri.dir)
 		);
-	}
+	},
 
 	/**
 	 * Process a Uri and retrieve the basename component.
@@ -517,7 +467,7 @@ class Paths {
 	 */
 	getBaseName(uri) {
 		return path.basename(this.getNormalPath(uri));
-	}
+	},
 
 	/**
 	 *
@@ -533,7 +483,7 @@ class Paths {
 		}
 
 		return vscode.Uri.file(path.dirname(this.getNormalPath(uri)));
-	}
+	},
 
 	/**
 	 * Checks for the existence of a directory.
@@ -557,7 +507,7 @@ class Paths {
 					}
 				});
 		});
-	}
+	},
 
 	/**
 	 * Writes a file to disk using UTF8 encoding.
@@ -581,7 +531,7 @@ class Paths {
 				}
 			);
 		});
-	}
+	},
 
 	/**
 	 * Reads a file and returns its contents
@@ -597,7 +547,7 @@ class Paths {
 				}
 			});
 		});
-	}
+	},
 
 	/**
 	 * @param {string} fileName - Name of the file to stat
@@ -624,7 +574,7 @@ class Paths {
 				resolve(result);
 			});
 		});
-	}
+	},
 
 	/**
 	 * @param {...Uri|string} pathName - The path to make glob 'friendly'
@@ -640,7 +590,7 @@ class Paths {
 					.replace(/\\/g, '/'),
 			''
 		);
-	}
+	},
 
 	/**
 	 * Writes content to a file and then opens it for editing.
@@ -658,16 +608,9 @@ class Paths {
 				utils.openDoc(uri);
 			})
 			.catch((error) => {
-				// Append the error
-				channel.appendError(error);
+				throw error;
 			});
 	}
-}
-
-Paths.sep = path.sep;
-
-Paths.re = {
-	badPathChars: /\.\.\//
 };
 
-module.exports = Paths;
+module.exports = paths;

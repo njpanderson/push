@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const TreeItem = require('../TreeItem');
 const ExplorerBase = require('../../ExplorerBase');
+const paths = require('../../lib/paths');
 
 class UploadQueue extends ExplorerBase {
 	constructor() {
@@ -19,7 +20,7 @@ class UploadQueue extends ExplorerBase {
 				this.data.upload.tasks.map((task) => {
 					if (task.id && task.data.uriContext) {
 						return new TreeItem(
-							this.paths.getPathWithoutWorkspace(
+							paths.getPathWithoutWorkspace(
 								task.data.uriContext,
 								vscode.workspace
 							),

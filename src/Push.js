@@ -5,11 +5,11 @@ const packageJson = require('../package.json');
 const PushError = require('./lib/types/PushError');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
+const paths = require('./lib/paths');
 const Service = require('./Service');
 const PushBase = require('./PushBase');
 const WatchList = require('./explorer/views/WatchList');
 const UploadQueue = require('./explorer/views/UploadQueue');
-const Paths = require('./Paths');
 const Queue = require('./Queue');
 const Watch = require('./Watch');
 const SCM = require('./SCM');
@@ -51,7 +51,6 @@ class Push extends PushBase {
 
 		this.initService();
 
-		this.paths = new Paths();
 		this.explorers = {
 			watchList: new WatchList(this.config),
 			uploadQueue: new UploadQueue(this.config)
@@ -197,7 +196,7 @@ class Push extends PushBase {
 	queueGitChangedFiles(uri, exec = false) {
 		return this.scm.exec(
 			SCM.providers.git,
-			this.paths.getCurrentWorkspaceRootPath(uri, true),
+			paths.getCurrentWorkspaceRootPath(uri, true),
 			'listWorkingUris'
 		).then((uris) => {
 			if (exec) {
@@ -211,7 +210,7 @@ class Push extends PushBase {
 	}
 
 	queueGitCommitChanges(uri, exec = false) {
-		let dir = this.paths.getCurrentWorkspaceRootPath(uri, true);
+		const dir = paths.getCurrentWorkspaceRootPath(uri, true);
 
 		return this.scm.exec(
 			SCM.providers.git,
@@ -242,7 +241,7 @@ class Push extends PushBase {
 			})
 			.then((result) => {
 				// Filter Uris by ignoreGlobs
-				return this.paths.filterUrisByGlobs(
+				return paths.filterUrisByGlobs(
 					result.uris,
 					this.config.ignoreGlobs
 				).then(({ uris, ignored }) => {
@@ -288,7 +287,7 @@ class Push extends PushBase {
 
 		switch (eventType) {
 		case 'onDidSaveTextDocument':
-			if (!this.paths.pathInWorkspaceFolder(data.uri)) {
+			if (!path.pathInWorkspaceFolder(data.uri)) {
 				// Do nothing with files outside of the workspace
 				return;
 			}
@@ -326,7 +325,7 @@ class Push extends PushBase {
 
 		if (
 			eventType === 'onServiceFileUpdate' ||
-			!this.service.settings.isSettingsFile(uri)
+			!this.service.settings.isServerFile(uri)
 		) {
 			// Get current server settings for the editor
 			settings = this.service.settings.getServerJSON(
@@ -356,7 +355,7 @@ class Push extends PushBase {
 	 * @param {textDocument} textDocument
 	 */
 	didSaveTextDocument(textDocument, settings) {
-		if (!textDocument.uri || !this.paths.isValidScheme(textDocument.uri)) {
+		if (!textDocument.uri || !paths.isValidScheme(textDocument.uri)) {
 			// Empty or invalid URI
 			return false;
 		}
@@ -385,7 +384,7 @@ class Push extends PushBase {
 		if (
 			!textEditor ||
 			!textEditor.document ||
-			!this.paths.isValidScheme(textEditor.document.uri)
+			!paths.isValidScheme(textEditor.document.uri)
 		) {
 			// Bail if there's still no editor, or no document
 			return;
@@ -529,7 +528,7 @@ class Push extends PushBase {
 				[uri]
 			);
 
-			return this.paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
+			return paths.filterUriByGlobs(uri, this.config.ignoreGlobs)
 				.then((filteredUri) => {
 					if (!filteredUri) {
 						return;
@@ -541,7 +540,7 @@ class Push extends PushBase {
 							actionTaken: 'uploaded',
 							uriContext: uri,
 							args: [uri, remotePath],
-							id: remotePath + this.paths.getNormalPath(uri)
+							id: remotePath + paths.getNormalPath(uri)
 						}],
 						false,
 						Push.queueDefs.upload,
@@ -628,7 +627,7 @@ class Push extends PushBase {
 						'vscode.diff',
 						tmpFile,
 						uri,
-						`${i18n.t('server_v_local')} (${this.paths.getBaseName(uri)})`
+						`${i18n.t('server_v_local')} (${paths.getBaseName(uri)})`
 					);
 				}
 			}], true, Push.queueDefs.diff).then(resolve, reject);
@@ -984,7 +983,7 @@ class Push extends PushBase {
 
 		// Check there are no directories
 		uris.forEach((uri) => {
-			if (this.paths.isDirectory(uri)) {
+			if (paths.isDirectory(uri)) {
 				throw new Error(`Path "${uri.path}" is a directory and cannot be transferred with Push#transfer.`);
 			}
 		});
@@ -1004,15 +1003,15 @@ class Push extends PushBase {
 
 		uris.forEach((uri, index) => {
 			// Check the source file is a usable scheme
-			if (!this.paths.isValidScheme(uri)) {
+			if (!paths.isValidScheme(uri)) {
 				return;
 			}
 
 			// Check that the source file exists
-			if (method === 'put' && !this.paths.fileExists(uri)) {
+			if (method === 'put' && !paths.fileExists(uri)) {
 				channel.appendLocalisedError(
 					'file_not_found',
-					this.paths.getNormalPath(uri)
+					paths.getNormalPath(uri)
 				);
 
 				return;
@@ -1026,7 +1025,7 @@ class Push extends PushBase {
 					return false;
 				}
 
-				return this.paths.filterUriByGlobs(uri, ignoreGlobs)
+				return paths.filterUriByGlobs(uri, ignoreGlobs)
 					.then((filteredUri) => {
 						if (filteredUri !== false) {
 							// Uri is not being ignored. Continue...
@@ -1046,7 +1045,7 @@ class Push extends PushBase {
 										filteredUri,
 										remotePath
 									],
-									id: remotePath + this.paths.getNormalPath(filteredUri)
+									id: remotePath + paths.getNormalPath(filteredUri)
 								}], (index === uris.length - 1));
 							}
 						} else {
@@ -1054,7 +1053,7 @@ class Push extends PushBase {
 							channel.appendLocalisedError(
 								'cannot_action_ignored_file',
 								action,
-								this.paths.getBaseName(uri)
+								paths.getBaseName(uri)
 							);
 						}
 					});
@@ -1078,18 +1077,18 @@ class Push extends PushBase {
 		let ignoreGlobs = [], actionTaken, config, remoteUri;
 
 		// Check the source directory is a usable scheme
-		if (!this.paths.isValidScheme(uri)) {
+		if (!paths.isValidScheme(uri)) {
 			return false;
 		}
 
-		if (!this.paths.isDirectory(uri)) {
+		if (!paths.isDirectory(uri)) {
 			throw new Error(
 				'Path is a single file and cannot be transferred with Push#transferDirectory.'
 			);
 		}
 
 		// Get Uri from file/selection, src from Uri
-		uri = this.paths.getFileSrc(uri);
+		uri = paths.getFileSrc(uri);
 
 		if (method === 'put') {
 			actionTaken = 'uploaded';
@@ -1111,7 +1110,7 @@ class Push extends PushBase {
 
 		if (method === 'put') {
 			// Recursively list local files and transfer each one
-			return this.paths.getDirectoryContentsAsFiles(
+			return paths.getDirectoryContentsAsFiles(
 				uri,
 				ignoreGlobs,
 				config.service.followSymlinks
@@ -1141,7 +1140,7 @@ class Push extends PushBase {
 								uri,
 								remotePath
 							],
-							id: remotePath + this.paths.getNormalPath(uri)
+							id: remotePath + paths.getNormalPath(uri)
 						};
 					});
 
@@ -1175,7 +1174,7 @@ class Push extends PushBase {
 								uri,
 								file
 							],
-							id: file + this.paths.getNormalPath(uri)
+							id: file + paths.getNormalPath(uri)
 						};
 					});
 
@@ -1190,8 +1189,8 @@ class Push extends PushBase {
 	 */
 	ensureSingleService(uri) {
 		return new Promise((resolve, reject) => {
-			this.paths.getDirectoryContentsAsFiles(
-				`${this.paths.getNormalPath(uri)}/**/${this.config.settingsFileGlob}`
+			paths.getDirectoryContentsAsFiles(
+				`${paths.getNormalPath(uri)}/**/${this.config.settingsFileGlob}`
 			)
 				.then((files) => {
 					if (files.length > 1) {
@@ -1214,7 +1213,7 @@ class Push extends PushBase {
 	 * @returns {Uri} The Uri uri, if. Will throw a PushError otherwise.
 	 */
 	getValidUri(uri) {
-		uri = this.paths.getFileSrc(uri);
+		uri = paths.getFileSrc(uri);
 
 		if (uri === null) {
 			// Uri could not be found *at all*
@@ -1222,12 +1221,12 @@ class Push extends PushBase {
 			return false;
 		}
 
-		if (!this.paths.isValidPath(uri)) {
+		if (!paths.isValidPath(uri)) {
 			utils.showError(i18n.t('invalid_path', uri.scheme));
 			return false;
 		}
 
-		if (!this.paths.isValidScheme(uri)) {
+		if (!paths.isValidScheme(uri)) {
 			utils.showError(i18n.t('invalid_uri_scheme', uri.scheme));
 			return false;
 		}
