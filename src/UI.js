@@ -2,6 +2,7 @@ const vscode = require('vscode');
 
 const Push = require('./Push');
 const utils = require('./lib/utils');
+const paths = require('./lib/paths');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -26,7 +27,7 @@ class UI extends Push {
 		if (context instanceof vscode.TreeItem) {
 			uri = context.resourceUri;
 		} else {
-			uri = this.paths.getFileSrc(context);
+			uri = paths.getFileSrc(context);
 		}
 
 		super.removeQueuedUri(Push.queueDefs.upload, uri);
@@ -73,7 +74,7 @@ class UI extends Push {
 			return Promise.reject();
 		}
 
-		if (this.paths.isDirectory(uri)) {
+		if (paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => this.transferDirectory(uri, 'put'))
 				.catch (this.catchError);
@@ -91,7 +92,7 @@ class UI extends Push {
 			return Promise.reject();
 		}
 
-		if (this.paths.isDirectory(uri)) {
+		if (paths.isDirectory(uri)) {
 			return this.ensureSingleService(uri)
 				.then(() => this.transferDirectory(uri, 'get'))
 				.catch(this.catchError);
@@ -137,7 +138,7 @@ class UI extends Push {
 			context = context.resourceUri;
 		}
 
-		if ((uri = this.paths.getFileSrc(context))) {
+		if ((uri = paths.getFileSrc(context))) {
 			this.watch.remove(uri).catch(this.catchError);
 		}
 	}

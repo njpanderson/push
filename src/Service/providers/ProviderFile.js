@@ -4,8 +4,10 @@ const path = require('path');
 
 const ProviderBase = require('../../ProviderBase');
 const TransferResult = require('../TransferResult');
+const PathCache = require('../../PathCache');
 const i18n = require('../../i18n');
 const utils = require('../../lib/utils');
+const paths = require('../../lib/paths');
 const PushError = require('../../lib/types/PushError');
 const ExtendedStream = require('../../lib/types/ExtendedStream');
 const { TRANSFER_TYPES, CACHE_SOURCES } = require('../../lib/constants/static');
@@ -19,6 +21,7 @@ class ProviderFile extends ProviderBase {
 
 		this.mkDir = this.mkDir.bind(this);
 		this.checkServiceRoot = this.checkServiceRoot.bind(this);
+		this.pathCache = new PathCache();
 
 		this.type = 'File';
 		this.writeStream = null;
@@ -28,8 +31,8 @@ class ProviderFile extends ProviderBase {
 	init(queueLength) {
 		return super.init(queueLength)
 			.then(this.checkServiceRoot)
-			.then(() => this.pathCache.local.clear())
-			.then(() => this.pathCache.remote.clear());
+			.then(() => this.pathCaches.local.clear())
+			.then(() => this.pathCaches.remote.clear());
 	}
 
 	/**
@@ -52,11 +55,11 @@ class ProviderFile extends ProviderBase {
 	 * @param {string} remote - Remote path.
 	 */
 	put(local, remote) {
-		if (!this.paths.fileExists(local)) {
+		if (!paths.fileExists(local)) {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
 				local,
-				new PushError(i18n.t('file_not_found', this.paths.getBaseName(local))),
+				new PushError(i18n.t('file_not_found', paths.getBaseName(local))),
 				TRANSFER_TYPES.PUT
 			));
 		}
@@ -85,11 +88,11 @@ class ProviderFile extends ProviderBase {
 		collisionAction = collisionAction ||
 			this.config.service.collisionDownloadAction;
 
-		if (!this.paths.fileExists(remote)) {
+		if (!paths.fileExists(remote)) {
 			// Remote file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
 				remote,
-				new PushError(i18n.t('file_not_found', this.paths.getBaseName(remote))),
+				new PushError(i18n.t('file_not_found', paths.getBaseName(remote))),
 				TRANSFER_TYPES.PUT
 			));
 		}
@@ -99,7 +102,7 @@ class ProviderFile extends ProviderBase {
 			TRANSFER_TYPES.GET,
 			remote,
 			local,
-			this.paths.getDirName(this.config.serviceUri),
+			paths.getDirName(this.config.serviceUri),
 			collisionAction
 		);
 	}
@@ -112,10 +115,10 @@ class ProviderFile extends ProviderBase {
 	 * @param {Uri} root - Root directory. Used for validation.
 	 */
 	transfer(transferType, src, dest, root, collisionAction) {
-		let destPath = this.paths.getNormalPath(dest),
+		let destPath = paths.getNormalPath(dest),
 			destDir = path.dirname(destPath),
 			destFilename = path.basename(destPath),
-			rootDir = this.paths.getNormalPath(root),
+			rootDir = paths.getNormalPath(root),
 			srcType = (
 				transferType === TRANSFER_TYPES.PUT ?
 					CACHE_SOURCES.remote : CACHE_SOURCES.local
@@ -213,7 +216,7 @@ class ProviderFile extends ProviderBase {
 	mkDir(dir) {
 		return this.list(path.dirname(dir))
 			.then(() => {
-				let existing = this.pathCache.remote.getFileByPath(dir);
+				let existing = this.pathCaches.remote.getFileByPath(dir);
 
 				if (existing === null) {
 					return new Promise((resolve, reject) => {
@@ -223,7 +226,7 @@ class ProviderFile extends ProviderBase {
 							}
 
 							// Add dir to cache
-							this.pathCache.remote.addFilePath(
+							this.pathCaches.remote.addFilePath(
 								dir,
 								((new Date()).getTime() / 1000),
 								'd'
@@ -246,7 +249,7 @@ class ProviderFile extends ProviderBase {
 	 * @param {string} loc - One of the {@link CACHE_SOURCES} types.
 	 */
 	list(dir, loc = CACHE_SOURCES.remote) {
-		return this.paths.listDirectory(dir, this.pathCache[loc]);
+		return this.pathCache.listDirectory(dir, this.pathCache[loc]);
 	}
 
 	/**
@@ -259,7 +262,7 @@ class ProviderFile extends ProviderBase {
 	 * @returns {Promise<array>} Resolving to an array of files.
 	 */
 	listRecursiveFiles(dir, ignoreGlobs) {
-		return this.paths.getDirectoryContentsAsFiles(
+		return paths.getDirectoryContentsAsFiles(
 			vscode.Uri.file(dir),
 			ignoreGlobs
 		);
@@ -271,17 +274,17 @@ class ProviderFile extends ProviderBase {
 	 * @param {uri} remote - Remote Uri.
 	 */
 	getFileStats(local, remote) {
-		const remotePath = this.paths.getNormalPath(remote),
+		const remotePath = paths.getNormalPath(remote),
 			remoteDir = path.dirname(remotePath);
 
 		return this.list(remoteDir, CACHE_SOURCES.remote)
 			.then(() => ({
 				// Get remote stats
-				remote: this.pathCache.remote.getFileByPath(remotePath)
+				remote: this.pathCaches.remote.getFileByPath(remotePath)
 			}))
 			.then(stats => (new Promise(resolve => {
 				// Get local stats
-				this.paths.getFileStats(this.paths.getNormalPath(local))
+				paths.getFileStats(paths.getNormalPath(local))
 					.then(local => {
 						resolve(Object.assign(stats, {
 							local
@@ -335,7 +338,7 @@ class ProviderFile extends ProviderBase {
 
 			if (src instanceof vscode.Uri || typeof src === 'string') {
 				// Source is a VSCode Uri - create a read stream
-				this.readStream = fs.createReadStream(this.paths.getNormalPath(src));
+				this.readStream = fs.createReadStream(paths.getNormalPath(src));
 				this.readStream.on('error', fnError.bind(this));
 				this.readStream.pipe(this.writeStream);
 			} else if (src instanceof ExtendedStream) {
@@ -356,10 +359,10 @@ class ProviderFile extends ProviderBase {
 	 * @param {uri} uri - VSCode URI to perform replacement on.
 	 */
 	convertUriToRemote(uri) {
-		let file = this.paths.getNormalPath(uri),
+		let file = paths.getNormalPath(uri),
 			remotePath;
 
-		remotePath = this.paths.stripTrailingSlash(this.config.service.root) +
+		remotePath = paths.stripTrailingSlash(this.config.service.root) +
 			utils.filePathReplace(file, path.dirname(this.config.serviceFile), '');
 
 		return remotePath;
@@ -371,11 +374,11 @@ class ProviderFile extends ProviderBase {
 	 * @returns {uri} A qualified Uri object.
 	 */
 	convertRemoteToUri(remotePath) {
-		return this.paths.join(
+		return paths.join(
 			path.dirname(this.config.serviceFile),
 			utils.filePathReplace(
 				remotePath,
-				this.paths.stripTrailingSlash(this.config.service.root) + path.sep,
+				paths.stripTrailingSlash(this.config.service.root) + path.sep,
 				''
 			)
 		);

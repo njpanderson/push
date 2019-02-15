@@ -1,4 +1,4 @@
-const paths = new (require('../Paths'));
+const paths = require('../lib/paths');
 
 /**
  * @description
@@ -7,6 +7,7 @@ const paths = new (require('../Paths'));
  * @param {Uri} uri - The associated Uri.
  * @param {string} - The selected service type.
  */
+
 class ServicePromptResult {
 	constructor(uri, serviceType = null) {
 		this.uri = uri;

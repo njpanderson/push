@@ -7,7 +7,7 @@ class ServiceSettings {
 		return config;
 	}
 
-	isSettingsFile(uri) {
+	isServerFile(uri) {
 		return (uri.path.match(/.push.settings.jsonc?/));
 	}
 }

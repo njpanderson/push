@@ -3,9 +3,9 @@ const tmp = require('tmp');
 
 const PushError = require('./lib/types/PushError');
 const utils = require('./lib/utils');
+const paths = require('./lib/paths');
 const channel = require('./lib/channel');
-const Paths = require('./Paths');
-const Cache = require('./Paths/Cache');
+const Cache = require('./PathCache/Cache');
 const i18n = require('./i18n');
 
 /**
@@ -27,9 +27,7 @@ class ServiceBase {
 		this.persistCollisionOptions = {};
 		this.channel = channel;
 
-		this.paths = new Paths();
-
-		this.pathCache = {
+		this.pathCaches = {
 			local: new Cache(),
 			remote: new Cache()
 		};
@@ -78,7 +76,7 @@ class ServiceBase {
 				)) !== true) {
 					throw new PushError(i18n.t(
 						'service_setting_missing',
-						this.paths.getNormalPath(this.config.serviceUri),
+						paths.getNormalPath(this.config.serviceUri),
 						this.config.env,
 						this.type,
 						validation
@@ -122,7 +120,7 @@ class ServiceBase {
 	 * @param {uri} uri - VSCode URI to perform replacement on.
 	 */
 	convertUriToRemote(uri) {
-		return this.paths.getNormalPath(uri);
+		return paths.getNormalPath(uri);
 	}
 
 	/**
@@ -182,10 +180,6 @@ class ServiceBase {
 		});
 	}
 
-	getModeForPath(path, modes = []) {
-		return this.paths.getMatchForPath(path, modes);
-	}
-
 	/**
 	 * Run intial tasks - executed once before a subsequent commands in a new queue.
 	 */
@@ -195,7 +189,7 @@ class ServiceBase {
 		return new Promise((resolve) => {
 			// Check if the workspace folder contains the service file...
 			if (
-				!this.paths.pathInWorkspaceFolder(this.config.serviceUri) &&
+				!paths.pathInWorkspaceFolder(this.config.serviceUri) &&
 				!this.allowExternalServiceFiles
 			) {
 				// ... It doesn't - show a warning first
@@ -536,6 +530,6 @@ ServiceBase.optionSchema = {
 	}
 };
 
-ServiceBase.pathSep = Paths.sep;
+ServiceBase.pathSep = paths.sep;
 
 module.exports = ServiceBase;

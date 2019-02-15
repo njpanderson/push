@@ -2,11 +2,10 @@ const vscode = require('vscode');
 
 const channel = require('../lib/channel');
 const utils = require('../lib/utils');
-const Paths = require('../Paths');
+const paths = require('../lib/paths');
 
 class SCM {
 	constructor() {
-		this.paths = new Paths();
 		this._provider = {
 			id: null,
 			dir: null,
@@ -52,7 +51,7 @@ class SCM {
 
 		if (method && this[method]) {
 			return new Promise((resolve, reject) => {
-				let result = this[method].apply(
+				const result = this[method].apply(
 					this,
 					[provider, dir, [...arguments].slice(3)]
 				);
@@ -126,7 +125,7 @@ class SCM {
 					if (status && status.all) {
 						// Return an array of items for use with the quick pick
 						return resolve(status.all.map((commit) => {
-							let shortCommit = commit.hash.substring(0, (hashSize - 1)),
+							const shortCommit = commit.hash.substring(0, hashSize - 1),
 								date = new Date(commit.date);
 
 							return {
@@ -177,7 +176,7 @@ class SCM {
 					'-m',
 					commit
 				], (error, status) => {
-					let uris = [];
+					const uris = [];
 
 					if (error) {
 						return reject(error);
@@ -185,14 +184,14 @@ class SCM {
 
 					if (status && (status = status.trim().split('\n'))) {
 						status.forEach((file) => {
-							let uri = this.paths.join(
+							const uri = paths.join(
 								dir,
 								this._cleanGitPath(file)
 							);
 
-							console.log(uri.fsPath, this.paths.fileExists(uri));
+							console.log(uri.fsPath, paths.fileExists(uri));
 
-							if (this.paths.fileExists(uri)) {
+							if (paths.fileExists(uri)) {
 								return uris.push(uri);
 							}
 						});
@@ -216,7 +215,7 @@ class SCM {
 	 * @returns {Uri[]} - A list of Uris that are edited.
 	 */
 	_urisFromGitStatus(dir, status) {
-		let files = [];
+		const files = [];
 
 		status.files.forEach((file) => {
 			if (file.working_dir === 'D') {
@@ -225,7 +224,7 @@ class SCM {
 			}
 
 			file.uri = vscode.Uri.file(
-				this.paths.addTrailingSlash(dir) + this._cleanGitPath(file.path)
+				paths.addTrailingSlash(dir) + this._cleanGitPath(file.path)
 			);
 
 			files.push(file.uri);
@@ -253,8 +252,9 @@ class SCM {
 	 * @private
 	 */
 	_appendChannelMessage(type, provider, error) {
-		let key,
-			stringSet = this._getStringSet(provider.id);
+		let key;
+
+		const stringSet = this._getStringSet(provider.id);
 
 		if (stringSet) {
 			// Type needs an uppercase first letter (channel#append[Localised]Type)

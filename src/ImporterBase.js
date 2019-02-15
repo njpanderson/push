@@ -1,18 +1,14 @@
 const jsonc = require('jsonc-parser');
 
-const Paths = require('./Paths');
+const paths = require('./lib/paths');
 
 class ImporterBase {
-	constructor() {
-		this.paths = new Paths();
-	}
-
 	/**
 	 * Load a single file into the base importer.
 	 * @param {Uri} uri - Uri of file to read.
 	 */
 	loadFile(uri) {
-		return this.paths.readFile(uri);
+		return paths.readFile(uri);
 	}
 
 	parseJSON(fileContents) {

@@ -2,9 +2,9 @@ const vscode = require('vscode');
 
 const ListItem = require('./ListItem');
 const Configurable = require('../Configurable');
-const Paths = require('../Paths');
 const channel = require('../lib/channel');
 const utils = require('../lib/utils');
+const paths = require('../lib/paths');
 const i18n = require('../i18n');
 const {
 	STATUS_PRIORITIES
@@ -21,7 +21,6 @@ class Watch extends Configurable {
 		this.watchByWorkspaceFolders = this.recallByWorkspaceFolders.bind(this);
 
 		this.watchList = [];
-		this.paths = new Paths();
 		this.stateStorage = stateStorage;
 
 		vscode.workspace.onDidChangeWorkspaceFolders((event) => {
@@ -78,7 +77,7 @@ class Watch extends Configurable {
 			args[i] && args[i].forEach((folder) => {
 				// Filter watch list by Uris in folder root then add watches
 				watchList
-					.filter(item => this.paths.pathInUri(
+					.filter(item => paths.pathInUri(
 						vscode.Uri.file(item.path),
 						folder.uri
 					))
@@ -98,7 +97,7 @@ class Watch extends Configurable {
 		}
 
 		watchList = this.stateStorage.get(Watch.constants.WATCH_STORE, []);
-		path = this.paths.getNormalPath(uri);
+		path = paths.getNormalPath(uri);
 		index = watchList.findIndex(item => item.path === path);
 
 		if (add) {
@@ -109,7 +108,7 @@ class Watch extends Configurable {
 				watchList[index].enabled = enabled;
 			} else {
 				watchList.unshift({
-					path: this.paths.getNormalPath(uri),
+					path: paths.getNormalPath(uri),
 					date: (Date.now()),
 					enabled
 				});
@@ -157,7 +156,7 @@ class Watch extends Configurable {
 
 			this.setInWatchStore(uri, true);
 
-			channel.appendLocalisedInfo('added_watch_for', this.paths.getNormalPath(uri));
+			channel.appendLocalisedInfo('added_watch_for', paths.getNormalPath(uri));
 			this._updateStatus();
 
 			resolve();
@@ -175,7 +174,7 @@ class Watch extends Configurable {
 			if ((item = this.find(uri)) !== -1) {
 				this.watchList[item].removeWatcher();
 				this.watchList.splice(item, 1);
-				channel.appendLocalisedInfo('removed_watch_for', this.paths.getNormalPath(uri));
+				channel.appendLocalisedInfo('removed_watch_for', paths.getNormalPath(uri));
 			}
 
 			this.setInWatchStore(uri, false);
@@ -191,7 +190,7 @@ class Watch extends Configurable {
 	 * @param {Uri} uri - Uri to find a watch item with.
 	 */
 	find(uri) {
-		let path = this.paths.getNormalPath(uri);
+		let path = paths.getNormalPath(uri);
 		return this.watchList.findIndex((item) => item.path === path);
 	}
 

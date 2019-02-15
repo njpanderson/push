@@ -8,11 +8,13 @@ const micromatch = require('micromatch');
 
 const ProviderBase = require('../../ProviderBase');
 const TransferResult = require('../TransferResult');
+const PathCache = require('../../PathCache');
 const utils = require('../../lib/utils');
 const PushError = require('../../lib/types/PushError');
 const channel = require('../../lib/channel');
 const i18n = require('../../i18n');
 const { TRANSFER_TYPES } = require('../../lib/constants/static');
+const paths = require('../../lib/paths');
 
 /**
  * ProviderSFTP transfers.
@@ -27,6 +29,7 @@ class ProviderSFTP extends ProviderBase {
 		this.clients = {};
 		this.sftpError = null;
 		this.globalReject = null;
+		this.pathCache = new PathCache();
 
 		this.options.maxClients = 2;
 		this.options.modeGlob = {
@@ -53,8 +56,8 @@ class ProviderSFTP extends ProviderBase {
 			.then(() => {
 				this.sftpError = null;
 			})
-			.then(() => this.pathCache.local.clear())
-			.then(() => this.pathCache.remote.clear());
+			.then(() => this.pathCaches.local.clear())
+			.then(() => this.pathCaches.remote.clear());
 	}
 
 	/**
@@ -62,7 +65,7 @@ class ProviderSFTP extends ProviderBase {
 	 * @returns {Promise<object>} Promise resolving to a connected ProviderSFTP client instance.
 	 */
 	connect() {
-		let hash = this.config.serviceSettingsHash;
+		const hash = this.config.serviceSettingsHash;
 
 		return this.getClient(hash)
 			.then((client) => {
@@ -559,7 +562,7 @@ class ProviderSFTP extends ProviderBase {
 						local,
 						new PushError(i18n.t(
 							'file_not_found',
-							this.paths.getBaseName(local)
+							paths.getBaseName(local)
 						)),
 						TRANSFER_TYPES.PUT
 					);
@@ -636,7 +639,7 @@ class ProviderSFTP extends ProviderBase {
 	 * of the utils.collisionOpts collision actions.
 	 */
 	get(local, remote, collisionAction) {
-		let localPath = this.paths.getNormalPath(local),
+		let localPath = paths.getNormalPath(local),
 			remoteDir = path.dirname(remote),
 			remoteFilename = path.basename(remote);
 
@@ -662,7 +665,7 @@ class ProviderSFTP extends ProviderBase {
 						local,
 						new PushError(i18n.t(
 							'remote_file_not_found',
-							this.paths.getBaseName(local)
+							paths.getBaseName(local)
 						)),
 						TRANSFER_TYPES.GET
 					);
@@ -700,7 +703,7 @@ class ProviderSFTP extends ProviderBase {
 						localFilename = path.basename(localPath);
 
 						// Rename (non-colliding) and get
-						return this.paths.listDirectory(localDir, this.pathCache.local)
+						return this.pathCache.listDirectory(localDir, this.pathCaches.local)
 							.then((dirContents) => {
 								let localPath = localDir + '/' +
 									this.getNonCollidingName(
@@ -817,7 +820,7 @@ class ProviderSFTP extends ProviderBase {
 	 * @param {string} remote - Remote path to replace upload to.
 	 */
 	clientPut(local, remote) {
-		let localPath = this.paths.getNormalPath(local);
+		let localPath = paths.getNormalPath(local);
 
 		return new Promise((resolve, reject) => {
 			this.globalReject = reject;
@@ -859,14 +862,14 @@ class ProviderSFTP extends ProviderBase {
 	 */
 	clientGetByStream(local, remote) {
 		let client,
-			localPath = this.paths.getNormalPath(local);
+			localPath = paths.getNormalPath(local);
 
 		return this.connect()
 			.then((connection) => {
 				client = connection;
 			})
-			.then(() => this.paths.ensureDirExists(
-				this.paths.getDirName(local)
+			.then(() => paths.ensureDirExists(
+				paths.getDirName(local)
 			))
 			.then(() => this.getMimeCharset(remote))
 			.then((charset) => {
@@ -909,20 +912,20 @@ class ProviderSFTP extends ProviderBase {
 		return this.connect().then((connection) => {
 			return this.list(path.dirname(dir))
 				.then(() => {
-					let existing = this.pathCache.remote.getFileByPath(dir);
+					let existing = this.pathCaches.remote.getFileByPath(dir);
 
 					if (existing === null) {
 						return connection.mkdir(dir)
 							.then(() => {
 								// Change path mode
 								return this.setRemotePathMode(
-									this.paths.addTrailingSlash(dir, '/'),
+									paths.addTrailingSlash(dir, '/'),
 									this.config.service.fileMode
 								);
 							})
 							.then(() => {
 								// Add dir to cache
-								this.pathCache.remote.addFilePath(
+								this.pathCaches.remote.addFilePath(
 									dir,
 									((new Date()).getTime() / 1000),
 									'd'
@@ -946,11 +949,11 @@ class ProviderSFTP extends ProviderBase {
 	 * @param {string} ignoreGlobs - List of globs to ignore.
 	 */
 	list(dir, ignoreGlobs) {
-		if (this.pathCache.remote.dirIsCached(dir)) {
+		if (this.pathCaches.remote.dirIsCached(dir)) {
 			// Retrieve cached path list
 			// TODO: Allow ignoreGlobs option on this route
 			utils.trace('ProviderSFTP#list', `Using cached path for ${dir}`);
-			return Promise.resolve(this.pathCache.remote.getDir(dir));
+			return Promise.resolve(this.pathCaches.remote.getDir(dir));
 		} else {
 			// Get path list interactively and cache
 			return this.connect()
@@ -975,7 +978,7 @@ class ProviderSFTP extends ProviderBase {
 								}
 
 								if (!match || !match.length) {
-									this.pathCache.remote.addFilePath(
+									this.pathCaches.remote.addFilePath(
 										pathName,
 										(item.modifyTime / 1000),
 										(item.type === 'd' ? 'd' : 'f')
@@ -983,7 +986,7 @@ class ProviderSFTP extends ProviderBase {
 								}
 							});
 
-							return this.pathCache.remote.getDir(dir);
+							return this.pathCaches.remote.getDir(dir);
 						});
 				});
 		}
@@ -1007,7 +1010,7 @@ class ProviderSFTP extends ProviderBase {
 		return new Promise((resolve, reject) => {
 			this.cacheRecursiveList(dir, counter, ignoreGlobs, () => {
 				if (counter.scanned === counter.total) {
-					resolve(this.pathCache.remote.getRecursiveFiles(
+					resolve(this.pathCaches.remote.getRecursiveFiles(
 						dir
 					));
 				}
@@ -1090,13 +1093,13 @@ class ProviderSFTP extends ProviderBase {
 		let result = {};
 
 		return this.list(remoteDir)
-			.then(() => (this.paths.getFileStats(this.paths.getNormalPath(local))
+			.then(() => (paths.getFileStats(paths.getNormalPath(local))
 				.then(localStats => {
 					result.local = localStats;
 				})
 			))
 			.then(() => {
-				result.remote = this.pathCache.remote.getFileByPath(
+				result.remote = this.pathCaches.remote.getFileByPath(
 					remote
 				);
 
@@ -1242,10 +1245,10 @@ class ProviderSFTP extends ProviderBase {
 	 * @param {uri} uri - VSCode URI to perform replacement on.
 	 */
 	convertUriToRemote(uri) {
-		let file = this.paths.getNormalPath(uri),
+		let file = paths.getNormalPath(uri),
 			remotePath;
 
-		remotePath = this.paths.stripTrailingSlash(this.config.service.root) +
+		remotePath = paths.stripTrailingSlash(this.config.service.root) +
 			utils.filePathReplace(file, path.dirname(this.config.serviceFile), '');
 
 		remotePath = (path.join(remotePath).split(path.sep)).join('/');
@@ -1259,10 +1262,10 @@ class ProviderSFTP extends ProviderBase {
 	 * @returns {uri} A qualified Uri object.
 	 */
 	convertRemoteToUri(remotePath) {
-		return this.paths.join(
+		return paths.join(
 			path.dirname(this.config.serviceFile),
 			remotePath.replace(
-				this.paths.stripTrailingSlash(this.config.service.root, '/') + '/', ''
+				paths.stripTrailingSlash(this.config.service.root, '/') + '/', ''
 			)
 		);
 	}

@@ -1,5 +1,4 @@
 const Configurable = require('./Configurable');
-const Paths = require('./Paths');
 const PushError = require('./lib/types/PushError');
 const channel = require('./lib/channel');
 
@@ -7,7 +6,6 @@ class PushBase extends Configurable {
 	constructor() {
 		super();
 
-		this.paths = new Paths();
 		this.timers = {};
 	}
 

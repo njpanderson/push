@@ -1,8 +1,6 @@
 const vscode = require('vscode');
 
-const Paths = require('../Paths');
-
-const paths = new Paths();
+const paths = require('../lib/paths');
 
 /**
  * Creates a new WatchListItem item.

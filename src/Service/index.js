@@ -1,14 +1,11 @@
-const ProviderBase = require('../ProviderBase');
-const ProviderSFTP = require('./providers/ProviderSFTP');
-const ProviderFile = require('./providers/ProviderFile');
+const ServiceDirectory = require('./ServiceDirectory');
 const ServiceSettings = require('./ServiceSettings');
-const ServiceType = require('./ServiceType');
 const PushBase = require('../PushBase');
-const Paths = require('../Paths');
 const PushError = require('../lib/types/PushError');
 const config = require('../lib/config');
 const utils = require('../lib/utils');
 const i18n = require('../i18n');
+const paths = require('../lib/paths');
 
 class Service extends PushBase {
 	constructor(options) {
@@ -18,21 +15,17 @@ class Service extends PushBase {
 
 		this.setOptions(options);
 
-		this.services = {
-			SFTP: ProviderSFTP,
-			File: ProviderFile
-		};
+		this.directory = new ServiceDirectory();
 
 		// Create ServiceSettings instance for managing the files
 		this.settings = new ServiceSettings({
-			serviceList: this.getList(),
+			serviceList: this.directory.getQuickPickList(),
 			onServiceFileUpdate: this.options.onServiceFileUpdate
 		});
 
 		this.getStateProgress = this.getStateProgress.bind(this);
 
 		this.activeService = null;
-		this.paths = new Paths();
 	}
 
 	/**
@@ -56,36 +49,6 @@ class Service extends PushBase {
 	}
 
 	/**
-	 * Produce a list of the services available, for use within a QuickPick dialog.
-	 * @return {ServiceType[]} List of the services, including default settings payloads.
-	 */
-	getList() {
-		let options = [],
-			service, settingsPayload;
-
-		for (service in this.services) {
-			settingsPayload = {
-				'env': 'default',
-				'default': {
-					service
-				}
-			};
-
-			settingsPayload.default.options = this.getServiceSchemaValues(service);
-
-			options.push(new ServiceType(
-				service,
-				this.services[service].description,
-				this.services[service].detail,
-				settingsPayload,
-				this.getServiceSchemaValues(service, 'required')
-			));
-		}
-
-		return options;
-	}
-
-	/**
 	 * @description
 	 * Similar to base setConfig but allows a mutated config including ad-hoc
 	 * service settings. Used primarily with Service#exec to invoke service
@@ -96,10 +59,9 @@ class Service extends PushBase {
 	 * @param {object} [configObject] - optional config set to apply.
 	 */
 	setConfig(configObject) {
-		let restart = (
+		const restart =
 			typeof configObject !== 'undefined' &&
-			configObject.serviceName !== this.config.serviceName
-		);
+			configObject.serviceName !== this.config.serviceName;
 
 		utils.trace(
 			'Service#setConfig',
@@ -111,12 +73,12 @@ class Service extends PushBase {
 		 * Done here instead of within ServiceSettings as this class knows
 		 * more about the available services.
 		 */
-		if (configObject && !this.services[configObject.serviceName]) {
+		if (configObject && !ServiceDirectory.services[configObject.serviceName]) {
 			// Service doesn't exist - return null and produce error
 			throw new PushError(i18n.t(
 				'service_name_invalid',
 				configObject.serviceName,
-				this.paths.getNormalPath(configObject.serviceUri)
+				paths.getNormalPath(configObject.serviceUri)
 			));
 		}
 
@@ -129,7 +91,7 @@ class Service extends PushBase {
 	}
 
 	getStateProgress() {
-		return (this.activeService && this.activeService.progress) || null;
+		return this.activeService && this.activeService.progress || null;
 	}
 
 	/**
@@ -153,7 +115,7 @@ class Service extends PushBase {
 		this.activeService.setConfig(this.config);
 
 		// Run the service method with supplied arguments
-		let result = this.activeService[method].apply(
+		const result = this.activeService[method].apply(
 			this.activeService,
 			args
 		);
@@ -223,50 +185,14 @@ class Service extends PushBase {
 			);
 
 			// Instantiate service
-			this.activeService = new this.services[this.config.serviceName](
+			this.activeService = new ServiceDirectory.services[this.config.serviceName](
 				{
 					onDisconnect: this.options.onDisconnect
 				},
-				this.getServiceSchemaValues(this.config.serviceName),
-				this.getServiceSchemaValues(this.config.serviceName, 'required')
+				this.directory.getServiceSchemaValues(this.config.serviceName),
+				this.directory.getServiceSchemaValues(this.config.serviceName, 'required')
 			);
 		}
-	}
-
-	/**
-	 * Get the default settings for a service, extended from the base defaults
-	 * @param {string} serviceName - Name of the service to retrieve defaults for.
-	 */
-	getServiceSchemaValues(serviceSchema, key = 'default') {
-		const values = {};
-
-		if (typeof serviceSchema === 'string') {
-			serviceSchema = this.services[serviceSchema].optionSchema;
-		}
-
-		// Get default values for each key from the options object
-		Object.entries(serviceSchema).forEach((option) => {
-			if (key === 'required' && option[1][key]) {
-				// Getting required value
-				values[option[0]] = true;
-			} else if (key !== 'required') {
-				// Getting default values
-				values[option[0]] = option[1][key] || '';
-			}
-
-			if (
-				option[1].fields &&
-				(key !== 'required' || (key === 'required' && values[option[0]]))
-			) {
-				// Nested fields — recurse and collect further items.
-				values[option[0]] = this.getServiceSchemaValues(
-					option[1].fields,
-					key
-				);
-			}
-		});
-
-		return values;
 	}
 }
 
