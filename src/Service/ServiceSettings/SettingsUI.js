@@ -3,10 +3,12 @@ const vscode = require('vscode');
 const utils = require('../../lib/utils');
 const VSCodeMessaging = require('../../messaging/VSCodeMessaging');
 const { COMMS } = require('../../lib/constants/static');
+const ServiceDirectory = require('../ServiceDirectory');
 
 class SettingsUI {
 	constructor(settings) {
 		this.settings = settings;
+		this.directory = new ServiceDirectory();
 	}
 
 	/**
@@ -30,20 +32,26 @@ class SettingsUI {
 			// Set panel content
 			this.panel.webview.html = utils.getAsset('service-ui/index.html');
 
-			this.messaging.onReceive((type, data) => {
-				console.log('message from webview!');
-				console.log(type, data);
-			});
+			this.messaging.onReceive(this.onReceive.bind(this));
 
 			this.messaging.post(
-				COMMS.TASK_INITIAL_STATE,
-				{
-					contents: this.settings.parseServerFile(settingsFile, false)
-				}
+				COMMS.SET_INITIAL_STATE,
+				this.settings.parseServerFile(settingsFile, false)
 			);
 
 			resolve();
 		});
+	}
+
+	onReceive(type, data) {
+		switch (type) {
+		case COMMS.GET_SERVICE_OPT_SCHEMA:
+			this.messaging.post(
+				COMMS.SET_SERVICE_OPT_SCHEMA,
+				{} // TODO: Schema goes here!
+			);
+			break;
+		}
 	}
 }
 
