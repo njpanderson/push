@@ -36,7 +36,7 @@ describe('PathCache', function() {
 		it('should list a directory', () => {
 			return pathcache.listDirectory(fixtures.mockFolder)
 				.then((list) => {
-					let test = [];
+					const test = [];
 
 					list.forEach((item) => {
 						test.push({

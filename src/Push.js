@@ -223,7 +223,7 @@ class Push extends PushBase {
 			}))
 			.then((option) => {
 				// Get Uris from the selected commit
-				let result = { option };
+				const result = { option };
 
 				if (!option) {
 					throw undefined;
@@ -379,7 +379,7 @@ class Push extends PushBase {
 	}
 
 	didChangeActiveTextEditor(textEditor, settings) {
-		let uploadQueue = this.getQueue(Push.queueDefs.upload, false);
+		const uploadQueue = this.getQueue(Push.queueDefs.upload, false);
 
 		if (
 			!textEditor ||
@@ -520,9 +520,7 @@ class Push extends PushBase {
 		}
 
 		return Promise.all(uris.map(uri => {
-			let remotePath;
-
-			remotePath = this.service.execSync(
+			const remotePath = this.service.execSync(
 				'convertUriToRemote',
 				this.configWithServiceSettings(uri),
 				[uri]
@@ -566,14 +564,14 @@ class Push extends PushBase {
 	 */
 	execUploadQueue() {
 		return new Promise((resolve, reject) => {
-			let uploadQueue, queue;
+			let queue;
 
 			if (!this.config.uploadQueue) {
 				channel.appendLocalisedInfo('upload_queue_disabled');
 				return reject('Upload queue disabled.');
 			}
 
-			uploadQueue = this.getQueue(Push.queueDefs.upload);
+			const uploadQueue = this.getQueue(Push.queueDefs.upload);
 
 			if (uploadQueue.tasks.length) {
 				queue = this.queue(uploadQueue.tasks, true);
@@ -597,15 +595,12 @@ class Push extends PushBase {
 	 */
 	diffRemote(uri) {
 		return new Promise((resolve, reject) => {
-			let tmpFile, remotePath;
-
-			tmpFile = utils.getTmpFile();
-
-			remotePath = this.service.execSync(
-				'convertUriToRemote',
-				this.configWithServiceSettings(uri),
-				[uri]
-			);
+			const tmpFile = utils.getTmpFile(),
+				remotePath = this.service.execSync(
+					'convertUriToRemote',
+					this.configWithServiceSettings(uri),
+					[uri]
+				);
 
 			// Use the queue to get a file then diff it
 			this.queue([{
@@ -709,7 +704,7 @@ class Push extends PushBase {
 	 * @param {object} queueDef - One of the Push.queueDefs items.
 	 */
 	listQueueItems(queueDef) {
-		let queue = this.getQueue(queueDef, false);
+		const queue = this.getQueue(queueDef, false);
 
 		if (queue) {
 			channel.appendLocalisedInfo();
@@ -731,7 +726,7 @@ class Push extends PushBase {
 	 * @param {TransferResult[]} transferResults - Results to draw Uris from.
 	 */
 	remoteQueuedItemsByTransfer(queueDef, transferResults) {
-		let queue = this.getQueue(queueDef, false);
+		const queue = this.getQueue(queueDef, false);
 
 		if (queue) {
 			transferResults.forEach(result => queue.removeTaskByUri(result.src));
@@ -745,7 +740,7 @@ class Push extends PushBase {
 	 * @param {uri} uri - Uri of the item to remove.
 	 */
 	removeQueuedUri(queueDef, uri) {
-		let queue = this.getQueue(queueDef, false);
+		const queue = this.getQueue(queueDef, false);
 
 		if (queue) {
 			queue.removeTaskByUri(uri);
@@ -754,7 +749,7 @@ class Push extends PushBase {
 	}
 
 	clearQueue(queueDef) {
-		let queue = this.getQueue(queueDef, false);
+		const queue = this.getQueue(queueDef, false);
 
 		if (queue && queue.empty()) {
 			this.refreshExplorerQueues();
@@ -844,8 +839,9 @@ class Push extends PushBase {
 	 * @param {boolean} silent - Set `true` to create no notices when stopping the queue.
 	 */
 	stopCancellableQueues(force = false, silent = false) {
-		let tasks = [],
-			def, queue;
+		let def, queue;
+
+		const tasks = [];
 
 		for (def in Push.queueDefs) {
 			if (
@@ -871,15 +867,16 @@ class Push extends PushBase {
 	 * stopping the queue.
 	 */
 	stopQueue(queueDef, force = false, silent = false) {
-		let queue = this.getQueue(queueDef);
+		const queue = this.getQueue(queueDef);
 
 		return vscode.window.withProgress({
 			location: vscode.ProgressLocation.Window,
 			title: 'Push'
 		}, (progress) => {
 			return new Promise((resolve, reject) => {
-				let tasks = [],
-					timer;
+				let timer;
+
+				const tasks = [];
 
 				progress.report({ message: i18n.t('stopping') });
 				utils.trace('Push#stopQueue', 'Stopping queue');
@@ -968,8 +965,9 @@ class Push extends PushBase {
 	 */
 	transfer(uris, method) {
 		let ignoreGlobs = [],
-			tasks = [],
 			action, actionTaken;
+
+		const tasks = [];
 
 		this.service.settings.clear();
 
@@ -1074,7 +1072,7 @@ class Push extends PushBase {
 	 * @returns {Promise} A promise, resolving when the directory has transferred.
 	 */
 	transferDirectory(uri, method) {
-		let ignoreGlobs = [], actionTaken, config, remoteUri;
+		let ignoreGlobs = [], actionTaken;
 
 		// Check the source directory is a usable scheme
 		if (!paths.isValidScheme(uri)) {
@@ -1098,9 +1096,10 @@ class Push extends PushBase {
 
 		// Always filter multiple Uris by the ignore globs
 		ignoreGlobs = this.config.ignoreGlobs;
-		config = this.configWithServiceSettings(uri);
 
-		remoteUri = this.service.execSync(
+		const config = this.configWithServiceSettings(uri);
+
+		const remoteUri = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
@@ -1121,12 +1120,10 @@ class Push extends PushBase {
 						`Found ${files.length} file(s) on local`
 					);
 
-					let tasks = files.map((uri) => {
-						let remotePath;
-
+					const tasks = files.map((uri) => {
 						uri = vscode.Uri.file(uri);
 
-						remotePath = this.service.execSync(
+						const remotePath = this.service.execSync(
 							'convertUriToRemote',
 							config,
 							[uri]
@@ -1156,11 +1153,10 @@ class Push extends PushBase {
 						'Found ${files.length} file(s) on remote'
 					);
 
-					let tasks = files.map((file) => {
-						let uri;
-
+					const tasks = files.map((file) => {
 						file = file.pathName || file;
-						uri = this.service.execSync(
+
+						const uri = this.service.execSync(
 							'convertRemoteToUri',
 							config,
 							[file]
