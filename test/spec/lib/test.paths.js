@@ -9,8 +9,8 @@ const fixtures = require('../../fixtures/general');
 // Mocks
 const vscode = require('../../mocks/node/vscode');
 
-describe('Paths', function() {
-	let Paths, paths;
+describe('paths', function() {
+	let paths;
 
 	useMockery(() => {
 		useMockery
@@ -24,12 +24,11 @@ describe('Paths', function() {
 	});
 
 	before(() => {
-		Paths = require('../../../src/Paths');
+		paths = require('../../../src/lib/paths');
 	});
 
 	beforeEach(() => {
 		counter.reset();
-		paths = new Paths();
 	});
 
 	describe('#fileExists', () => {
@@ -176,43 +175,6 @@ describe('Paths', function() {
 			expect(paths.isDirectory(
 				fixtures.mockUriMissingDir
 			)).to.be.false;
-		});
-	});
-
-	describe('#listDirectory', () => {
-		it('should list a directory', () => {
-			return paths.listDirectory(fixtures.mockFolder)
-				.then((list) => {
-					let test = [];
-
-					list.forEach((item) => {
-						test.push({
-							name: item.name,
-							pathName: item.pathName,
-							type: item.type
-						});
-					});
-
-					expect(test).to.include.deep.members([{
-						name: '.hidden-file',
-						pathName: path.join(
-							path.dirname(path.dirname(__dirname)), 'fixtures', 'transfer', 'test-folder', '.hidden-file'
-						),
-						type: 'f'
-					}, {
-						name: 'another-test-subfile.txt',
-						pathName: path.join(
-							path.dirname(path.dirname(__dirname)), 'fixtures', 'transfer', 'test-folder', 'another-test-subfile.txt'
-						),
-						type: 'f'
-					}, {
-						name: 'test-subfile.txt',
-						pathName: path.join(
-							path.dirname(path.dirname(__dirname)), 'fixtures', 'transfer', 'test-folder', 'test-subfile.txt'
-						),
-						type: 'f'
-					}]);
-				});
 		});
 	});
 

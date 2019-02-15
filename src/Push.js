@@ -287,7 +287,7 @@ class Push extends PushBase {
 
 		switch (eventType) {
 		case 'onDidSaveTextDocument':
-			if (!path.pathInWorkspaceFolder(data.uri)) {
+			if (!paths.pathInWorkspaceFolder(data.uri)) {
 				// Do nothing with files outside of the workspace
 				return;
 			}
