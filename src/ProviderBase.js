@@ -481,12 +481,59 @@ class ServiceBase {
 ServiceBase.description = '';
 ServiceBase.detail = '';
 
-ServiceBase.defaults = {
-	timeZoneOffset: 0,
-	testCollisionTimeDiffs: true,
-	collisionUploadAction: null,
-	collisionDownloadAction: null,
-	followSymlinks: false
+// Default type: "text"
+// Default value: ""
+ServiceBase.optionSchema = {
+	timeZoneOffset: {
+		label: i18n.t('opt_base_tz_offset'),
+		type: 'number',
+		default: 0,
+		min: 0,
+		max: 24
+	},
+	testCollisionTimeDiffs: {
+		label: i18n.t('opt_base_test_time_diff'),
+		default: true
+	},
+	collisionUploadAction: {
+		label: i18n.t('opt_base_action_upload'),
+		type: 'select',
+		options: [{
+			label: i18n.t('opt_base_stop'),
+			value: 'stop'
+		}, {
+			label: i18n.t('opt_base_skip'),
+			value: 'skip'
+		}, {
+			label: i18n.t('opt_base_overwrite'),
+			value: 'overwrite'
+		}, {
+			label: i18n.t('opt_base_rename'),
+			value: 'rename'
+		}]
+	},
+	collisionDownloadAction: {
+		label: i18n.t('opt_base_action_download'),
+		type: 'select',
+		options: [{
+			label: i18n.t('opt_base_stop'),
+			value: 'stop'
+		}, {
+			label: i18n.t('opt_base_skip'),
+			value: 'skip'
+		}, {
+			label: i18n.t('opt_base_overwrite'),
+			value: 'overwrite'
+		}, {
+			label: i18n.t('opt_base_rename'),
+			value: 'rename'
+		}]
+	},
+	followSymlinks: {
+		label: i18n.t('opt_base_follow_symlinks'),
+		type: 'boolean',
+		default: false
+	}
 };
 
 ServiceBase.pathSep = Paths.sep;

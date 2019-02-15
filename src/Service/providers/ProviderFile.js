@@ -384,12 +384,13 @@ class ProviderFile extends ProviderBase {
 
 ProviderFile.description = i18n.t('file_class_description');
 
-ProviderFile.defaults = {
-	root: '/'
-};
-
-ProviderFile.required = {
-	root: true
+ProviderFile.optionSchema = {
+	...ProviderBase.optionSchema,
+	root: {
+		label: i18n.t('opt_file_root'),
+		default: '/',
+		required: true
+	}
 };
 
 module.exports = ProviderFile;
