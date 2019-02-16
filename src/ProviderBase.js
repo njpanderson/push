@@ -7,6 +7,10 @@ const paths = require('./lib/paths');
 const channel = require('./lib/channel');
 const Cache = require('./PathCache/Cache');
 const i18n = require('./i18n');
+const {
+	FIELDS
+} = require('./lib/constants/static');
+
 
 /**
  * Base service class. Intended to be extended by any new service
@@ -477,21 +481,25 @@ ServiceBase.detail = '';
 
 // Default type: "text"
 // Default value: ""
-ServiceBase.optionSchema = {
-	timeZoneOffset: {
+ServiceBase.optionSchema = [
+	{
+		name: 'timeZoneOffset',
 		label: i18n.t('opt_base_tz_offset'),
-		type: 'number',
+		type: FIELDS.NUMBER,
 		default: 0,
 		min: 0,
 		max: 24
 	},
-	testCollisionTimeDiffs: {
+	{
+		name: 'testCollisionTimeDiffs',
 		label: i18n.t('opt_base_test_time_diff'),
+		type: FIELDS.BOOLEAN,
 		default: true
 	},
-	collisionUploadAction: {
+	{
+		name: 'collisionUploadAction',
 		label: i18n.t('opt_base_action_upload'),
-		type: 'select',
+		type: FIELDS.SELECT,
 		options: [{
 			label: i18n.t('opt_base_stop'),
 			value: 'stop'
@@ -506,9 +514,10 @@ ServiceBase.optionSchema = {
 			value: 'rename'
 		}]
 	},
-	collisionDownloadAction: {
+	{
+		name: 'collisionDownloadAction',
 		label: i18n.t('opt_base_action_download'),
-		type: 'select',
+		type: FIELDS.SELECT,
 		options: [{
 			label: i18n.t('opt_base_stop'),
 			value: 'stop'
@@ -523,12 +532,13 @@ ServiceBase.optionSchema = {
 			value: 'rename'
 		}]
 	},
-	followSymlinks: {
+	{
+		name: 'followSymlinks',
 		label: i18n.t('opt_base_follow_symlinks'),
-		type: 'boolean',
+		type: FIELDS.BOOLEAN,
 		default: false
 	}
-};
+];
 
 ServiceBase.pathSep = paths.sep;
 

@@ -5,7 +5,10 @@ import Form from './Form';
 function Environments(props) {
 	const environments = props.envs.map((env) => {
 		return (
-			<Form env={env} key={env.id} />
+			<Form
+				schema={props.schemas[env.service]}
+				env={env}
+				key={env.id} />
 		);
 	});
 
@@ -18,7 +21,8 @@ function Environments(props) {
 
 Environments.propTypes = {
 	currentEnv: PropTypes.string,
-	envs: PropTypes.array
+	envs: PropTypes.array,
+	schemas: PropTypes.object
 };
 
 export default Environments;

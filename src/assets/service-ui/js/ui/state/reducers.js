@@ -7,26 +7,33 @@ import {
 } from './actions';
 
 const initialState = {
-	env: ''
+	settings: {
+		env: ''
+	},
+	schemas: {}
 };
 
 export default function serviceFile(state = initialState, action) {
 	let newState;
-
-	console.log('reducers/serviceFile', state, action);
 
 	switch (action.type) {
 	case SET_STATE:
 		return {...state, ...action.state};
 
 	case SET_CURRENT_ENV:
-		return {...state, env: action.env};
+		return {
+			...state,
+			settings: {
+				...state.settings,
+				env: action.env
+			}
+		};
 
 	case ADD_ENV:
 	case SET_ENV:
-		if (action.type === SET_ENV && !state[action.env]) {
+		if (action.type === SET_ENV && !state.settings[action.env]) {
 			throw new Error(`Env "${action.env}" must exist within state to be edited.`);
-		} else if (action.type === ADD_ENV && state[action.env]) {
+		} else if (action.type === ADD_ENV && state.settings[action.env]) {
 			throw new Error(`Env "${action.env}" exists within state. It cannot be added.`);
 		}
 
@@ -36,11 +43,14 @@ export default function serviceFile(state = initialState, action) {
 
 		return {
 			...state,
-			[action.env]: action.data
+			settings: {
+				...state.settings,
+				[action.env]: action.data
+			}
 		};
 
 	case REMOVE_ENV:
-		if (!state[action.env]) {
+		if (!state.settings[action.env]) {
 			throw new Error(`Env "${action.env}" must exist within state to be removed.`);
 		}
 
@@ -50,11 +60,11 @@ export default function serviceFile(state = initialState, action) {
 
 		// Get state and delete the env
 		newState = {...state};
-		delete newState[action.env];
+		delete newState.settings[action.env];
 
-		if (newState.env === action.env) {
+		if (newState.settings.env === action.env) {
 			// Current env is set to the deleted env - re-set to the first env
-			newState.env = getFirstEnv(newState);
+			newState.settings.env = getFirstEnv(newState);
 		}
 
 		return newState;
@@ -68,7 +78,7 @@ export default function serviceFile(state = initialState, action) {
  * @param {object} state - Current state
  */
 function getEnvCount(state) {
-	return (Object.keys(state).filter(key => key !== 'env')).length;
+	return (Object.keys(state.settings).filter(key => key !== 'env')).length;
 }
 
 /**
@@ -76,5 +86,5 @@ function getEnvCount(state) {
  * @param {object} state - Current state
  */
 function getFirstEnv(state) {
-	return (Object.keys(state).find(key => key !== 'env'));
+	return (Object.keys(state.settings).find(key => key !== 'env'));
 }
