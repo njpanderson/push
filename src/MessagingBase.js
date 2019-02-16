@@ -18,12 +18,22 @@ class MessagingBase {
 	onReceive() {
 		if (typeof arguments[0] === 'function') {
 			this.subscribers.onReceive = arguments[0];
-		} else {
-			// Handle event
+		} else if (
+			typeof MessageEvent !== 'undefined' &&
+			arguments[0] instanceof MessageEvent
+		) {
+			// Handle MessageEvent event
 			this.fire(
 				'onReceive',
-				this.getMessageType(event.data),
-				this.getMessageData(event.data)
+				this.getMessageType(arguments[0].data),
+				this.getMessageData(arguments[0].data)
+			);
+		} else if (arguments[0] instanceof Object) {
+			// Handle regular object
+			this.fire(
+				'onReceive',
+				this.getMessageType(arguments[0]),
+				this.getMessageData(arguments[0])
 			);
 		}
 	}
@@ -39,7 +49,7 @@ class MessagingBase {
 	}
 
 	getMessageData(message) {
-		return message.data;
+		return message.data || null;
 	}
 
 	formatMessage(type, data) {

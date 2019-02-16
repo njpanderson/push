@@ -52,22 +52,22 @@ class ServiceDirectory {
 		}
 
 		// Get default values for each key from the options object
-		Object.entries(serviceSchema).forEach((option) => {
-			if (key === 'required' && option[1][key]) {
+		serviceSchema.forEach((option) => {
+			if (key === 'required' && option[key]) {
 				// Getting required value
-				values[option[0]] = true;
+				values[option.name] = true;
 			} else if (key !== 'required') {
 				// Getting default values
-				values[option[0]] = option[1][key] || '';
+				values[option.name] = option[key] || '';
 			}
 
 			if (
-				option[1].fields &&
+				option.fields &&
 				(key !== 'required' || (key === 'required' && values[option[0]]))
 			) {
 				// Nested fields — recurse and collect further items.
-				values[option[0]] = this.getServiceSchemaValues(
-					option[1].fields,
+				values[option.name] = this.getServiceSchemaValues(
+					option.fields,
 					key
 				);
 			}
@@ -75,8 +75,15 @@ class ServiceDirectory {
 
 		return values;
 	}
+
+	getSchema(service) {
+		return ServiceDirectory.services[service].optionSchema || {};
+	}
 }
 
+/**
+ * A list of the service providers available.
+ */
 ServiceDirectory.services = {
 	SFTP: ProviderSFTP,
 	File: ProviderFile

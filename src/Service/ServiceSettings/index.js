@@ -7,12 +7,14 @@ const micromatch = require('micromatch');
 const Configurable = require('../../Configurable');
 const ServiceType = require('../ServiceType');
 const ServicePromptResult = require('../ServicePromptResult');
+const ServiceDirectory = require('../ServiceDirectory');
 const channel = require('../../lib/channel');
 const paths = require('../../lib/paths');
 const PushError = require('../../lib/types/PushError');
 const utils = require('../../lib/utils');
 const i18n = require('../../i18n');
 const SettingsUI = require('./SettingsUI');
+
 const {
 	CONFIG_FORMATS,
 	DEFAULT_SERVICE_CONFIG
@@ -36,6 +38,8 @@ class ServiceSettings extends Configurable {
 
 		this.setOptions(options);
 		this.settingsCache = {};
+
+		this.directory = new ServiceDirectory();
 		this.ui = new SettingsUI(this);
 	}
 
@@ -357,6 +361,37 @@ class ServiceSettings extends Configurable {
 		return false;
 	}
 
+	getServerEnvDetail(jsonData, key) {
+		switch (jsonData[key].service) {
+		case 'SFTP':
+			return (jsonData[key].options && (
+				jsonData[key].options.host ?
+					jsonData[key].options.host + (
+						(jsonData[key].options.port ? ':' + jsonData[key].options.port : '')
+					) :
+					i18n.t('no_host_defined')
+			)) || '';
+
+		case 'File':
+			return (jsonData[key].options && jsonData[key].options.root) || '';
+		}
+	}
+
+	/**
+	 * Retrieves the raw contents of a settings file at the specified Uri.
+	 * @param {Uri} uri - File Uri.
+	 */
+	getServerFile(uri) {
+		const filename = paths.getNormalPath(uri);
+
+		utils.trace(
+			'ServiceSettings#getServerFile',
+			`Service file read at ${filename}`
+		);
+
+		return fs.readFileSync(filename, 'utf8').toString().trim();
+	}
+
 	addCachedSettings(uriPath, settings) {
 		this.settingsCache[uriPath] = settings;
 		this.settingsCache[uriPath].newFile = true;
@@ -516,22 +551,6 @@ class ServiceSettings extends Configurable {
 		});
 	}
 
-	getServerEnvDetail(jsonData, key) {
-		switch (jsonData[key].service) {
-		case 'SFTP':
-			return (jsonData[key].options && (
-				jsonData[key].options.host ?
-					jsonData[key].options.host + (
-						(jsonData[key].options.port ? ':' + jsonData[key].options.port : '')
-					) :
-					i18n.t('no_host_defined')
-			)) || '';
-
-		case 'File':
-			return (jsonData[key].options && jsonData[key].options.root) || '';
-		}
-	}
-
 	/**
 	 * Produce a settings filename prompt.
 	 * @param {string} exampleFileName - Filename example to start with.
@@ -603,6 +622,29 @@ class ServiceSettings extends Configurable {
 	}
 
 	/**
+	 * Get the options schema for a service.
+	 * @param {string} service - Service key as defined in ServiceDirectory.services.
+	 */
+	getServiceSchema(service) {
+		return this.directory.getSchema(service);
+	}
+
+	/**
+	 * Get the options schema for all currently available services.
+	 */
+	getAllServiceSchemas() {
+		const result = {};
+
+		let service;
+
+		for (service in ServiceDirectory.services) {
+			result[service] = this.getServiceSchema(service);
+		}
+
+		return result;
+	}
+
+	/**
 	 * Retrieves the contents of a settings file by locating it within the current
 	 * `dir` path or within the path's ancestors.
 	 * @param {Uri} dir - The contextual directory in which to begin searching.
@@ -640,21 +682,6 @@ class ServiceSettings extends Configurable {
 				basename: true
 			}
 		);
-	}
-
-	/**
-	 * Retrieves the raw contents of a settings file at the specified Uri.
-	 * @param {Uri} uri - File Uri.
-	 */
-	getServerFile(uri) {
-		const filename = paths.getNormalPath(uri);
-
-		utils.trace(
-			'ServiceSettings#getServerFile',
-			`Service file read at ${filename}`
-		);
-
-		return fs.readFileSync(filename, 'utf8').toString().trim();
 	}
 
 	/**

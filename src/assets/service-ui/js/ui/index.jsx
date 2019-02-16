@@ -15,29 +15,32 @@ import Environments from './containers/Environments';
 
 const store = createStore(serviceFile);
 
-store.dispatch(setState({
-	env: 'dev',
-	dev: {
-		service: 'SFTP',
-		options: {
-			host: 'raspberrypi.local',
-			username: 'pushtest',
-			root: '/home/pushtest/jsonc-prod/dev',
-			followSymlinks: true,
-			testCollisionTimeDiffs: false
-		}
-	},
-	prod: {
-		service: 'SFTP',
-		options: {
-			host: 'neilinscotland.net',
-			username: 'push-test',
-			root: '/home/push-test/jsonc-prod/prod',
-			followSymlinks: true,
-			testCollisionTimeDiffs: false
-		}
-	}
-}));
+// store.dispatch(setState({
+// 	schemas: {},
+// 	settings: {
+// 		env: 'dev',
+// 		dev: {
+// 			service: 'SFTP',
+// 			options: {
+// 				host: 'raspberrypi.local',
+// 				username: 'pushtest',
+// 				root: '/home/pushtest/jsonc-prod/dev',
+// 				followSymlinks: true,
+// 				testCollisionTimeDiffs: false
+// 			}
+// 		},
+// 		prod: {
+// 			service: 'SFTP',
+// 			options: {
+// 				host: 'neilinscotland.net',
+// 				username: 'push-test',
+// 				root: '/home/push-test/jsonc-prod/prod',
+// 				followSymlinks: true,
+// 				testCollisionTimeDiffs: false
+// 			}
+// 		}
+// 	}
+// }));
 
 class Root extends React.Component {
 	constructor() {
@@ -45,12 +48,18 @@ class Root extends React.Component {
 
 		this.messaging = new WebMessaging(acquireVsCodeApi());
 		this.messaging.onReceive(this.receiveMessage.bind(this));
+
+		// Send intiialisation ping
+		this.messaging.post(COMMS.VIEW_INIT);
 	}
 
 	receiveMessage(type, data) {
+		console.log('message received!', type, data);
+
 		switch (type) {
-		case COMMS.TASK_INITIAL_STATE:
-			console.log(data);
+		case COMMS.SET_INITIAL_STATE:
+			console.log('state received!', data);
+			store.dispatch(setState(data));
 			break;
 		}
 	}

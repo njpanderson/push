@@ -13,8 +13,11 @@ const utils = require('../../lib/utils');
 const PushError = require('../../lib/types/PushError');
 const channel = require('../../lib/channel');
 const i18n = require('../../i18n');
-const { TRANSFER_TYPES } = require('../../lib/constants/static');
 const paths = require('../../lib/paths');
+const {
+	TRANSFER_TYPES,
+	FIELDS
+} = require('../../lib/constants/static');
 
 /**
  * ProviderSFTP transfers.
@@ -1273,105 +1276,128 @@ class ProviderSFTP extends ProviderBase {
 
 ProviderSFTP.description = i18n.t('sftp_class_description');
 
-ProviderSFTP.optionSchema = {
+ProviderSFTP.optionSchema = [
 	...ProviderBase.optionSchema,
-	host: {
+	{
+		name: 'host',
 		label: i18n.t('opt_sftp_hostname'),
 		required: true
 	},
-	port: {
+	{
+		name: 'port',
 		label: i18n.t('opt_sftp_port'),
 		description: i18n.t('opt_sftp_port_desc'),
+		type: FIELDS.NUMBER,
 		default: 22
 	},
-	username: {
+	{
+		name: 'username',
 		label: i18n.t('opt_sftp_username'),
 		required: true
 	},
-	password: {
+	{
+		name: 'password',
 		label: i18n.t('opt_sftp_password'),
-		type: 'password'
+		type: FIELDS.PASSWORD
 	},
-	privateKey: {
+	{
+		name: 'privateKey',
 		label: i18n.t('opt_sftp_keyfile'),
-		type: 'file'
+		type: FIELDS.FILE
 	},
-	keyPassphrase: {
+	{
+		name: 'keyPassphrase',
 		label: i18n.t('opt_sftp_keyphrase')
 	},
-	root: {
+	{
+		name: 'root',
 		label: i18n.t('opt_sftp_root'),
 		default: '/',
 		required: true
 	},
-	keepaliveInterval: {
+	{
+		name: 'keepaliveInterval',
 		label: i18n.t('opt_sftp_keepalive'),
 		default: 3000,
-		type: 'number',
+		type: FIELDS.NUMBER,
 		min: 0,
 		max: 10000
 	},
-	fileMode: {
-		label: i18n.t('opt_sftp_filenmode'),
-		type: 'grid',
-		columns: {
-			glob: {
-				label: i18n.t('opt_sftp_glob'),
-				type: 'text'
+	{
+		name: 'fileMode',
+		label: i18n.t('opt_sftp_filemode'),
+		type: FIELDS.GRID,
+		columns: [
+			{
+				name: 'glob',
+				label: i18n.t('opt_sftp_glob')
 			},
-			mode: {
+			{
+				name: 'mode',
 				label: i18n.t('opt_sftp_mode'),
-				type: 'number'
+				type: FIELDS.NUMBER
 			}
-		}
+		],
+		default: []
 	},
-	sshGateway: {
+	{
+		name: 'sshGateway',
 		label: i18n.t('opt_sftp_sshgateway'),
-		fields: {
-			host: {
+		fields: [
+			{
+				name: 'host',
 				label: i18n.t('opt_sftp_hostname'),
 				required: true
 			},
-			port: {
-				label: i18n.t('opt_sftp_post'),
+			{
+				name: 'port',
+				label: i18n.t('opt_sftp_port'),
 				description: i18n.t('opt_sftp_port_desc'),
+				type: FIELDS.NUMBER,
 				default: 22
 			},
-			username: {
+			{
+				name: 'username',
 				label: i18n.t('opt_sftp_username'),
 				required: true
 			},
-			password: {
+			{
+				name: 'password',
 				label: i18n.t('opt_sftp_password'),
-				type: 'password'
+				type: FIELDS.PASSWORD
 			},
-			privateKey: {
+			{
+				name: 'privateKey',
 				label: i18n.t('opt_sftp_keyfile'),
-				type: 'file'
+				type: FIELDS.FILE
 			},
-			keyPassphrase: {
+			{
+				name: 'keyPassphrase',
 				label: i18n.t('opt_sftp_keyphrase')
 			},
-			keepaliveInterval: {
+			{
+				name: 'keepaliveInterval',
 				label: i18n.t('opt_sftp_keepalive'),
 				default: 3000,
-				type: 'number',
+				type: FIELDS.NUMBER,
 				min: 0,
 				max: 10000
 			},
-			debug: {
+			{
+				name: 'debug',
 				label: i18n.t('opt_sftp_debug'),
 				default: false,
-				type: 'boolean'
+				type: FIELDS.BOOLEAN
 			}
-		}
+		]
 	},
-	debug: {
+	{
+		name: 'debug',
 		label: i18n.t('opt_sftp_debug'),
 		default: false,
-		type: 'boolean'
+		type: FIELDS.BOOLEAN
 	}
-};
+];
 
 ProviderSFTP.encodingByExtension = {
 	'utf8': [
