@@ -1,9 +1,12 @@
 // Base styles
 @import './reset.css';
+@import './variables';
 
 // Layout, etc
 @import './layout';
+@import './typography';
 @import './colours';
 
 // Components
 @import './components/form';
+@import './components/grid';

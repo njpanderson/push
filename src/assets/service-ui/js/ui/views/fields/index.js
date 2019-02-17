@@ -64,7 +64,7 @@ export function getField(field, value, fieldOnly = false) {
 			name: field.name,
 			placeholder: field.default,
 			value: (
-				typeof field.value !== 'undefined' ?
+				typeof value !== 'undefined' ?
 					(field.type === FIELDS.NUMBER ? parseFloat(value) : value) :
 					field.default
 			)

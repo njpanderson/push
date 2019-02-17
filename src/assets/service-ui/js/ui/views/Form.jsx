@@ -37,9 +37,9 @@ class Form extends React.Component {
 			key = `fieldset-${counter}`;
 
 		return (
-			<fieldset key={key}>
+			<div className="fieldset" key={key}>
 				{fields}
-			</fieldset>
+			</div>
 		);
 	}
 
@@ -48,7 +48,7 @@ class Form extends React.Component {
 
 		return (
 			<form>
-				<p>Environment ({this.props.env.id})</p>
+				<h2>{this.props.env.id} ({this.props.env.service})</h2>
 
 				{fieldSets}
 			</form>

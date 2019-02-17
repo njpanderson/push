@@ -15,6 +15,12 @@ function GridField(props) {
 		columnFieldTypes[column.name] = column.type || FIELDS.TEXT;
 	});
 
+	columns.push(
+		<th key="cell-act-add-top">[add]</th>
+	);
+
+	console.log('GridField', props);
+
 	const fields = props.value.map((value, rowIndex) => {
 		const cells = [],
 			rowKey = `row-${rowIndex}`;
@@ -23,15 +29,20 @@ function GridField(props) {
 			cellKey, key;
 
 		for (key in value) {
-			cellKey = `${rowKey}-cell-${cellIndex++}`;
+			cellKey = `${rowKey}-cell-${cellIndex}`;
 
 			cells.push(
 				<td key={cellKey}>
-					// TODO: get the right column/field here!
 					{getField(props.columns[cellIndex], value[key], true)}
 				</td>
 			);
+
+			cellIndex += 1;
 		}
+
+		cells.push(
+			<td key="cell-act-delete">[Delete]</td>
+		);
 
 		return (
 			<tr key={rowKey}>
@@ -41,9 +52,9 @@ function GridField(props) {
 	});
 
 	return (
-		<div className="form-group">
+		<div className="form-group form-group__full">
 			<label>{props.label}</label>
-			<table>
+			<table className="grid">
 				<thead>
 					<tr>
 						{columns}

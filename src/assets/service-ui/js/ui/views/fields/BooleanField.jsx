@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 function BooleanField(props) {
 	return (
-		<div className="form-group">
+		<div className="form-group inline">
 			<input type="checkbox" value={props.value}/>
 			<label>{props.label}</label>
 		</div>

@@ -5,7 +5,7 @@ function FileField(props) {
 	return (
 		<div className="form-group">
 			<label>{props.label}</label>
-			<input type="input"
+			<input type="file"
 				defaultValue={props.value}/>
 		</div>
 	);

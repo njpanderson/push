@@ -1,3 +1,40 @@
-fieldset {
-	padding: 1em;
+.fieldset {
+	display: flex;
+	flex-wrap: wrap;
+	margin: $margin-fieldgroup 0;
+
+	.form-group {
+		margin: $margin-field 0;
+		width: 50%;
+
+		&__full {
+			width: 100%;
+		}
+
+		label {
+			display: block;
+			margin-bottom: $margin-innerfield;
+			font-weight: bold;
+		}
+
+		&.inline label {
+			display: inline-block;
+			margin: 0;
+		}
+
+		.field__text {
+			border: 1px solid var(--vscode-dropdown-border);
+			padding: 4px;
+			color: var(--vscode-input-foreground);
+			background-color: var(--vscode-input-background);
+		}
+
+		.field__text:focus {
+			border-color: var(--vscode-inputOption-activeBorder);
+		}
+	}
+}
+
+input {
+	font-size: 14px;
 }
