@@ -7,6 +7,7 @@ function PasswordField(props) {
 			<label>{props.label}</label>
 			<input
 				type="password"
+				className="field__text"
 				defaultValue={props.value}
 				placeholder={props.placeholder} />
 		</div>

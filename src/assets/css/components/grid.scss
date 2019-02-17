@@ -1,0 +1,22 @@
+.fieldset {
+	.grid {
+		margin: 0 (-$margin-innerfield);
+		width: 100%;
+
+		th,
+		td {
+			text-align: left;
+			padding: $margin-innerfield;
+
+			.form-group {
+				margin: 0;
+				width: 100%;
+			}
+
+			input.field__text {
+				display: block;
+				width: 100%;
+			}
+		}
+	}
+}

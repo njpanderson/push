@@ -8,6 +8,7 @@ function NumberField(props) {
 			<label>{props.label}</label>
 			<input
 				type="number"
+				className="field__text"
 				defaultValue={props.value}
 				placeholder={props.placeholder} />
 		</div>
