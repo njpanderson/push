@@ -6,6 +6,7 @@ const PATH_ROOT = path.resolve.apply(path, __dirname.split(path.sep).slice(0, -3
 module.exports = {
 	PATH_ROOT,
 	PATH_ASSETS: path.join(PATH_ROOT, 'assets'),
+	PATH_TEST: path.join(PATH_ROOT, 'test'),
 
 	DEBUG: fs.existsSync(path.join(PATH_ROOT, '.debug'))
 };

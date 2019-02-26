@@ -2,8 +2,10 @@ const vscode = require('vscode');
 
 const utils = require('../../lib/utils');
 const VSCodeMessaging = require('../../messaging/VSCodeMessaging');
-const { COMMS } = require('../../lib/constants/static');
 const ServiceDirectory = require('../ServiceDirectory');
+const i18n = require('../../i18n');
+const paths = require('../../lib/paths');
+const { COMMS } = require('../../lib/constants/static');
 
 class SettingsUI {
 	constructor(settings) {
@@ -61,8 +63,25 @@ class SettingsUI {
 			);
 			break;
 
+		case COMMS.GET_FILE_SELECTION:
+			vscode.window.showOpenDialog({
+				defaultUri: data && data.defaultValue ?
+					vscode.Uri.file(data.defaultValue) : null,
+				canSelectMany: false,
+				openLabel: i18n.t('btn_select_file')
+			}).then((file) => {
+				// Respond with selected file
+				if (file && file.length) {
+					this.messaging.post(COMMS.SET_FILE_SELECTION, {
+						map: data.map,
+						file: paths.getNormalPath(file[0])
+					});
+				}
+			});
+			break;
+
 		case COMMS.GET_SERVICE_OPT_SCHEMA:
-			// Requesting schema - send back
+			// Respond with requesting schema
 			this.messaging.post(
 				COMMS.SET_SERVICE_OPT_SCHEMA,
 				this.serviceSettings.getServiceSchema(data.service)

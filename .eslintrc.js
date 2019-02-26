@@ -1,1 +1,1 @@
-.ide/.eslintrc.js
+.ide/.eslintrc-react.js

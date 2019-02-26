@@ -1,0 +1,46 @@
+.toolbar {
+	display: flex;
+	align-items: center;
+	background-color: var(--vscode-panel-dropBackground);
+
+	.container > & {
+		position: sticky;
+		top: 0;
+		bottom: 0;
+		background-color: var(--vscode-menu-background);
+		border-bottom: 1px solid var(--vscode-panel-border);
+
+		&:last-child {
+			border-top: 1px solid var(--vscode-panel-border);
+		}
+
+		nav {
+			margin: $margin-header 0 $margin-header auto;
+		}
+	}
+
+	.text {
+		padding: 0 $margin-field;
+		flex-basis: 50%;
+	}
+
+	nav {
+		display: flex;
+		margin: $margin-field 0 $margin-field auto;
+		flex-basis: 50%;
+		justify-content: flex-end;
+		align-items: center;
+
+		.group {
+			margin: 0 $margin-field;
+		}
+	}
+
+	.field--text {
+		border-color: transparent;
+
+		&--focus {
+			border-color: var(--vscode-inputOption-activeBorder);
+		}
+	}
+}

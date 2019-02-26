@@ -44,14 +44,15 @@ function replaceVars(ob, replacements = []) {
  */
 module.exports = function fixtureServiceLoader(type = 'File') {
 	const serviceFilepath = path.join(getPlatformPrefix(), type),
-		serviceFilename = '.push.config.jsonc',
+		serviceFilename = '.push.settings.jsonc',
 		testFilename = 'test-file.txt';
 
-	let contents = fs.readFileSync(
-			path.join(serviceFilepath, serviceFilename),
-			'utf-8'
-		),
-		remoterootPath, remoteFilepath, remoteFileSubpath, data;
+	const contents = fs.readFileSync(
+		path.join(serviceFilepath, serviceFilename),
+		'utf-8'
+	);
+
+	let remoterootPath, remoteFilepath, remoteFileSubpath, data;
 
 	// Set vars based on service type
 	switch (type) {

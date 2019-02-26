@@ -1,11 +1,14 @@
 // Global actions
 export const SET_STATE = 'SET_STATE';
 export const SET_CURRENT_ENV = 'SET_CURRENT_ENV';
+export const SET_MAPPED_ENV_VALUE = 'SET_MAPPED_ENV_VALUE';
 
 // Environment specific actions
 export const ADD_ENV = 'ADD_ENV';
 export const REMOVE_ENV = 'REMOVE_ENV';
 export const SET_ENV = 'SET_ENV';
+export const SET_ENV_SERVICE = 'SET_ENV_SERVICE';
+export const RENAME_ENV = 'RENAME_ENV';
 
 /**
  * Set the initial state for the entire service file.
@@ -15,6 +18,14 @@ export function setState(state) {
 	return {
 		type: SET_STATE,
 		state
+	};
+}
+
+export function setMappedEnvValue(map, value) {
+	return {
+		type: SET_MAPPED_ENV_VALUE,
+		map,
+		value
 	};
 }
 
@@ -62,5 +73,31 @@ export function setEnv(env, data) {
 		type: SET_ENV,
 		env,
 		data
+	};
+}
+
+/**
+ * Set id for a single env.
+ * @param {string} env - The env to set. Must exist within the state.
+ * @param {object} id - The new ID to give the env.
+ */
+export function renameEnv(env, id) {
+	return {
+		type: RENAME_ENV,
+		env,
+		id
+	};
+}
+
+/**
+ * Set the service option for a single env.
+ * @param {string} env - The env to set. Must exist within the state.
+ * @param {string} service - The service to set for the named env.
+ */
+export function setEnvService(env, service) {
+	return {
+		type: SET_ENV_SERVICE,
+		env,
+		service
 	};
 }

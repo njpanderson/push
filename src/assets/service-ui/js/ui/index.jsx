@@ -1,74 +1,112 @@
 /* global acquireVsCodeApi */
-/* eslint-disable no-unused-vars */
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { createStore } from 'redux';
 import { Provider } from 'react-redux';
 
 import serviceFile from './state/reducers';
-import { setState } from './state/actions';
-import { COMMS } from '../../../../lib/constants/static';
 import WebMessaging from '../../../../messaging/WebMessaging';
+import {
+	setState,
+	addEnv,
+	setMappedEnvValue
+} from './state/actions';
+import { COMMS } from '../../../../lib/constants/static';
 
 // React
 import Environments from './containers/Environments';
+import Toolbar from './views/Toolbar';
 
 const store = createStore(serviceFile);
-
-// store.dispatch(setState({
-// 	schemas: {},
-// 	settings: {
-// 		env: 'dev',
-// 		dev: {
-// 			service: 'SFTP',
-// 			options: {
-// 				host: 'raspberrypi.local',
-// 				username: 'pushtest',
-// 				root: '/home/pushtest/jsonc-prod/dev',
-// 				followSymlinks: true,
-// 				testCollisionTimeDiffs: false
-// 			}
-// 		},
-// 		prod: {
-// 			service: 'SFTP',
-// 			options: {
-// 				host: 'neilinscotland.net',
-// 				username: 'push-test',
-// 				root: '/home/push-test/jsonc-prod/prod',
-// 				followSymlinks: true,
-// 				testCollisionTimeDiffs: false
-// 			}
-// 		}
-// 	}
-// }));
+const vscode = acquireVsCodeApi();
 
 class Root extends React.Component {
 	constructor() {
 		super();
 
-		this.messaging = new WebMessaging(acquireVsCodeApi());
+		this.messaging = new WebMessaging(vscode);
 		this.messaging.onReceive(this.receiveMessage.bind(this));
 
 		// Send intiialisation ping
 		this.messaging.post(COMMS.VIEW_INIT);
 	}
 
+	/**
+	 * Receives messages from the SettingsUI class.
+	 * @param {string} type - Message type
+	 * @param {*} data - Message data
+	 */
 	receiveMessage(type, data) {
-		console.log('message received!', type, data);
-
 		switch (type) {
 		case COMMS.SET_INITIAL_STATE:
-			console.log('state received!', data);
 			store.dispatch(setState(data));
+			break;
+
+		case COMMS.SET_FILE_SELECTION:
+			console.log('SET_FILE_SELECTION', data);
+			store.dispatch(setMappedEnvValue(data.map, data.file));
+			// this.messaging.post(COMMS.GET_FILE_SELECTION);
+			// store.dispatch(setState(data));
 			break;
 		}
 	}
 
+	/**
+	 * Create a new env with a unique state name
+	 */
+	addEnv() {
+		const state = store.getState(),
+			envs = Object.keys(state.settings).filter(
+				key => key.startsWith('new_env')
+			);
+
+		let a = 1,
+			newEnvName = 'new_env_' + a;
+
+		// Find a unique name
+		while (envs.findIndex(key => key === newEnvName) !==-1) {
+			newEnvName = 'new_env_' + ++a;
+		}
+
+		// Dispatch change
+		store.dispatch(addEnv(
+			newEnvName,
+			{
+				service: 'File',
+				options: {}
+			}
+		));
+	}
+
+	getButtons() {
+		return [[{
+			label: 'Add',
+			onClick: this.addEnv.bind(this)
+		}], [{
+			label: 'Cancel',
+			onClick: () => {
+				console.log('button cancel');
+			}
+		}, {
+			label: 'Save',
+			onClick: () => {
+				console.log('button save');
+			}
+		}]];
+	}
+
+	getFileSelection(options = {}) {
+		this.messaging.post(COMMS.GET_FILE_SELECTION, options);
+	}
+
 	render() {
+		console.log('root render');
 		return (
 			<div className='container'>
-				<h1>Push service settings</h1>
-				<Environments />
+				<Toolbar heading="Push service settings" buttons={this.getButtons()}/>
+				<Environments
+					onFileSelection={this.getFileSelection.bind(this)}/>
+				<Toolbar buttons={this.getButtons()}/>
 			</div>
 		);
 	}

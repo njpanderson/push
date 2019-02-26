@@ -1,23 +1,35 @@
-import React from 'react'; // eslint-disable-line no-unused-vars
+import React from 'react';
 import PropTypes from 'prop-types';
 
+import { propTypesFormElement } from '../../../lib/proptypes';
+
 function NumberField(props) {
-	console.log('numberField', props.label, props.value);
+	const className = 'field--text' + (props.className ? ` ${props.className}` : '');
+
+	function onChange(event) {
+		props.onChange(event, parseFloat(event.target.value));
+	}
+
 	return (
 		<div className="form-group">
 			<label>{props.label}</label>
 			<input
 				type="number"
-				className="field__text"
+				onFocus={props.onFocus}
+				onChange={onChange}
+				name={props.name}
+				className={className}
 				defaultValue={props.value}
 				placeholder={props.placeholder} />
+			{props.description}
 		</div>
 	);
 }
 
 NumberField.propTypes = {
-	name: PropTypes.string,
-	value: PropTypes.number
+	...propTypesFormElement,
+	value: PropTypes.number,
+	placeholder: PropTypes.number
 };
 
 export default NumberField;

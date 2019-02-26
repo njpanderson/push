@@ -1,27 +1,31 @@
-import React from 'react'; // eslint-disable-line no-unused-vars
-import PropTypes from 'prop-types';
+import React from 'react';
+
+import { propTypesFormElement } from '../../../lib/proptypes';
 
 function TextField(props) {
-	console.log('TextField', props.name, props.value);
-	const className = 'field__text' + (props.className ? ` ${props.className}` : '');
+	const className = 'field--text' + (props.className ? ` ${props.className}` : '');
+
+	function onChange(event) {
+		props.onChange && props.onChange(event, event.target.value);
+	}
 
 	return (
 		<div className="form-group">
 			<label>{props.label}</label>
 			<input
 				type="text"
-				className={className}
+				onFocus={props.onFocus}
+				onChange={onChange}
 				name={props.name}
+				title={props.label}
+				className={className}
 				defaultValue={props.value}
 				placeholder={props.placeholder} />
+			{props.description}
 		</div>
 	);
 }
 
-TextField.propTypes = {
-	name: PropTypes.string,
-	value: PropTypes.string,
-	className: PropTypes.string
-};
+TextField.propTypes = propTypesFormElement;
 
 export default TextField;

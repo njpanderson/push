@@ -1,6 +1,5 @@
 .fieldset {
 	.grid {
-		margin: 0 (-$margin-innerfield);
 		width: 100%;
 
 		th,
@@ -11,11 +10,30 @@
 			.form-group {
 				margin: 0;
 				width: 100%;
+				padding: 0;
 			}
 
-			input.field__text {
+			input.field--text {
 				display: block;
 				width: 100%;
+			}
+
+			label {
+				display: none;
+			}
+		}
+
+		th {
+			border-bottom: 1px solid var(--vscode-menu-background);
+		}
+
+		td, th {
+			&:first-child {
+				padding-left: 0;
+			}
+
+			&:last-child {
+				padding-right: 0;
 			}
 		}
 	}

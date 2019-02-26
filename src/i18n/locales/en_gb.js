@@ -116,6 +116,7 @@ module.exports = {
 	'opt_sftp_password': 'Password',
 	'opt_sftp_keyfile': 'Private key file',
 	'opt_sftp_keyphrase': 'Private key passphrase',
+	'opt_sftp_keyphrase_desc': 'If the private key requires a passphrase, enter it here.',
 	'opt_sftp_root': 'Remote root path',
 	'opt_sftp_keepalive': 'Keep-alive interval (ms)',
 	'opt_sftp_sshgateway': 'SSH Gateway',
@@ -132,5 +133,6 @@ module.exports = {
 	'opt_base_overwrite': 'Overwrite',
 	'opt_base_rename': 'Rename',
 	'opt_base_action_download': 'Action on download collisions',
-	'opt_base_follow_symlinks': 'Follow symlinks when transferring folders'
+	'opt_base_follow_symlinks': 'Follow symlinks when transferring folders',
+	'btn_select_file': 'Select file'
 };

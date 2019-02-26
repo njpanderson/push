@@ -3,6 +3,7 @@ const ServiceType = require('./ServiceType');
 // Service providers
 const ProviderSFTP = require('./providers/ProviderSFTP');
 const ProviderFile = require('./providers/ProviderFile');
+const { FIELDS } = require('../lib/constants/static');
 
 /**
  * Provides a directory of available service providers, as well as some methods
@@ -41,7 +42,7 @@ class ServiceDirectory {
 	}
 
 	/**
-	 * Get the default settings for a service, extended from the base defaults
+	 * Get cumulative keys from the settings for a service, extended from the base defaults.
 	 * @param {string} serviceName - Name of the service to retrieve defaults for.
 	 */
 	getServiceSchemaValues(serviceSchema, key = 'default') {
@@ -76,8 +77,25 @@ class ServiceDirectory {
 		return values;
 	}
 
+	normaliseSchema(schema) {
+		return schema.map((field) => {
+			if (field.fields) {
+				field.fields = this.normaliseSchema(field.fields);
+			}
+
+			if (!field.type) {
+				// Field has no type — default to TEXT
+				field.type = FIELDS.TEXT;
+			}
+
+			return field;
+		});
+	}
+
 	getSchema(service) {
-		return ServiceDirectory.services[service].optionSchema || {};
+		return this.normaliseSchema(
+			ServiceDirectory.services[service].optionSchema || []
+		);
 	}
 }
 

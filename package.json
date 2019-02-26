@@ -157,6 +157,11 @@
     },
     "commands": [
       {
+        "command": "push.debugOpenSampleConfig",
+        "title": "DEBUG: Open sample configuration",
+        "category": "Push"
+      },
+      {
         "command": "push.createServiceConfig",
         "title": "Create Push service configuration",
         "category": "Push"
@@ -437,6 +442,10 @@
       ],
       "commandPalette": [
         {
+          "command": "push.debugOpenSampleConfig",
+          "when": "push:isDebugMode"
+        },
+        {
           "command": "push.editServiceConfig",
           "when": "push:hasServiceContext"
         },
@@ -600,6 +609,7 @@
     "publish": "npm run t && vsce publish",
     "vsce": "vsce",
     "watch-assets": "webpack --watch --mode=development",
+    "watch-assets-vscode": "webpack --watch --mode=development --silent --no-color",
     "build-assets": "webpack --mode=production",
     "vscode:prepublish": "npm run build-assets"
   },
@@ -611,8 +621,11 @@
     "copy-webpack-plugin": "^4.6.0",
     "css-loader": "^2.1.0",
     "eslint": "^5.14.0",
+    "eslint-plugin-react": "^7.12.4",
+    "friendly-errors-webpack-plugin": "^1.7.0",
     "istanbul": "^0.4.5",
     "jsdoc": "^3.5.5",
+    "lodash": "^4.17.11",
     "mocha": "^5.2.0",
     "node-sass": "^4.11.0",
     "react": "^16.8.2",

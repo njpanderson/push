@@ -1,19 +1,31 @@
-import React from 'react'; // eslint-disable-line no-unused-vars
+import React from 'react';
 import PropTypes from 'prop-types';
 
+import { propTypesFormElement } from '../../../lib/proptypes';
+
 function BooleanField(props) {
+	function onChange(event) {
+		props.onChange(event, event.target.checked);
+	}
+
 	return (
 		<div className="form-group inline">
-			<input type="checkbox" value={props.value}/>
-			<label>{props.label}</label>
+			<label>
+				<input
+					type="checkbox"
+					className="field--checkbox"
+					onFocus={props.onFocus}
+					value={props.value}
+					onChange={onChange}/>
+				{props.label}
+			</label>
 		</div>
 	);
 }
 
 BooleanField.propTypes = {
-	name: PropTypes.string,
+	...propTypesFormElement,
 	checked: PropTypes.bool,
-	value: PropTypes.string
 };
 
 export default BooleanField;

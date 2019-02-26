@@ -18,25 +18,7 @@
                 "**/node_modules/**",
                 "<node_internals>/**/*"
             ],
-            // "preLaunchTask": "npm: build-assets"
-        },
-        {
-            "name": "Launch Extension (Solo)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceRoot}"
-            ],
-            "stopOnEntry": false,
-            "smartStep": true,
-            "skipFiles": [
-                "${workspaceRoot}/node_modules/**/*",
-                "**/extensions/**",
-                "**/node_modules/**",
-                "<node_internals>/**/*"
-            ]
+            // "preLaunchTask": "npm: watch-assets-vscode"
         },
         {
             "type": "node",

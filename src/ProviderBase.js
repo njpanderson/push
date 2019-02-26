@@ -488,7 +488,8 @@ ServiceBase.optionSchema = [
 		type: FIELDS.NUMBER,
 		default: 0,
 		min: 0,
-		max: 24
+		max: 24,
+		className: 'field--small'
 	},
 	{
 		name: 'testCollisionTimeDiffs',

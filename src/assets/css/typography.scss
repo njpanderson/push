@@ -1,3 +1,17 @@
 body {
-	font-size: 14px;
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+}
+
+h1,
+h2 {
+	margin: $margin-header 0;
+}
+
+h1 {
+	font-size: 18px;
+}
+
+h2 {
+	font-size: 16px;
 }

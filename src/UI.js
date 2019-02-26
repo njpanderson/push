@@ -3,6 +3,9 @@ const vscode = require('vscode');
 const Push = require('./Push');
 const utils = require('./lib/utils');
 const paths = require('./lib/paths');
+const {
+	PATH_TEST
+} = require('./lib/constants/dynamic');
 
 /**
  * Provides a normalised interface for the command panel and contextual menus.
@@ -223,6 +226,14 @@ class UI extends Push {
 		if (this.getValidUri(uri)) {
 			return this.service.settings.importConfig(uri).catch(this.catchError);
 		}
+	}
+
+	debugOpenSampleConfig() {
+		return this.editServiceConfig(paths.join(
+			PATH_TEST, 'fixtures', 'sample-config',
+			(process.platform === 'win32' ? 'win32' : 'posix'),
+			'.push.settings.jsonc'
+		)).catch(this.catchError);
 	}
 }
 

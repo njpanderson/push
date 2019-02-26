@@ -1281,14 +1281,16 @@ ProviderSFTP.optionSchema = [
 	{
 		name: 'host',
 		label: i18n.t('opt_sftp_hostname'),
-		required: true
+		required: true,
+		className: 'field--large'
 	},
 	{
 		name: 'port',
 		label: i18n.t('opt_sftp_port'),
 		description: i18n.t('opt_sftp_port_desc'),
 		type: FIELDS.NUMBER,
-		default: 22
+		default: 22,
+		className: 'field--small'
 	},
 	{
 		name: 'username',
@@ -1307,13 +1309,15 @@ ProviderSFTP.optionSchema = [
 	},
 	{
 		name: 'keyPassphrase',
-		label: i18n.t('opt_sftp_keyphrase')
+		label: i18n.t('opt_sftp_keyphrase'),
+		description: i18n.t('opt_sftp_keyphrase_desc')
 	},
 	{
 		name: 'root',
 		label: i18n.t('opt_sftp_root'),
 		default: '/',
-		required: true
+		required: true,
+		className: 'field--large'
 	},
 	{
 		name: 'keepaliveInterval',
@@ -1321,13 +1325,14 @@ ProviderSFTP.optionSchema = [
 		default: 3000,
 		type: FIELDS.NUMBER,
 		min: 0,
-		max: 10000
+		max: 10000,
+		className: 'field--small'
 	},
 	{
 		name: 'fileMode',
 		label: i18n.t('opt_sftp_filemode'),
 		type: FIELDS.GRID,
-		columns: [
+		fields: [
 			{
 				name: 'glob',
 				label: i18n.t('opt_sftp_glob')
@@ -1343,18 +1348,21 @@ ProviderSFTP.optionSchema = [
 	{
 		name: 'sshGateway',
 		label: i18n.t('opt_sftp_sshgateway'),
+		type: FIELDS.FIELDSET,
 		fields: [
 			{
 				name: 'host',
 				label: i18n.t('opt_sftp_hostname'),
-				required: true
+				required: true,
+				className: 'field--large'
 			},
 			{
 				name: 'port',
 				label: i18n.t('opt_sftp_port'),
 				description: i18n.t('opt_sftp_port_desc'),
 				type: FIELDS.NUMBER,
-				default: 22
+				default: 22,
+				className: 'field--small'
 			},
 			{
 				name: 'username',
@@ -1373,7 +1381,7 @@ ProviderSFTP.optionSchema = [
 			},
 			{
 				name: 'keyPassphrase',
-				label: i18n.t('opt_sftp_keyphrase')
+				label: i18n.t('opt_sftp_keyphrase'),
 			},
 			{
 				name: 'keepaliveInterval',
@@ -1381,7 +1389,8 @@ ProviderSFTP.optionSchema = [
 				default: 3000,
 				type: FIELDS.NUMBER,
 				min: 0,
-				max: 10000
+				max: 10000,
+				className: 'field--small'
 			},
 			{
 				name: 'debug',

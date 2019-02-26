@@ -1,0 +1,29 @@
+button {
+	-webkit-appearance: none;
+	margin: 0 $margin-innerfield;
+	border: 0;
+	padding: $margin-innerfield ($margin-innerfield * 2);
+	font-size: .75rem;
+	font-weight: bold;
+	color: var(--vscode-button-foreground);
+	background-color: var(--vscode-button-background);
+
+	&:hover {
+		background-color: var(--vscode-button-hoverBackground);
+	}
+
+	&.btn {
+		&--destructive {
+			background-color: $colour-destructive;
+		}
+	}
+}
+
+.vscode-light button {
+	&.btn {
+		&--destructive {
+			color: $colour-destructive;
+			background-color: lighten($colour-destructive, 60%);
+		}
+	}
+}
