@@ -1,0 +1,15 @@
+{
+	"env": "env_file",
+	"env_file": {
+		"service": "File",
+		"options": {
+			"root": "/some/root/path"
+		}
+	},
+	"env_sftp": {
+		"service": "SFTP",
+		"options": {
+			"root": "/some/root/path"
+		}
+	}
+}

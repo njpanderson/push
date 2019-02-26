@@ -1,0 +1,44 @@
+{
+	"env": "env_file",
+	"env_file": {
+		"service": "File",
+		"options": {
+			"root": "/some/root/path"
+		}
+	},
+	"env_sftp_with_gateway": {
+		"service": "SFTP",
+		"options": {
+			"host": "neilinscotland.net",
+			"port": 22,
+			"username": "push-test",
+			"password": "",
+			"privateKey": "/home/pi/.ssh/id_rsa",
+			"root": "/home/push-test/gateway",
+			"sshGateway": {
+				"host": "raspberrypi.local",
+				"username": "pi"
+			}
+		}
+	},
+	"env_sftp": {
+		"service": "SFTP",
+		"options": {
+			"host": "neilinscotland.net",
+			"port": 22,
+			"username": "push-test",
+			"password": "",
+			"fileMode": [{
+				"glob": "*.txt",
+				"mode": "600"
+			}, {
+				"glob": "*.jpg",
+				"mode": "700"
+			}, {
+				"glob": "**/*/",
+				"mode": "655"
+			}],
+			"root": "/home/push-test"
+		}
+	}
+}

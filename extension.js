@@ -54,7 +54,8 @@ exports.activate = (context) => {
 		'push.editServiceConfig': 'editServiceConfig',
 		'push.createServiceConfig': 'createServiceConfig',
 		'push.setServiceEnv': 'setServiceEnv',
-		'push.importConfig': 'importConfig'
+		'push.importConfig': 'importConfig',
+		'push.debugOpenSampleConfig': 'debugOpenSampleConfig'
 	};
 
 	for (sub in subscriptions) {
@@ -72,8 +73,6 @@ exports.activate = (context) => {
 		'push.uploadQueueExplorer',
 		ui.explorers.uploadQueue
 	);
-
-	ui.editServiceConfig(vscode.Uri.file('/Users/neilanderson/Projects/push-test/sftp/jsonc/.push.settings.jsonc'));
 };
 
 // this method is called when your extension is deactivated

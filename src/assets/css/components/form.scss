@@ -3,8 +3,20 @@
 	flex-wrap: wrap;
 	margin: $margin-fieldgroup 0;
 
+	h2 {
+		padding: 0 $margin-field;
+		width: 100%;
+	}
+
+	.fieldset {
+		margin-left: $margin-fieldgroup;
+		margin-right: $margin-fieldgroup;
+		border-left: 2px solid var(--vscode-panel-border);
+	}
+
 	.form-group {
 		margin: $margin-field 0;
+		padding: 0 $margin-field;
 		width: 50%;
 
 		&__full {
@@ -14,27 +26,71 @@
 		label {
 			display: block;
 			margin-bottom: $margin-innerfield;
+			flex-basis: 2100%;
 			font-weight: bold;
 		}
 
 		&.inline label {
-			display: inline-block;
+			align-items: center;
 			margin: 0;
 		}
 
-		.field__text {
-			border: 1px solid var(--vscode-dropdown-border);
-			padding: 4px;
-			color: var(--vscode-input-foreground);
-			background-color: var(--vscode-input-background);
+		.description {
+			margin: $margin-innerfield 0;
+			flex-basis: 100%;
 		}
+	}
 
-		.field__text:focus {
-			border-color: var(--vscode-inputOption-activeBorder);
+	.input-group {
+		display: flex;
+		align-items: center;
+	}
+
+	@include large {
+		.form-group {
+			width: 33.33%;
+
+			&__full {
+				width: 100%;
+			}
 		}
 	}
 }
 
 input {
 	font-size: 14px;
+}
+
+.field {
+	&--text {
+		border: 1px solid var(--vscode-dropdown-border);
+		padding: 4px;
+		color: var(--vscode-input-foreground);
+		background-color: var(--vscode-input-background);
+
+		&:focus {
+			border-color: var(--vscode-inputOption-activeBorder);
+		}
+	}
+
+	&--checkbox {
+		margin-right: $margin-innerfield;
+	}
+
+	&--heading {
+		font-size: larger;
+		font-weight: bold;
+	}
+
+	&--small {
+		width: 20%;
+	}
+
+	&--large {
+		width: 90%;
+	}
+}
+
+.toolbar .field--text:focus {
+	background-color: var(--vscode-inputValidation-infoBackground);
 }

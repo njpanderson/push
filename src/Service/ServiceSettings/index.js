@@ -17,7 +17,8 @@ const SettingsUI = require('./SettingsUI');
 
 const {
 	CONFIG_FORMATS,
-	DEFAULT_SERVICE_CONFIG
+	DEFAULT_SERVICE_CONFIG,
+	FIELDS
 } = require('../../lib/constants/static');
 
 /**
@@ -706,8 +707,65 @@ class ServiceSettings extends Configurable {
 	 * @returns {object} An object definition of the file contents.
 	 */
 	parseServerFileContent(content, uri, normalise = true) {
-		const data = jsonc.parse(content);
-		return normalise ? this.normaliseServerSettings(data, uri) : data;
+		let key, schema;
+		const settings = jsonc.parse(content);
+
+		for (key in settings) {
+			if (
+				settings.hasOwnProperty(key) &&
+				key !== 'env' &&
+				settings[key].options &&
+				(schema = this.getServiceSchema(settings[key].service))
+			) {
+				settings[key].options = this.setValueTypes(
+					schema,
+					settings[key].options
+				);
+			}
+		}
+
+		return normalise ? this.normaliseServerSettings(settings, uri) : settings;
+	}
+
+	/**
+	 * Parses a server settings file, setting the correct types for each value
+	 * @param {array} schema - Schema to check settings against.
+	 * @param {object} settings - Server settings to parse.
+	 */
+	setValueTypes(schema, settings) {
+		schema.forEach((field) => {
+			if (!settings.hasOwnProperty(field.name)) {
+				// Setting doesn't exist - possibly make default and return
+				if (field.default) {
+					settings[field.name] = field.default;
+				}
+
+				return;
+			}
+
+			switch (field.type) {
+			case FIELDS.NUMBER:
+				settings[field.name] = parseFloat(settings[field.name]);
+				break;
+
+			case FIELDS.GRID:
+				settings[field.name].forEach((row) => {
+					row = this.setValueTypes(
+						field.fields,
+						row
+					);
+				});
+				break;
+
+			case FIELDS.FIELDSET:
+				settings[field.name] = this.setValueTypes(
+					field.fields,
+					settings[field.name]
+				);
+			}
+		});
+
+		return settings;
 	}
 
 	/**

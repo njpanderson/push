@@ -5,14 +5,29 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "build-assets",
-            "presentation": {
-                "reveal": "silent",
+			"script": "watch-assets-vscode",
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
 				"focus": true
-            },
+			},
 			"group": {
 				"kind": "build",
 				"isDefault": true
+			},
+			"problemMatcher": {
+				"fileLocation": "relative",
+				"pattern": [
+					{
+						"regexp": "error\\s+in\\s+(.*?)",
+						"file": 1
+					}
+				],
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "WAIT\\s+Compiling...",
+					"endsPattern": "Build Complete"
+				}
 			}
 		}
 	]

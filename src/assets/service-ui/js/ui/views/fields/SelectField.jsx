@@ -1,28 +1,32 @@
-import React from 'react'; // eslint-disable-line no-unused-vars
+import React from 'react';
 import PropTypes from 'prop-types';
 
+import Select from '../components/Select';
+import { propTypesFormElement } from '../../../lib/proptypes';
+
 function SelectField(props) {
-	const options = props.options.map((option) => {
-		return (
-			<option value={option.value} key={option.value}>
-				{option.label}
-			</option>
+	function onChange(event) {
+		props.onChange(
+			event,
+			event.target.options[event.target.selectedIndex].value
 		);
-	});
+	}
 
 	return (
 		<div className="form-group">
 			<label>{props.label}</label>
-			<select>
-				{options}
-			</select>
+			<Select
+				options={props.options}
+				value={props.value}
+				onFocus={props.onFocus}
+				onChange={onChange} />
 		</div>
 	);
 }
 
 SelectField.propTypes = {
-	name: PropTypes.string,
-	value: PropTypes.string
+	...propTypesFormElement,
+	options: PropTypes.array
 };
 
 export default SelectField;

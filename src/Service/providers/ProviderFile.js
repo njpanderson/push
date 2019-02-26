@@ -393,7 +393,8 @@ ProviderFile.optionSchema = [
 		name: 'root',
 		label: i18n.t('opt_file_root'),
 		default: '/',
-		required: true
+		required: true,
+		className: 'field--large'
 	}
 ];
 
