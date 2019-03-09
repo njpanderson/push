@@ -39,8 +39,8 @@ export function getField(
 		key: field.name,
 		label: field.label,
 		// Enhance the current onChange event with specific field handling
-		onChange: (event, value) => {
-			componentProps.onChange(event, map, value);
+		onChange: (value) => {
+			componentProps.onChange(map, value);
 		}
 	};
 
@@ -85,7 +85,7 @@ export function getField(
 			placeholder: field.default,
 			// Add onFileSelection event (with map data from the field loop and value data
 			// from the original event from FileField).
-			onFileSelection: (event, value) => {
+			onFileSelection: (value) => {
 				// Update the key to the new file value, so the component remounts
 				key = map.join(',') + value;
 

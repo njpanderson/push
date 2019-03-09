@@ -1,5 +1,4 @@
-import React from 'react'; // eslint-disable-line no-unused-vars
-import PropTypes from 'prop-types';
+import React from 'react';
 
 import { propTypesDescription } from '../../../lib/proptypes';
 

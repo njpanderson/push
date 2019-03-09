@@ -4,6 +4,7 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 const glob = require('glob');
 const micromatch = require('micromatch');
+const crypto = require('crypto');
 
 const ExtendedStream = require('../lib/types/ExtendedStream');
 const utils = require('../lib/utils');
@@ -610,6 +611,17 @@ const paths = {
 			.catch((error) => {
 				throw error;
 			});
+	},
+
+	/**
+	 * Get the sha256 hash of a filename in hex format.
+	 * @param {Uri} fileName - The Uri of a file
+	 */
+	getFilenameHash(fileName) {
+		const hash = crypto.createHash('sha256');
+		hash.update(this.getNormalPath(fileName));
+
+		return hash.digest('hex');
 	}
 };
 

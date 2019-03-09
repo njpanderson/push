@@ -625,7 +625,6 @@
     "friendly-errors-webpack-plugin": "^1.7.0",
     "istanbul": "^0.4.5",
     "jsdoc": "^3.5.5",
-    "lodash": "^4.17.11",
     "mocha": "^5.2.0",
     "node-sass": "^4.11.0",
     "react": "^16.8.2",
@@ -650,6 +649,7 @@
     "simple-git": "^1.107.0",
     "ssh2-sftp-client": "^1.1.0",
     "tmp": "^0.0.33",
-    "url-parse": "^1.4.4"
+    "url-parse": "^1.4.4",
+    "lodash": "^4.17.11"
   }
 }

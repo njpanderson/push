@@ -3,6 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const jsonc = require('jsonc-parser');
 const micromatch = require('micromatch');
+const merge = require('lodash/merge');
 
 const Configurable = require('../../Configurable');
 const ServiceType = require('../ServiceType');
@@ -209,7 +210,7 @@ class ServiceSettings extends Configurable {
 	 * @returns {string} The file contents.
 	 */
 	createServerFileContents(serviceType) {
-		let content, serviceJSON, serviceJSONLines,
+		let serviceJSON, serviceJSONLines,
 			defaults, requiredOptions, re,
 			state, prevState;
 
@@ -248,7 +249,7 @@ class ServiceSettings extends Configurable {
 			 * TODO: improve with a proper AST parser or the node-jsonc-parser when available.
 			 */
 			serviceJSONLines = serviceJSONLines.map((line) => {
-				let match = line.match(re.optionItem);
+				const match = line.match(re.optionItem);
 
 				// Set various state options
 				state.line = line;
@@ -281,7 +282,7 @@ class ServiceSettings extends Configurable {
 		}
 
 		// Add comment to the top, then the contents
-		content =
+		const content =
 			'// ' + i18n.t('comm_push_settings1', (new Date()).toString()) + '\n' +
 			'// ' + i18n.t('comm_push_settings2') + '\n' +
 			'// ' + i18n.t('comm_push_settings3') + '\n' +
@@ -413,7 +414,7 @@ class ServiceSettings extends Configurable {
 		);
 
 		// Make a duplicate to avoid changing the original config
-		let newConfig = Object.assign({}, merge);
+		const newConfig = Object.assign({}, merge);
 
 		if (settings) {
 			// Settings retrieved from JSON file within context
@@ -724,7 +725,7 @@ class ServiceSettings extends Configurable {
 			}
 		}
 
-		return normalise ? this.normaliseServerSettings(settings, uri) : settings;
+		return normalise ? this.normaliseServerSettings(settings, uri, normalise) : settings;
 	}
 
 	/**
@@ -772,9 +773,15 @@ class ServiceSettings extends Configurable {
 	 * Normalises server data into a consistent format.
 	 * @param {object} settings - Settings data as retrieved by JSON/C files.
 	 * @param {Uri} uri - Uri of the settings file. Mainly for error reporting.
+	 * @param {string} [normaliseStyle='single'] - One of 'single' or 'array'.
+	 * @returns {object} Either an object containing a single servce settings
+	 * based on the active environment, or an object containing array data of
+	 * environments.
 	 */
-	normaliseServerSettings(settings, uri) {
+	normaliseServerSettings(settings, uri, normaliseStyle) {
 		let serviceData, env;
+
+		settings = merge({}, settings);
 
 		if (!settings.service) {
 			if (settings.env) {

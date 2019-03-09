@@ -10,7 +10,7 @@ class Select extends React.Component {
 		};
 	}
 
-	onChange(event) {
+	onChange() {
 		this.props.onChange && this.props.onChange(
 			event,
 			this.dom.nodeSelect.current.options[

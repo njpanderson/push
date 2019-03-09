@@ -2,10 +2,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import { propTypesFormElement } from '../../../lib/proptypes';
+import { deferredOnChange } from '../../../lib/utils';
 
 function BooleanField(props) {
 	function onChange(event) {
-		props.onChange(event, event.target.checked);
+		deferredOnChange(
+			props.onChange,
+			event.target.checked
+		);
 	}
 
 	return (

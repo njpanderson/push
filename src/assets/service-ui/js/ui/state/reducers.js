@@ -3,38 +3,40 @@ import set from 'lodash/set';
 
 import {
 	SET_STATE,
-	SET_CURRENT_ENV,
+	SET_ACTIVE_ENV,
 	ADD_ENV,
 	REMOVE_ENV,
 	SET_ENV,
 	SET_MAPPED_ENV_VALUE,
-	SET_ENV_SERVICE,
-	RENAME_ENV
+	SET_ENV_VALUE
 } from './actions';
 
 const initialState = {
-	settings: {
-		env: ''
-	},
-	schemas: {}
+	settings: [],
+	schemas: {},
+	filename: ''
 };
 
 export default function serviceFile(state = initialState, action) {
-	let newState;
+	let newState, index;
 
 	switch (action.type) {
 	case SET_STATE:
+		console.log('new state', action.state);
 		return merge({}, state, action.state);
 
-	case SET_CURRENT_ENV:
-		return merge(
+	case SET_ACTIVE_ENV:
+		index = findEnvIndex(state, action.id);
+
+		if (index === -1) {
+			throw new Error(`Env "${action.id}" must exist within state to be made active.`);
+		}
+
+		return setMutexOption(
 			state,
-			{
-				settings: {
-					...state.settings,
-					env: action.env
-				}
-			}
+			index,
+			(env) => env.active = true,
+			(env) => env.active = false
 		);
 
 	case SET_MAPPED_ENV_VALUE:
@@ -43,48 +45,61 @@ export default function serviceFile(state = initialState, action) {
 		return newState;
 
 	case ADD_ENV:
-	case SET_ENV:
-		if (action.type === SET_ENV && !state.settings[action.env]) {
-			throw new Error(`Env "${action.env}" must exist within state to be edited.`);
-		} else if (action.type === ADD_ENV && state.settings[action.env]) {
-			throw new Error(`Env "${action.env}" exists within state. It cannot be added.`);
+		if (findEnvIndex(state, action.id) !== -1) {
+			throw new Error(`Env "${action.id}" must exist within state to be edited.`);
 		}
 
-		if (!action.data.service || !action.data.options) {
-			throw new Error(`Env "${action.env}" must contain 'service' and 'options' values.`);
+		if (!action.service || !action.options) {
+			throw new Error(`Env "${action.id}" must contain 'service' and 'options' values.`);
 		}
 
 		return merge({}, state, {
-			settings: merge(
-				{},
-				state.settings,
-				{
-					[action.env]: action.data
-				}
-			)
+			settings: state.settings.concat([{
+				id: action.id,
+				service: action.service,
+				options: action.options,
+				active: action.active
+			}])
 		});
 
-	case RENAME_ENV:
-		// TODO: think about this! It needs to work without re-ordering the envs or causing a mass re-render of the UI
-		newState = merge({}, state);
+	case SET_ENV:
+		// Set env options
+		if (findEnvIndex(state, action.id) === -1) {
+			throw new Error(`Env "${action.id}" must exist within state to be edited.`);
+		}
 
-		newState.settings[action.id] = merge({}, newState.settings[action.env]);
+		if (!action.options) {
+			throw new Error(`Env "${action.id}" must contain 'service' and 'options' values.`);
+		}
 
-		delete newState.settings[action.env];
+		newState = merge({},...state);
+		newState.settings[index] = {
+			...newState.settings[index],
+			options: {
+				...newState.settings[index].options,
+				...action.options
+			}
+		};
 
 		return newState;
 
-	case SET_ENV_SERVICE:
-		return merge({}, state, {
-			settings: merge({}, state.settings, {
-				[action.env]: merge({}, state.settings[action.env], {
-					service: action.service
-				})
-			})
-		});
+	case SET_ENV_VALUE:
+		// Change the value for an env
+		index = findEnvIndex(state, action.id);
+
+		if (index === -1) {
+			throw new Error(`Env "${action.id}" must exist within state to be edited.`);
+		}
+
+		newState = merge({}, state);
+		newState.settings[index][action.prop] = action.value;
+		return newState;
 
 	case REMOVE_ENV:
-		if (!state.settings[action.env]) {
+		// Remove an env
+		index = findEnvIndex(action.env);
+
+		if (index === -1) {
 			throw new Error(`Env "${action.env}" must exist within state to be removed.`);
 		}
 
@@ -94,11 +109,13 @@ export default function serviceFile(state = initialState, action) {
 
 		// Get state and delete the env
 		newState = merge({}, state);
-		delete newState.settings[action.env];
 
-		if (newState.settings.env === action.env) {
-			// Current env is set to the deleted env - re-set to the first env
-			newState.settings.env = getFirstEnv(newState);
+		// Remove the env by its index
+		newState.settings.splice(index, 1);
+
+		if (findActiveEnv(newState)) {
+			// Deleted env is active - re-set to the first env
+			newState.settings[0].active = true;
 		}
 
 		return newState;
@@ -108,17 +125,48 @@ export default function serviceFile(state = initialState, action) {
 }
 
 /**
- * Return a count of the current environments
+ * Return a count of the current environments.
  * @param {object} state - Current state
  */
 function getEnvCount(state) {
-	return (Object.keys(state.settings).filter(key => key !== 'env')).length;
+	return state.settings.length;
 }
 
 /**
- * Return a count of the current environments
- * @param {object} state - Current state
+ * Gets the index of an env by its ID
+ * @param {object} state - Current state.
+ * @param {string} id - ID of the env to find.
  */
-function getFirstEnv(state) {
-	return (Object.keys(state.settings).find(key => key !== 'env'));
+function findEnvIndex(state, id) {
+	return state.settings.findIndex((env) => env.id === id);
+}
+
+/**
+ * Gets the index of the active env.
+ * @param {object} state - Current state.
+ */
+function findActiveEnv(state) {
+	return state.settings.findIndex((env) => env.active);
+}
+
+/**
+ * Runs through the settings of the provided state object and applies
+ * the `setter` function on the matching index, or the `altSetter` function
+ * on non-matching indices.
+ * @param {object} state - Current state.
+ * @param {number} index - Index to alter
+ * @param {function} setter - Setter function - passed an env object.
+ * @param {function} altSetter - Alternate setter function - passed an env object.
+ * @returns {object} a new state object.
+ */
+function setMutexOption(state, index, setter, altSetter) {
+	merge({}, state).settings.forEach((env, i) => {
+		if (i === index) {
+			env = merge({}, setter(env));
+		} else {
+			env = merge({}, altSetter(env));
+		}
+	});
+
+	return state;
 }

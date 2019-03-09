@@ -2,14 +2,9 @@ import merge from 'lodash/merge';
 import set from 'lodash/set';
 import { FIELDS } from '../../../../lib/constants/static';
 
-/**
- * Returns a list of environments as an array
- * @param {object} state - Current state.
- */
-export function getEnvsArray(state) {
-	const envs = Object.keys(state).filter(env => env !== 'env');
-	return envs.map(env => ({ ...state[env], id: env }));
-}
+const timers = {
+	deferredOnChange: null
+};
 
 /**
  * @description
@@ -67,4 +62,14 @@ export function stripInternalKeys(value = []) {
 
 		return set;
 	});
+}
+
+export function deferredOnChange(callback) {
+	// Clear the existing timer
+	clearTimeout(timers.deferredOnChange);
+
+	// Delay callback handler by 250ms
+	timers.deferredOnChange = setTimeout(() => {
+		callback && callback.apply(null, [...arguments].slice(1));
+	}, 250);
 }

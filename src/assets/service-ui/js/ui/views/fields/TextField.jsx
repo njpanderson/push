@@ -1,12 +1,17 @@
 import React from 'react';
 
 import { propTypesFormElement } from '../../../lib/proptypes';
+import { deferredOnChange } from '../../../lib/utils';
 
 function TextField(props) {
 	const className = 'field--text' + (props.className ? ` ${props.className}` : '');
 
+	/**
+	 * Handles onChange events from the input field. Fires props.onChange.
+	 * @param {SyntheticEvent} event
+	 */
 	function onChange(event) {
-		props.onChange && props.onChange(event, event.target.value);
+		deferredOnChange(props.onChange, event.target.value);
 	}
 
 	return (
