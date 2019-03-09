@@ -1,6 +1,6 @@
 // Global actions
 export const SET_STATE = 'SET_STATE';
-export const SET_CURRENT_ENV = 'SET_CURRENT_ENV';
+export const SET_ACTIVE_ENV = 'SET_ACTIVE_ENV';
 export const SET_MAPPED_ENV_VALUE = 'SET_MAPPED_ENV_VALUE';
 
 // Environment specific actions
@@ -8,7 +8,7 @@ export const ADD_ENV = 'ADD_ENV';
 export const REMOVE_ENV = 'REMOVE_ENV';
 export const SET_ENV = 'SET_ENV';
 export const SET_ENV_SERVICE = 'SET_ENV_SERVICE';
-export const RENAME_ENV = 'RENAME_ENV';
+export const SET_ENV_VALUE = 'SET_ENV_VALUE';
 
 /**
  * Set the initial state for the entire service file.
@@ -22,6 +22,7 @@ export function setState(state) {
 }
 
 export function setMappedEnvValue(map, value) {
+	console.log('setMappedEnvValue', map, value);
 	return {
 		type: SET_MAPPED_ENV_VALUE,
 		map,
@@ -30,25 +31,27 @@ export function setMappedEnvValue(map, value) {
 }
 
 /**
- * Set the current environment for the service file.
+ * Set the active environment for the service file.
  * @param {string} env - The environment to set. Must exist within the state.
  */
-export function setCurrentEnv(env) {
+export function setActiveEnv(env) {
 	return {
-		type: SET_CURRENT_ENV,
+		type: SET_ACTIVE_ENV,
 		env
 	};
 }
 
 /**
  * Create a single env element in the service file.
- * @param {string} env - The environment to add. Must not exist within the state.
+ * @param {string} id - The environment ID to add. Must not exist within the state.
  */
-export function addEnv(env, data) {
+export function addEnv(id, service, options, active = false) {
 	return {
 		type: ADD_ENV,
-		env,
-		data
+		id,
+		service,
+		options,
+		active
 	};
 }
 
@@ -65,39 +68,41 @@ export function removeEnv(env) {
 
 /**
  * Set env data for a single env.
- * @param {string} env - The env to set. Must exist within the state.
- * @param {object} data - The data to set for the named env.
+ * @param {string} id - The env to set. Must exist within the state.
+ * @param {object} options - The options to set for the named env.
  */
-export function setEnv(env, data) {
+export function setEnv(id, options) {
 	return {
 		type: SET_ENV,
-		env,
-		data
+		id,
+		options
 	};
 }
 
 /**
  * Set id for a single env.
- * @param {string} env - The env to set. Must exist within the state.
- * @param {object} id - The new ID to give the env.
+ * @param {string} id - The env to set. Must exist within the state.
+ * @param {string} value - The new ID to give the env.
  */
-export function renameEnv(env, id) {
+export function renameEnv(id, value) {
 	return {
-		type: RENAME_ENV,
-		env,
-		id
+		type: SET_ENV_VALUE,
+		id,
+		prop: 'id',
+		value
 	};
 }
 
 /**
  * Set the service option for a single env.
- * @param {string} env - The env to set. Must exist within the state.
- * @param {string} service - The service to set for the named env.
+ * @param {string} id - Env ID to set. Must exist within the state.
+ * @param {string} value - The service name to set for the env.
  */
-export function setEnvService(env, service) {
+export function setEnvService(id, value) {
 	return {
-		type: SET_ENV_SERVICE,
-		env,
-		service
+		type: SET_ENV_VALUE,
+		id,
+		prop: 'service',
+		value
 	};
 }

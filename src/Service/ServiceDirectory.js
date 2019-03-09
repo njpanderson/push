@@ -43,7 +43,8 @@ class ServiceDirectory {
 
 	/**
 	 * Get cumulative keys from the settings for a service, extended from the base defaults.
-	 * @param {string} serviceName - Name of the service to retrieve defaults for.
+	 * @param {array} serviceSchema - A reference to one of the Provider schemas on
+	 * which to retrieve the default values. E.g: ProviderSFTP.optionSchema
 	 */
 	getServiceSchemaValues(serviceSchema, key = 'default') {
 		const values = {};

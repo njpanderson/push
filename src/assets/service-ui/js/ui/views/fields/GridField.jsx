@@ -65,15 +65,16 @@ class GridField extends React.Component {
 	/**
 	 * onChange handler to accumulate data into state and send as a single object value.
 	 */
-	onChange(event, map, value) {
+	onChange(map, value) {
 		// Send all data
+		console.log('GridField change', map, value);
 		const newValue = setMappedValue(merge([], this.state.value), map, value);
 
 		this.setState({
 			value: newValue
 		});
 
-		this.props.onChange(event, newValue);
+		this.props.onChange(newValue);
 	}
 
 	/**
@@ -90,7 +91,7 @@ class GridField extends React.Component {
 			value: this.applyIds(newValue)
 		});
 
-		this.props.onChange(event, newValue);
+		this.props.onChange(newValue);
 	}
 
 	/**
@@ -122,7 +123,7 @@ class GridField extends React.Component {
 			value: newValue
 		});
 
-		this.props.onChange(event, newValue);
+		this.props.onChange(newValue);
 	}
 
 	/**

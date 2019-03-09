@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 
 import Button from '../components/Button';
 import { propTypesFormElement } from '../../../lib/proptypes';
+import { deferredOnChange } from '../../../lib/utils';
 
 class FileField extends React.Component {
 	constructor(props) {
@@ -35,7 +36,7 @@ class FileField extends React.Component {
 			value: this.dom.nodeInput.current.value
 		});
 
-		this.props.onChange(event, this.dom.nodeInput.current.value);
+		deferredOnChange(this.props.onChange, this.dom.nodeInput.current.value);
 	}
 
 	/**
@@ -44,7 +45,7 @@ class FileField extends React.Component {
 	 */
 	onFileSelection(event) {
 		event.preventDefault();
-		this.props.onFileSelection(event, this.dom.nodeInput.current.value);
+		this.props.onFileSelection(this.dom.nodeInput.current.value);
 	}
 
 	render() {

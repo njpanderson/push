@@ -45,11 +45,11 @@ class Form extends React.Component {
 	 * an array of fieldset eleements.
 	 * @param {array} schema - Schema, from ServiceDirectory#getSchema.
 	 * @param {object} values - The environment values, as set by the user.
+	 * @param {array} [map] - Location map to find the field within the data during events.
 	 * @param {string} [heading] - Optional fieldset heading.
 	 * @param {number} [counter] - Incrementing counter, used internally for keys.
-	 * @param {array} [map] - Location map to find the field within the data during events.
 	 */
-	parseFieldSets(schema, values, heading = '', counter = 1, map = []) {
+	parseFieldSets(schema, values, map = [], heading = '', counter = 1) {
 		const key = `fieldset-${counter}`;
 
 		const fields = schema.map((field) => {
@@ -63,9 +63,9 @@ class Form extends React.Component {
 				return this.parseFieldSets(
 					field.fields,
 					values[field.name] || {},
+					[...map, field.name],
 					field.label,
-					counter + 1,
-					[...map, field.name]
+					counter + 1
 				);
 			} else {
 				// Parse a single field type
@@ -79,9 +79,7 @@ class Form extends React.Component {
 							this.props.onFocus &&
 								this.props.onFocus(event, key);
 						},
-						onChange: (event, map, value) => {
-							console.log('Form field change', field.name, map, value);
-						}
+						onChange: this.props.onChange
 					},
 					{
 						onFileSelection: this.props.onFileSelection
@@ -112,9 +110,7 @@ class Form extends React.Component {
 		const fieldSets = this.parseFieldSets(
 			this.props.schemas[this.props.env.service],
 			this.props.env.options,
-			'',
-			1,
-			[this.props.env.id]
+			[this.props.envIndex]
 		);
 
 		return (
@@ -130,6 +126,7 @@ class Form extends React.Component {
 
 Form.propTypes = {
 	env: PropTypes.object,
+	envIndex: PropTypes.number,
 	schemas: PropTypes.object,
 	onChange: PropTypes.func,
 	onFocus: PropTypes.func,

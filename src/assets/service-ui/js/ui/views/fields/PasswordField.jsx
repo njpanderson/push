@@ -1,10 +1,11 @@
 import React from 'react';
 
 import { propTypesFormElement } from '../../../lib/proptypes';
+import { deferredOnChange } from '../../../lib/utils';
 
 function PasswordField(props) {
 	function onChange(event) {
-		props.onChange(event, event.target.value);
+		deferredOnChange(props.onChange, event.target.value);
 	}
 
 	return (

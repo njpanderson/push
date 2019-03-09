@@ -3,25 +3,26 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import Form from '../views/Form';
-import { getEnvsArray } from '../../lib/utils';
+import { setMappedEnvValue } from '../state/actions';
 
 class Environments extends React.Component {
 	onFocus(event, fieldset) {
 		// console.log('onFocus', event, fieldset);
 	}
 
-	onChange(env, data) {
-		// console.log('onChange', env, data);
+	onChange(map, data) {
+		this.props.onChange(map, data);
 	}
 
 	render() {
-		const environments = this.props.envs.map((env) => {
-			console.log('env render', env);
+		console.log('Environments envs', this.props.envs);
+		const environments = this.props.envs.map((env, index) => {
 			return (
 				<Form
 					schemas={this.props.schemas}
 					env={env}
-					key={env.id}
+					envIndex={index}
+					key={index}
 					onFileSelection={this.props.onFileSelection}
 					onFocus={this.onFocus.bind(this)}
 					onChange={this.onChange.bind(this)} />
@@ -40,20 +41,21 @@ Environments.propTypes = {
 	currentEnv: PropTypes.string,
 	envs: PropTypes.array,
 	schemas: PropTypes.object,
-	onFileSelection: PropTypes.func
+	onFileSelection: PropTypes.func,
+	onChange: PropTypes.func
 };
 
 export function mapStateToProps(state) {
 	return {
 		currentEnv: state.settings.env,
-		envs: getEnvsArray(state.settings),
+		envs: state.settings,
 		schemas: state.schemas
 	};
 }
 
 export function mapDispatchToProps(dispatch) {
 	return {
-
+		onChange: (map, value) => dispatch(setMappedEnvValue(map, value)),
 	};
 }
 

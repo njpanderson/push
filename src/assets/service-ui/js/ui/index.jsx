@@ -39,14 +39,13 @@ class Root extends React.Component {
 	receiveMessage(type, data) {
 		switch (type) {
 		case COMMS.SET_INITIAL_STATE:
+			// Set the initial state from the service file
 			store.dispatch(setState(data));
 			break;
 
 		case COMMS.SET_FILE_SELECTION:
-			console.log('SET_FILE_SELECTION', data);
+			// Set a file selection from the field by its map
 			store.dispatch(setMappedEnvValue(data.map, data.file));
-			// this.messaging.post(COMMS.GET_FILE_SELECTION);
-			// store.dispatch(setState(data));
 			break;
 		}
 	}
@@ -56,26 +55,20 @@ class Root extends React.Component {
 	 */
 	addEnv() {
 		const state = store.getState(),
-			envs = Object.keys(state.settings).filter(
-				key => key.startsWith('new_env')
+			envs = state.settings.filter(
+				env => env.id.startsWith('new_env')
 			);
 
 		let a = 1,
-			newEnvName = 'new_env_' + a;
+			newEnvId = 'new_env_' + a;
 
 		// Find a unique name
-		while (envs.findIndex(key => key === newEnvName) !==-1) {
-			newEnvName = 'new_env_' + ++a;
+		while (envs.findIndex(env => env.id === newEnvId) !== -1) {
+			newEnvId = 'new_env_' + ++a;
 		}
 
 		// Dispatch change
-		store.dispatch(addEnv(
-			newEnvName,
-			{
-				service: 'File',
-				options: {}
-			}
-		));
+		store.dispatch(addEnv(newEnvId, 'File', {}));
 	}
 
 	getButtons() {
@@ -84,15 +77,34 @@ class Root extends React.Component {
 			onClick: this.addEnv.bind(this)
 		}], [{
 			label: 'Cancel',
-			onClick: () => {
-				console.log('button cancel');
-			}
+			onClick: () => this.close()
 		}, {
 			label: 'Save',
-			onClick: () => {
-				console.log('button save');
-			}
+			onClick: () => this.save()
+		}, {
+			label: 'Save & close',
+			onClick: () => this.save(true)
 		}]];
+	}
+
+	save(close = false) {
+		const state = store.getState();
+
+		// Validate settings
+		// TODO:...
+
+		this.messaging.post(COMMS.SAVE, {
+			settings: state.settings,
+			filename: state.filename
+		});
+
+		if (close) {
+			this.close();
+		}
+	}
+
+	close() {
+		this.messaging.post(COMMS.CLOSE);
 	}
 
 	getFileSelection(options = {}) {

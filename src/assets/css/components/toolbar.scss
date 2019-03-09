@@ -22,6 +22,10 @@
 	.text {
 		padding: 0 $margin-field;
 		flex-basis: 50%;
+
+		label {
+			display: none;
+		}
 	}
 
 	nav {

@@ -2,12 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import { propTypesFormElement } from '../../../lib/proptypes';
+import { deferredOnChange } from '../../../lib/utils';
 
 function NumberField(props) {
 	const className = 'field--text' + (props.className ? ` ${props.className}` : '');
 
 	function onChange(event) {
-		props.onChange(event, parseFloat(event.target.value));
+		deferredOnChange(props.onChange, event.target.value);
 	}
 
 	return (
