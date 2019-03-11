@@ -77,7 +77,7 @@ const utils = {
 			color = new vscode.ThemeColor(config.get('statusMessageColor'));
 		}
 
-		this._sb = new vscode.window.createStatusBarItem(
+		this._sb = vscode.window.createStatusBarItem(
 			vscode.StatusBarAlignment.left,
 			1
 		);
