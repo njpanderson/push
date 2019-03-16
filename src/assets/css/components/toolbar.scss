@@ -42,8 +42,14 @@
 
 	.field--text {
 		border-color: transparent;
+		background-color: transparent;
 
-		&--focus {
+		&:hover {
+			border-bottom-color: var(--vscode-inputOption-activeBorder);
+		}
+
+		&:focus {
+			outline: 0;
 			border-color: var(--vscode-inputOption-activeBorder);
 		}
 	}
