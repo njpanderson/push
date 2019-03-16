@@ -63,12 +63,13 @@ input {
 
 .field {
 	&--text {
-		border: 1px solid var(--vscode-dropdown-border);
+		border: 1px solid transparent;
 		padding: 4px;
 		color: var(--vscode-input-foreground);
 		background-color: var(--vscode-input-background);
 
 		&:focus {
+			outline: 0;
 			border-color: var(--vscode-inputOption-activeBorder);
 		}
 	}
