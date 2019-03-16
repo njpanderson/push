@@ -6,10 +6,10 @@ import { propTypesFormElement } from '../../../lib/proptypes';
 import { deferredOnChange } from '../../../lib/utils';
 
 function SelectField(props) {
-	function onChange(event) {
+	function onChange(value) {
 		deferredOnChange(
 			props.onChange,
-			event.target.options[event.target.selectedIndex].value
+			value
 		);
 	}
 
@@ -17,6 +17,9 @@ function SelectField(props) {
 		<div className="form-group">
 			<label>{props.label}</label>
 			<Select
+				isSearchable
+				isClearable
+				name={props.name}
 				options={props.options}
 				value={props.value}
 				onFocus={props.onFocus}
