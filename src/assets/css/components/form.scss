@@ -57,14 +57,11 @@
 	}
 }
 
-input {
-	font-size: 14px;
-}
-
 .field {
 	&--text {
 		border: 1px solid transparent;
 		padding: 4px;
+		font-size: 14px;
 		color: var(--vscode-input-foreground);
 		background-color: var(--vscode-input-background);
 

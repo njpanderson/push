@@ -10,7 +10,7 @@ import {
 } from '../state/actions';
 
 class FormToolbar extends React.Component {
-	onEnvSelect(event, value) {
+	onEnvSelect(value) {
 		this.props.onEnvSelect(this.props.env.id, value);
 	}
 
@@ -34,6 +34,7 @@ class FormToolbar extends React.Component {
 						<Select
 							className="service-selector"
 							onChange={this.onEnvSelect.bind(this)}
+							value={this.props.env.service}
 							options={this.props.serviceOptions} />
 					</div>
 				</nav>
