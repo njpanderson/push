@@ -1,6 +1,9 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.6.26
+ - Fixed issue with directory creation on download jobs.
+
 ## 0.6.25
  - Fixed issue with errors appearing in console.
 
