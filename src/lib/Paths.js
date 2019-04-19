@@ -565,7 +565,7 @@ class Paths {
 			this.getFileStats(this.getNormalPath(uri))
 				.then(stats => {
 					if (!stats) {
-						mkdirp(uri, function (error) {
+						mkdirp(this.getNormalPath(uri), function (error) {
 							if (error) {
 								reject(error);
 							} else {
