@@ -207,9 +207,20 @@ class UI extends Push {
 		}
 	}
 
+	/**
+	 * @description
+	 * Sets the current service file environment, then disables any active watchers,
+	 * depending on the user's preference.
+	 * @see Service#setConfigEnv
+	 */
 	setServiceEnv(uri) {
 		if ((uri = this.getValidUri(uri))) {
-			return this.service.setConfigEnv(uri).catch(this.catchError);
+			return this.service.setConfigEnv(uri).catch(this.catchError)
+				.then(() => {
+					if (this.config.disableWatchOnEnvChange) {
+						this.stopWatch();
+					}
+				});
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
