@@ -536,6 +536,16 @@ class Paths {
 	}
 
 	/**
+	 * Process a Uri and retrieve the extension component.
+	 * @param {Uri} uri - Uri to process.
+	 * @returns {string} The extension of the file.
+	 */
+	getExtName(uri) {
+		utils.assertFnArgs('Paths#getExtName', arguments, [vscode.Uri]);
+		return path.extname(this.getNormalPath(uri));
+	}
+
+	/**
 	 *
 	 * @param {Uri} uri - Uri or pathname.
 	 * @param {boolean} [returnIfDirectory=false] - If the path supplied is already a

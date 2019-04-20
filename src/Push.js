@@ -631,7 +631,7 @@ class Push extends PushBase {
 		return new Promise((resolve, reject) => {
 			let tmpFile, remotePath;
 
-			tmpFile = utils.getTmpFile();
+			tmpFile = utils.getTmpFile(true, this.paths.getExtName(uri));
 
 			remotePath = this.service.execSync(
 				'convertUriToRemote',

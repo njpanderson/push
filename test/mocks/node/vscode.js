@@ -17,6 +17,7 @@ Uri.file = (uri) => {
 class ExtensionContext {
 	constructor() {
 		this.globalState = new StateMachine();
+		this.extensionPath = path.dirname(path.dirname(path.dirname(__dirname)));
 	}
 }
 

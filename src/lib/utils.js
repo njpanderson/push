@@ -284,11 +284,13 @@ const utils = {
 	/**
 	 * Create a temporary file and return its filename.
 	 * @param {boolean} [getUri=true] - Whether to return a URI or a string.
+	 * @param {string} [extension] - An extension to supply for determining the extension of the temporary file.
 	 * @return {string} Filename created.
 	 */
-	getTmpFile(getUri = true) {
-		let tmpobj = tmp.fileSync({
-			prefix: TMP_FILE_PREFIX
+	getTmpFile(getUri = true, extension = null) {
+		const tmpobj = tmp.fileSync({
+			prefix: TMP_FILE_PREFIX,
+			postfix: (typeof extension === 'string' ? extension : '.tmp')
 		});
 
 		if (getUri) {
