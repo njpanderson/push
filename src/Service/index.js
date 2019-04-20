@@ -77,7 +77,7 @@ class Service extends PushBase {
 				// Produce a prompt to create a new settings file
 				this.getFileNamePrompt(this.config.settingsFilename, [{
 					uri: dir
-				}])
+				}], forceCreate)
 					.then((file) => {
 						if (file.exists) {
 							return this.openDoc(file.uri);
