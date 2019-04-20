@@ -73,10 +73,8 @@ class Push extends PushBase {
 
 		this.createEventHandlers();
 
-		if (!DEBUG) {
-			// Once initialised, do the new version check
-			this.checkNewVersion();
-		}
+		// Once initialised, do the new version check
+		this.checkNewVersion();
 	}
 
 	/**
@@ -85,9 +83,14 @@ class Push extends PushBase {
 	 * based on the users preferences. Also sets the current version into storage.
 	 */
 	checkNewVersion() {
-		const currentVersion = this.context.globalState.get(
+		let currentVersion = this.context.globalState.get(
 			Push.globals.VERSION_STORE
 		);
+
+		if (DEBUG) {
+			// Ensure the below code always runs
+			currentVersion = '0.0.0';
+		}
 
 		if (typeof currentVersion === 'undefined') {
 			// Let's do nothing for new installs
@@ -95,7 +98,7 @@ class Push extends PushBase {
 		}
 
 		utils.trace(
-			'Push',
+			'Push#checkNewVersion',
 			`Current version: ${currentVersion}, Package version: ${packageJson.version}`
 		);
 
@@ -110,19 +113,26 @@ class Push extends PushBase {
 				this.showChangelog();
 			}
 
-			// Display a small notice
-			vscode.window.showInformationMessage(
-				i18n.t('push_upgraded', packageJson.version),
-				(!this.config.showChangelog ? {
-					isCloseAffordance: true,
-					id: 'show_changelog',
-					title: i18n.t('show_changelog')
-				} : null)
-			).then((option) => {
-				if (option && option.id === 'show_changelog') {
-					this.showChangelog();
-				}
-			});
+			if (DEBUG) {
+				utils.trace(
+					'Push#checkNewVersion',
+					i18n.t('push_upgraded', packageJson.version)
+				);
+			} else {
+				// Display a small notice
+				vscode.window.showInformationMessage(
+					i18n.t('push_upgraded', packageJson.version),
+					(!this.config.showChangelog ? {
+						isCloseAffordance: true,
+						id: 'show_changelog',
+						title: i18n.t('show_changelog')
+					} : null)
+				).then((option) => {
+					if (option && option.id === 'show_changelog') {
+						this.showChangelog();
+					}
+				});
+			}
 		}
 
 		// Retain next version
@@ -136,10 +146,20 @@ class Push extends PushBase {
 	 * Shows the Push changelog in a markdown preview.
 	 */
 	showChangelog() {
-		vscode.commands.executeCommand(
-			'markdown.showPreview',
-			vscode.Uri.file(this.context.extensionPath + '/CHANGELOG.md')
-		);
+		const changelogFile = this.paths.join(this.context.extensionPath, 'CHANGELOG.md');
+
+		utils.trace('Push#showChangelog', `Changelog file at ${this.paths.getNormalPath(changelogFile)}`);
+
+		if (!this.paths.fileExists(changelogFile)) {
+			throw new Error(`Changelog file at ${this.paths.getNormalPath(changelogFile)} does not exist.`);
+		}
+
+		if (!DEBUG) {
+			vscode.commands.executeCommand(
+				'markdown.showPreview',
+				changelogFile
+			);
+		}
 	}
 
 	createEventHandlers() {
