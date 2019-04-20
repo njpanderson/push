@@ -7,7 +7,7 @@
   <img src="https://raw.github.com/njpanderson/push/master/img/icon-with-label.png" alt="Push - The user friendly uploader" width="829"/>
 </p>
 
-> Push is a file transfer extension built with with the goal of being both easy to use and reliable, providing developers with features they need.
+> Push is a file transfer extension built with with the goal of being both easy to use and reliable.
 
 ## Contents
 
