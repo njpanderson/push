@@ -191,8 +191,6 @@ class SCM {
 								this._cleanGitPath(file)
 							);
 
-							console.log(uri.fsPath, this.paths.fileExists(uri));
-
 							if (this.paths.fileExists(uri)) {
 								return uris.push(uri);
 							}
