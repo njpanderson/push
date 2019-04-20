@@ -7,8 +7,8 @@ class TreeItem extends vscode.TreeItem {
 
 		if (options.icon) {
 			this.iconPath = {
-				light: path.join(__filename, '..', '..', '..', '..', 'resources', 'light', options.icon + '.svg'),
-				dark: path.join(__filename, '..', '..', '..', '..', 'resources', 'dark', options.icon + '.svg')
+				light: path.join(__filename, '..', '..', '..', 'resources', 'light', options.icon + '.svg'),
+				dark: path.join(__filename, '..', '..', '..', 'resources', 'dark', options.icon + '.svg')
 			};
 		}
 
