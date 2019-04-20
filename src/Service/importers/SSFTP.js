@@ -1,4 +1,4 @@
-const ImporterBase = require('../ImporterBase');
+const ImporterBase = require('../../ImporterBase');
 
 class SSFTP extends ImporterBase {
 	/**
