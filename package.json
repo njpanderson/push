@@ -328,6 +328,11 @@
       "explorer/context": [
         {
           "when": "push:initialised",
+          "command": "push.createServiceConfig",
+          "group": "njp-push-config@1"
+        },
+        {
+          "when": "push:initialised",
           "command": "push.editServiceConfig",
           "group": "njp-push-config@1"
         },
