@@ -7,7 +7,23 @@
   <img src="https://raw.github.com/njpanderson/push/master/img/icon-with-label.png" alt="Push - The user friendly uploader" width="829"/>
 </p>
 
-> Push is a file transfer extension built with with the goal of being both easy to use and reliable, providing developers with features they need.
+> Push is a file transfer extension built with with the goal of being both easy to use and reliable.
+
+## Contents
+
+ - [Features](#features)
+ - ️️️[Quick setup](#quick-setup)
+ - [Extension settings](#extension-settings)
+ - [Using push](#using-push)
+   - [On demand transfers](#on-demand-transfers)
+   - [File watching](#file-watching)
+   - [Queued uploading](#queued-uploading)
+ - [Service settings files](#service-settings-files)
+   - [Environments](#environments)
+ - [Available services](#available-services)
+ - [Reporting bugs](#reporting-bugs)
+ - [Contributing](#contributing)
+ - [Push in your language](#push-in-your-language)
 
 ## Features
 
@@ -19,7 +35,7 @@ It currently provides:
  - Watching of files within the project.
  - SFTP gateway support - connect via an SSH gateway/bastion to your SFTP server.
 
-<div style="border: 3px double orange; background-color: #fff7ec; padding: 0 1em; margin: 2em 0">
+<div id="quick-setup" style="border: 3px double orange; background-color: #fff7ec; padding: 0 1em; margin: 2em 0">
 
 ## ⚡️ Quick setup
 
@@ -53,6 +69,7 @@ This extension contributes the following settings:
 | `persistWatchers` | `false` | When test to `true`, Push will retain up to 50 watchers between a restart of VS Code. See [Watcher Persistence](#watcher-persistence) |
 | `useEnvLabel` | `true` | Set `false` to disable the currently active environment label within the status bar. |
 | `envColours` | `dev: #62defd`<br>`stage: #ffd08a`<br>`prod: #f7ed00` | The currently defined transfer environments (and their status bar colours). VS Code's [theme colours](https://code.visualstudio.com/docs/getstarted/theme-color-reference) can also be used here. |
+| `envReminderTimeout` | `30` | The number of seconds before a reminder for the active environment is displayed when transferring files. See `reminder` in the [general service settings](#general-service-settings).
 
 ## Using Push
 Push has three main modes of operation: 1) As a standard, on-demand uploader, 2) as a queue-based uploader on save, or 3) as a file watching uploader. All three methods may be combined as your preferences dictate.
@@ -344,6 +361,8 @@ The following options are available to all services:
 | `collisionDownloadAction` | (Prompt) | Identical in options to `collisionUploadAction`, sets how to proceed when colliding with the same local file.
 | `timeZoneOffset` | `0` | The offset, in hours, the time is set to on the origin relative to the local device. I.e. if the origin is GMT+1 and the device is GMT-1, the offset would be `2` |
 | `followSymlinks` | `false` | If supported, the contents of symlinks may be included when uploading files. This will likely not affect downloads due to the nature of how they are normally represented on remote servers, as well as the potential for not having access to the linked-to files. |
+| `reminder` | `true` | If `true`, will remind you when `reminderTimeout` (or `envReminderTimeout` in the workspace config) has passed if this environment is active. This time is shortened if you switch away from VS Code.
+| `reminderTimeout` | `null` | A server-specific timeout setting, in seconds. See `envReminderTimeout` in the main configuration.
 
 ## Known issues
 

@@ -13,6 +13,7 @@ const config = require('../lib/config');
 const channel = require('../lib/channel');
 const constants = require('../lib/constants');
 const utils = require('../lib/utils');
+const logger = require('../lib/logger');
 const i18n = require('../i18n');
 
 class Service extends PushBase {
@@ -335,11 +336,11 @@ class Service extends PushBase {
 	}
 
 	/**
-	 * Invokes a method within the active transfer service.
+	 * Asyncronously invokes a method within the active transfer service.
 	 * @param {string} method - Method name to invoke.
 	 * @param {object} config - Current configuration state.
 	 * @param {array} args - Arguments to send to the method, as an array.
-	 * @return {mixed} Return result from the service method.
+	 * @return {Promise} Return result from the service method.
 	 */
 	exec(method, config, args = []) {
 		// Set the current service configuration
@@ -354,22 +355,34 @@ class Service extends PushBase {
 		// Set the active service's config
 		this.activeService.setConfig(this.config);
 
-		// Run the service method with supplied arguments
-		let result = this.activeService[method].apply(
-			this.activeService,
-			args
-		);
+		return this.checkEnvSafety()
+			.then(() => {
+				// Run the service method with supplied arguments
+				let result = this.activeService[method].apply(
+					this.activeService,
+					args
+				);
 
-		if (!(result instanceof Promise)) {
-			throw new Error(
-				`Method ${method} does not return a Promise. This method cannot ` +
-				'be used with exec(). Try execSync()?'
-			);
-		}
+				if (!(result instanceof Promise)) {
+					throw new Error(
+						`Method ${method} does not return a Promise. This method cannot ` +
+						'be used with exec(). Try execSync()?'
+					);
+				}
 
-		return result;
+				return result;
+			}, (error) => {
+				throw error;
+			});
 	}
 
+	/**
+	 * Synchronously invokes a method within the active transfer service.
+	 * @param {string} method - Method name to invoke.
+	 * @param {object} config - Current configuration state.
+	 * @param {array} args - Arguments to send to the method, as an array.
+	 * @return {mixed} Return result from the service method.
+	 */
 	execSync(method, config, args = []) {
 		// Set the current service configuration
 		this.setConfig(config);
@@ -386,6 +399,93 @@ class Service extends PushBase {
 			this.activeService,
 			args
 		);
+	}
+
+	/**
+	 * @description
+	 * Checks that the ENV has had a transfer operation within x seconds, otherwise
+	 * will produce a warning dialog.
+	 * @returns {Promise} - Resolving if the dialog is either not produced, or
+	 * confirmed, rejecting if the dialog is cancelled.
+	 */
+	checkEnvSafety() {
+		const log = logger.get('Service#checkEnvSafety'),
+			blurLog = logger.getEvent('windowBlurred');
+
+		let envReminderTimeout = this.getEnvReminderTimeout(),
+			age;
+
+		if (blurLog.lastRun() > log.lastRun() && envReminderTimeout > 0) {
+			// If vscode was blurred since the last run, halve the timeout.
+			envReminderTimeout = (envReminderTimeout / 2);
+		}
+
+		if (
+			!this.config.service.reminder ||
+			log.hasRunOnce() && log.runWithin(envReminderTimeout)
+		) {
+			// Loggable has run within X seconds - log again
+			log.add();
+
+			return Promise.resolve();
+		} else {
+			age = log.age();
+
+			return vscode.window.showWarningMessage(
+				(
+					(age === 0) ?
+						i18n.t('service_inactive', this.config.env) :
+						i18n.t('service_inactive_x_seconds', this.config.env, Math.round(log.age()))
+				),
+				{
+					modal: true
+				},
+				{
+					id: 'continue',
+					title: i18n.t('continue')
+				}, {
+					id: 'cancel',
+					isCloseAffordance: true,
+					title: i18n.t('cancel')
+				}
+			).then((answer) => {
+				answer = !!(answer && answer.id === 'continue');
+
+				if (answer) {
+					// Log execution
+					log.add();
+
+					return true;
+				}
+
+				throw new PushError(i18n.t('transfer_cancelled'));
+			});
+		}
+	}
+
+	/**
+	 * Returns the configured ENV switch reminder timeout, or a default of 30 seconds.
+	 */
+	getEnvReminderTimeout() {
+		if (
+			this.config.service.reminderTimeout !== null &&
+			!isNaN(this.config.service.reminderTimeout) &&
+			this.config.service.reminderTimeout > 0
+		) {
+			// Get timeout from service file
+			return this.config.service.reminderTimeout;
+		}
+
+		if (
+			!isNaN(this.config.envReminderTimeout) &&
+			this.config.envReminderTimeout > 0
+		) {
+			// Get workspace timeout
+			return this.config.envReminderTimeout;
+		}
+
+		// Return the default
+		return 30;
 	}
 
 	stop() {

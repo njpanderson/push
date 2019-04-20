@@ -1,4 +1,3 @@
-/* global suite, test */
 const assert = require('assert');
 const expect = require('chai').expect;
 
@@ -145,7 +144,7 @@ describe('Push', function() {
 					assert(
 						counter.getArgs('utils.showWarning', 1, 0) ===
 						'queue_empty'
-					)
+					);
 				});
 		});
 	});
