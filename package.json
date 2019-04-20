@@ -155,6 +155,11 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically disables any watchers when the active environment is changed."
+        },
+        "njpPush.envReminderTimeout": {
+          "type": "number",
+          "default": 30,
+          "description": "Defines in seconds how long Push will wait before producing a reminder for the active environment during transfers."
         }
       }
     },

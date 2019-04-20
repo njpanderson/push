@@ -6,7 +6,6 @@ const PushError = require('./types/PushError');
 const channel = require('./lib/channel');
 const i18n = require('./i18n');
 
-
 class PushBase extends Configurable {
 	constructor() {
 		super();

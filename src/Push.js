@@ -13,8 +13,8 @@ const Watch = require('./Watch');
 const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
+const logger = require('./lib/logger');
 const i18n = require('./i18n');
-
 
 const {
 	STATUS_PRIORITIES,
@@ -71,18 +71,7 @@ class Push extends PushBase {
 		// Set initial contexts
 		this.setContexts(true);
 
-		this.event('onDidChangeActiveTextEditor', vscode.window.activeTextEditor);
-
-		// Create event handlers
-		vscode.workspace.onDidSaveTextDocument((textDocument) => {
-			this.event('onDidSaveTextDocument', textDocument);
-		});
-
-		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
-			this.event('onDidChangeActiveTextEditor', textEditor);
-		});
-
-		utils.trace('Push', 'Events bound');
+		this.createEventHandlers();
 
 		if (!DEBUG) {
 			// Once initialised, do the new version check
@@ -151,6 +140,28 @@ class Push extends PushBase {
 			'markdown.showPreview',
 			vscode.Uri.file(this.context.extensionPath + '/CHANGELOG.md')
 		);
+	}
+
+	createEventHandlers() {
+		this.event('onDidChangeActiveTextEditor', vscode.window.activeTextEditor);
+
+		// Create event handlers
+		vscode.workspace.onDidSaveTextDocument((textDocument) => {
+			this.event('onDidSaveTextDocument', textDocument);
+		});
+
+		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
+			this.event('onDidChangeActiveTextEditor', textEditor);
+		});
+
+		vscode.window.onDidChangeWindowState((state) => {
+			if (!state.focused) {
+				// Only set "blurred" to true, never un set it
+				logger.getEvent('windowBlurred').add();
+			}
+		});
+
+		utils.trace('Push', 'Events bound');
 	}
 
 	/**

@@ -108,5 +108,7 @@ module.exports = {
 	'commit_no_files': 'The selected commit (${1}) did not contain any uploadable files.',
 	'commit_no_files_with_ignore': 'The selected commit (${1}) did not contain any uploadable files. (${2} p{2:file:files} ignored.)',
 	'server_v_local': 'Server vs. Local',
-	'continue': 'Continue'
+	'continue': 'Continue',
+	'service_inactive': 'The environment "${1}" has not yet transferred in this session. Should Push continue this transfer?',
+	'service_inactive_x_seconds': 'The environment "${1}" has been inactive for ${2} p{2:second:seconds}. Should Push continue this transfer?'
 };

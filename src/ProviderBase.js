@@ -486,7 +486,9 @@ ServiceBase.defaults = {
 	testCollisionTimeDiffs: true,
 	collisionUploadAction: null,
 	collisionDownloadAction: null,
-	followSymlinks: false
+	followSymlinks: false,
+	reminder: true,
+	reminderTimeout: null
 };
 
 ServiceBase.pathSep = Paths.sep;
