@@ -48,6 +48,7 @@ let vscode = {
 	window: {
 		activeTextEditor: null,
 		onDidChangeActiveTextEditor: () => { },
+		onDidChangeWindowState: () => { return { focused: true }; },
 		withProgress: counter.attach(
 			'vscode.window.withProgress',
 			(options, callback) => {
