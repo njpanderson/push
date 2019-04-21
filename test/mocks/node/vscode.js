@@ -17,6 +17,7 @@ Uri.file = (uri) => {
 class ExtensionContext {
 	constructor() {
 		this.globalState = new StateMachine();
+		this.extensionPath = path.dirname(path.dirname(path.dirname(__dirname)));
 	}
 }
 
@@ -48,6 +49,7 @@ let vscode = {
 	window: {
 		activeTextEditor: null,
 		onDidChangeActiveTextEditor: () => { },
+		onDidChangeWindowState: () => { return { focused: true }; },
 		withProgress: counter.attach(
 			'vscode.window.withProgress',
 			(options, callback) => {
@@ -65,6 +67,9 @@ let vscode = {
 			return new StatusBarItem();
 		},
 		showInformationMessage: () => {
+			return Promise.resolve('');
+		},
+		showErrorMessage: () => {
 			return Promise.resolve('');
 		}
 	},
@@ -87,6 +92,9 @@ let vscode = {
 			}
 
 			return uri;
+		},
+		getConfiguration: () => {
+			return {};
 		}
 	},
 

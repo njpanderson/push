@@ -2,18 +2,20 @@ const vscode = require('vscode');
 const semver = require('semver');
 
 const packageJson = require('../package.json');
-const Service = require('./lib/Service');
-const PushError = require('./lib/PushError');
-const PushBase = require('./lib/PushBase');
-const Explorer = require('./lib/explorer/Explorer');
-const Paths = require('./lib/Paths');
-const Queue = require('./lib/queue/Queue');
-const QueueTask = require('./lib/queue/QueueTask');
-const Watch = require('./lib/Watch');
+const Service = require('./Service');
+const PushError = require('./types/PushError');
+const PushBase = require('./PushBase');
+const WatchList = require('./explorer/views/WatchList');
+const UploadQueue = require('./explorer/views/UploadQueue');
+const Paths = require('./Paths');
+const Queue = require('./Queue');
+const Watch = require('./Watch');
 const SCM = require('./lib/SCM');
 const channel = require('./lib/channel');
 const utils = require('./lib/utils');
-const i18n = require('./lang/i18n');
+const logger = require('./lib/logger');
+const i18n = require('./i18n');
+
 const {
 	STATUS_PRIORITIES,
 	QUEUE_LOG_TYPES,
@@ -50,7 +52,10 @@ class Push extends PushBase {
 		this.initService();
 
 		this.paths = new Paths();
-		this.explorer = new Explorer(this.config);
+		this.explorers = {
+			watchList: new WatchList(this.config),
+			uploadQueue: new UploadQueue(this.config)
+		};
 		this.scm = new SCM();
 
 		// Create watch class and set initial watchers
@@ -66,23 +71,10 @@ class Push extends PushBase {
 		// Set initial contexts
 		this.setContexts(true);
 
-		this.event('onDidChangeActiveTextEditor', vscode.window.activeTextEditor);
+		this.createEventHandlers();
 
-		// Create event handlers
-		vscode.workspace.onDidSaveTextDocument((textDocument) => {
-			this.event('onDidSaveTextDocument', textDocument);
-		});
-
-		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
-			this.event('onDidChangeActiveTextEditor', textEditor);
-		});
-
-		utils.trace('Push', 'Events bound');
-
-		if (!DEBUG) {
-			// Once initialised, do the new version check
-			this.checkNewVersion();
-		}
+		// Once initialised, do the new version check
+		this.checkNewVersion();
 	}
 
 	/**
@@ -91,9 +83,14 @@ class Push extends PushBase {
 	 * based on the users preferences. Also sets the current version into storage.
 	 */
 	checkNewVersion() {
-		const currentVersion = this.context.globalState.get(
+		let currentVersion = this.context.globalState.get(
 			Push.globals.VERSION_STORE
 		);
+
+		if (DEBUG) {
+			// Ensure the below code always runs
+			currentVersion = '0.0.0';
+		}
 
 		if (typeof currentVersion === 'undefined') {
 			// Let's do nothing for new installs
@@ -101,7 +98,7 @@ class Push extends PushBase {
 		}
 
 		utils.trace(
-			'Push',
+			'Push#checkNewVersion',
 			`Current version: ${currentVersion}, Package version: ${packageJson.version}`
 		);
 
@@ -116,19 +113,26 @@ class Push extends PushBase {
 				this.showChangelog();
 			}
 
-			// Display a small notice
-			vscode.window.showInformationMessage(
-				i18n.t('push_upgraded', packageJson.version),
-				(!this.config.showChangelog ? {
-					isCloseAffordance: true,
-					id: 'show_changelog',
-					title: i18n.t('show_changelog')
-				} : null)
-			).then((option) => {
-				if (option && option.id === 'show_changelog') {
-					this.showChangelog();
-				}
-			});
+			if (DEBUG) {
+				utils.trace(
+					'Push#checkNewVersion',
+					i18n.t('push_upgraded', packageJson.version)
+				);
+			} else {
+				// Display a small notice
+				vscode.window.showInformationMessage(
+					i18n.t('push_upgraded', packageJson.version),
+					(!this.config.showChangelog ? {
+						isCloseAffordance: true,
+						id: 'show_changelog',
+						title: i18n.t('show_changelog')
+					} : null)
+				).then((option) => {
+					if (option && option.id === 'show_changelog') {
+						this.showChangelog();
+					}
+				});
+			}
 		}
 
 		// Retain next version
@@ -142,10 +146,42 @@ class Push extends PushBase {
 	 * Shows the Push changelog in a markdown preview.
 	 */
 	showChangelog() {
-		vscode.commands.executeCommand(
-			'markdown.showPreview',
-			vscode.Uri.file(this.context.extensionPath + '/CHANGELOG.md')
-		);
+		const changelogFile = this.paths.join(this.context.extensionPath, 'CHANGELOG.md');
+
+		utils.trace('Push#showChangelog', `Changelog file at ${this.paths.getNormalPath(changelogFile)}`);
+
+		if (!this.paths.fileExists(changelogFile)) {
+			throw new Error(`Changelog file at ${this.paths.getNormalPath(changelogFile)} does not exist.`);
+		}
+
+		if (!DEBUG) {
+			vscode.commands.executeCommand(
+				'markdown.showPreview',
+				changelogFile
+			);
+		}
+	}
+
+	createEventHandlers() {
+		this.event('onDidChangeActiveTextEditor', vscode.window.activeTextEditor);
+
+		// Create event handlers
+		vscode.workspace.onDidSaveTextDocument((textDocument) => {
+			this.event('onDidSaveTextDocument', textDocument);
+		});
+
+		vscode.window.onDidChangeActiveTextEditor((textEditor) => {
+			this.event('onDidChangeActiveTextEditor', textEditor);
+		});
+
+		vscode.window.onDidChangeWindowState((state) => {
+			if (!state.focused) {
+				// Only set "blurred" to true, never un set it
+				logger.getEvent('windowBlurred').add();
+			}
+		});
+
+		utils.trace('Push', 'Events bound');
 	}
 
 	/**
@@ -452,7 +488,7 @@ class Push extends PushBase {
 		// Add initial init to a new queue
 		if (queue.tasks.length === 0 && !queue.running) {
 			utils.trace('Push#queue', 'Adding initial queue task');
-			queue.addTask(new QueueTask(() => {
+			queue.addTask(new Queue.Task(() => {
 				// Run init with length - 1 (allowing for init task which is always first)
 				return this.service.activeService &&
 					this.service.activeService.init((queue.tasks.length - 1));
@@ -460,14 +496,14 @@ class Push extends PushBase {
 		}
 
 		tasks.forEach((task) => {
-			if (task instanceof QueueTask) {
+			if (task instanceof Queue.Task) {
 				// Add the task as-is
 				return queue.addTask(task);
 			}
 
 			// Add queue item with contextual config
 			queue.addTask(
-				new QueueTask(
+				new Queue.Task(
 					(() => {
 						// Execute the service method, returning any results and/or promises
 						return this.service.exec(
@@ -595,7 +631,7 @@ class Push extends PushBase {
 		return new Promise((resolve, reject) => {
 			let tmpFile, remotePath;
 
-			tmpFile = utils.getTmpFile();
+			tmpFile = utils.getTmpFile(true, this.paths.getExtName(uri));
 
 			remotePath = this.service.execSync(
 				'convertUriToRemote',
@@ -764,18 +800,14 @@ class Push extends PushBase {
 	 * Refresh the Push explorer queue data.
 	 */
 	refreshExplorerQueues() {
-		this.explorer.refresh({
-			queues: this.queues
-		});
+		this.explorers.uploadQueue.refresh(this.queues);
 	}
 
 	/**
 	 * Refresh the Push explorer watch list data.
 	 */
 	onWatchUpdate(watchList) {
-		this.explorer.refresh({
-			watchList: watchList
-		});
+		this.explorers.watchList.refresh(watchList);
 	}
 
 	/**

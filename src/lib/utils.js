@@ -4,8 +4,8 @@ const fs = require('fs');
 const dateFormat = require('dateformat');
 
 const config = require('./config');
-const PushError = require('./PushError');
-const i18n = require('../lang/i18n');
+const PushError = require('../types/PushError');
+const i18n = require('../i18n');
 const {
 	TMP_FILE_PREFIX,
 	PUSH_MESSAGE_PREFIX,
@@ -284,11 +284,13 @@ const utils = {
 	/**
 	 * Create a temporary file and return its filename.
 	 * @param {boolean} [getUri=true] - Whether to return a URI or a string.
+	 * @param {string} [extension] - An extension to supply for determining the extension of the temporary file.
 	 * @return {string} Filename created.
 	 */
-	getTmpFile(getUri = true) {
-		let tmpobj = tmp.fileSync({
-			prefix: TMP_FILE_PREFIX
+	getTmpFile(getUri = true, extension = null) {
+		const tmpobj = tmp.fileSync({
+			prefix: TMP_FILE_PREFIX,
+			postfix: (typeof extension === 'string' ? extension : '.tmp')
 		});
 
 		if (getUri) {

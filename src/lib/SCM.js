@@ -1,8 +1,9 @@
 const vscode = require('vscode');
 
 const channel = require('./channel');
-const Paths = require('./Paths');
+const Paths = require('../Paths');
 const utils = require('./utils');
+
 
 class SCM {
 	constructor() {
@@ -189,8 +190,6 @@ class SCM {
 								dir,
 								this._cleanGitPath(file)
 							);
-
-							console.log(uri.fsPath, this.paths.fileExists(uri));
 
 							if (this.paths.fileExists(uri)) {
 								return uris.push(uri);

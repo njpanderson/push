@@ -1,4 +1,3 @@
-/* global suite, test */
 const assert = require('assert');
 const expect = require('chai').expect;
 
@@ -17,18 +16,17 @@ describe('Push', function() {
 		useMockery
 			.registerMultiple({
 				'vscode': vscode,
-				'./lib/Service': require('../mocks/lib/Service'),
-				'./lib/explorer/Explorer': require('../mocks/lib/Explorer'),
-				// './lib/Paths': require('../mocks/lib/Paths'),
-				'./lib/queue/Queue': Queue,
-				// './lib/queue/QueueTask': {},
-				'./lib/Watch': require('../mocks/lib/Watch'),
+				'./Service': require('../mocks/lib/Service'),
+				'./explorer/views/WatchList': require('../mocks/lib/Explorer'),
+				'./explorer/views/UploadQueue': require('../mocks/lib/Explorer'),
+				'./Queue': Queue,
+				'./Watch': require('../mocks/lib/Watch'),
 				'./lib/SCM': require('../mocks/lib/SCM'),
 				'./lib/channel': require('../mocks/lib/channel'),
 				'./lib/utils': require('../mocks/lib/utils'),
-				'./lib/PushBase': require('../mocks/lib/PushBase'),
-				'./lang/i18n': require('../mocks/lib/i18n'),
-				'../lang/i18n': require('../mocks/lib/i18n')
+				'./PushBase': require('../mocks/lib/PushBase'),
+				'./i18n': require('../mocks/lib/i18n'),
+				'../i18n': require('../mocks/lib/i18n')
 			});
 	});
 
@@ -146,7 +144,7 @@ describe('Push', function() {
 					assert(
 						counter.getArgs('utils.showWarning', 1, 0) ===
 						'queue_empty'
-					)
+					);
 				});
 		});
 	});

@@ -32,11 +32,23 @@
   ],
   "main": "./extension",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [{
+        "id": "njp-push",
+        "title": "Push",
+        "icon": "resources/cloud.svg"
+      }]
+    },
     "views": {
-      "explorer": [
+      "njp-push": [
         {
-          "id": "push.pushExplorer",
-          "name": "Push"
+          "id": "push.watchListExplorer",
+          "name": "Watched Files"
+        },
+        {
+          "id": "push.uploadQueueExplorer",
+          "name": "Upload Queue",
+          "when": "config.njpPush.uploadQueue"
         }
       ]
     },
@@ -138,6 +150,16 @@
           "type": "boolean",
           "default": true,
           "description": "Limits how far Push will traverse before giving up when looking for a service settings file. If enabled, Push will stop at the workspace root (or a hard limit of 50 ancestors)."
+        },
+        "njpPush.disableWatchOnEnvChange": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically disables any watchers when the active environment is changed."
+        },
+        "njpPush.envReminderTimeout": {
+          "type": "number",
+          "default": 30,
+          "description": "Defines in seconds how long Push will wait before producing a reminder for the active environment during transfers."
         }
       }
     },
@@ -193,7 +215,7 @@
       },
       {
         "command": "push.uploadQueuedItems",
-        "title": "Upload queued items",
+        "title": "Upload queued files",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/repo-push.svg",
@@ -290,7 +312,11 @@
       {
         "command": "push.clearWatchers",
         "title": "Clear all Push watchers",
-        "category": "Push"
+        "category": "Push",
+        "icon": {
+          "dark": "resources/dark/trashcan.svg",
+          "light": "resources/light/trashcan.svg"
+        }
       },
       {
         "command": "push.purgeStoredWatchers",
@@ -300,6 +326,11 @@
     ],
     "menus": {
       "explorer/context": [
+        {
+          "when": "push:initialised",
+          "command": "push.createServiceConfig",
+          "group": "njp-push-config@1"
+        },
         {
           "when": "push:initialised",
           "command": "push.editServiceConfig",
@@ -514,23 +545,28 @@
       "view/title": [
         {
           "command": "push.stopWatch",
-          "when": "view == push.pushExplorer && push:initialised && push:hasRunningWatchers",
+          "when": "view == push.watchListExplorer && push:initialised && push:hasRunningWatchers",
           "group": "navigation@1"
         },
         {
           "command": "push.startWatch",
-          "when": "view == push.pushExplorer && push:initialised && push:hasStoppedWatchers",
+          "when": "view == push.watchListExplorer && push:initialised && push:hasStoppedWatchers",
           "group": "navigation@2"
         },
         {
-          "command": "push.uploadQueuedItems",
-          "when": "view == push.pushExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
+          "command": "push.clearWatchers",
+          "when": "view == push.watchListExplorer && push:hasWatchers",
           "group": "navigation@3"
         },
         {
+          "command": "push.uploadQueuedItems",
+          "when": "view == push.uploadQueueExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
+          "group": "navigation@1"
+        },
+        {
           "command": "push.clearUploadQueue",
-          "when": "view == push.pushExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
-          "group": "navigation@4"
+          "when": "view == push.uploadQueueExplorer && push:initialised && push:hasUploadQueue && push:queue-upload-itemCount",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -557,8 +593,8 @@
       },
       {
         "command": "push.download",
-        "key": "ctrl+alt+d",
-        "mac": "cmd+ctrl+d",
+        "key": "ctrl+alt+l",
+        "mac": "cmd+ctrl+l",
         "when": "editorTextFocus"
       },
       {

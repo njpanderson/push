@@ -1,6 +1,12 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## (EDGE)
+ - **Added environment reminders** - This is a change to the interface which you may notice in this version. Push will now remind you when your session has been inactive for over 30 seconds (or less if you switch away from vscode) when working within an applicable environment. Set `reminder` to false on any environments in which you don't want this behaviour. See README for more information.
+ - **Added a new explorer window** - Queues and watch lists now appear in their own panels.
+ - Fixed issue with directory creation on download jobs.
+ - Improved display of diffs when comparing remote files.
+
 ## 0.6.25
  - Fixed issue with errors appearing in console.
 
