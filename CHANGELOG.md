@@ -3,6 +3,7 @@ All notable changes to Push will be documented in this file. If this file has ap
 
 ## 0.7.1
  - Updated underlying SFTP / SSH libs - New OpenSSH formatted SSH keys are now supported properly.
+ - Optimised package payload.
 
 ## 0.7.0
  - **Added environment reminders** - This is a change to the interface which you may notice in this version. Push will now remind you when your session has been inactive for over 30 seconds (or less if you switch away from vscode) when working within an applicable environment. Set `reminder` to false on any environments in which you don't want this behaviour. See README for more information.

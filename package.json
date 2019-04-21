@@ -30,7 +30,7 @@
   "activationEvents": [
     "*"
   ],
-  "main": "./extension",
+  "main": "./dist/extension",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -613,7 +613,10 @@
     "test": "mocha",
     "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
     "publish": "npm run t && vsce publish",
-    "vsce": "vsce"
+    "vsce": "vsce",
+    "vscode:prepublish": "webpack --mode production",
+    "compile": "webpack --mode none",
+    "watch": "webpack --mode none --watch"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.48",
@@ -625,7 +628,9 @@
     "mocha": "^5.2.0",
     "typescript": "^2.8.3",
     "vsce": "^1.59.0",
-    "vscode": "^1.1.18"
+    "vscode": "^1.1.18",
+    "webpack": "^4.30.0",
+    "webpack-cli": "^3.3.0"
   },
   "dependencies": {
     "dateformat": "^3.0.3",
