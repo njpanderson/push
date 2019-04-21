@@ -27,7 +27,11 @@ class UploadQueue extends ExplorerBase {
 							{
 								icon: 'file',
 								resourceUri: task.data.uriContext,
-								contextValue: 'uploadQueue:file'
+								contextValue: 'uploadQueue:file',
+								command: {
+									command: 'vscode.open',
+									arguments: [task.data.uriContext]
+								}
 							}
 						);
 					}

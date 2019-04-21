@@ -77,7 +77,7 @@ class Service extends PushBase {
 				// Produce a prompt to create a new settings file
 				this.getFileNamePrompt(this.config.settingsFilename, [{
 					uri: dir
-				}])
+				}], forceCreate)
 					.then((file) => {
 						if (file.exists) {
 							return this.openDoc(file.uri);
@@ -421,7 +421,11 @@ class Service extends PushBase {
 		}
 
 		if (
+			// No environment
+			typeof this.config.env === 'undefined' ||
+			// Reminder is false
 			!this.config.service.reminder ||
+			// Task has run and within timeframe
 			log.hasRunOnce() && log.runWithin(envReminderTimeout)
 		) {
 			// Loggable has run within X seconds - log again
@@ -429,6 +433,7 @@ class Service extends PushBase {
 
 			return Promise.resolve();
 		} else {
+			// Remind the user
 			age = log.age();
 
 			return vscode.window.showWarningMessage(
