@@ -897,26 +897,45 @@ class ProviderSFTP extends ProviderBase {
 
 					utils.trace('ProviderSFTP#clientGetByStream', remote);
 
-					client.get(remote, true, charset === 'binary' ? null : 'utf8')
-						.then((stream) => {
-							utils.writeFileFromStream(stream, localPath, remote)
-								.then(() => {
-									resolve(new TransferResult(
-										local,
-										true,
-										TRANSFER_TYPES.GET
-									));
-								}, (error) => {
-									resolve(new TransferResult(
-										local,
-										new PushError(error),
-										TRANSFER_TYPES.GET
-									));
-								});
+
+					client.get(remote, localPath, {
+						encoding: (charset === 'binary' ? null : 'utf8')
+					})
+						.then(() => {
+							resolve(new TransferResult(
+								local,
+								true,
+								TRANSFER_TYPES.GET
+							));
 						})
 						.catch((error) => {
-							throw new PushError(`${remote}: ${error && error.message}`);
+							resolve(new TransferResult(
+								local,
+								new PushError(error),
+								TRANSFER_TYPES.GET
+							));
 						});
+
+					// client.get(remote, true, charset === 'binary' ? null : 'utf8')
+					// 	.then((stream) => {
+					// 		utils.writeFileFromStream(stream, localPath, remote)
+					// 			.then(() => {
+					// 				resolve(new TransferResult(
+					// 					local,
+					// 					true,
+					// 					TRANSFER_TYPES.GET
+					// 				));
+					// 			}, (error) => {
+					// 				resolve(new TransferResult(
+					// 					local,
+					// 					new PushError(error),
+					// 					TRANSFER_TYPES.GET
+					// 				));
+					// 			});
+					// 	})
+					// 	.catch((error) => {
+					// 		throw new PushError(`${remote}: ${error && error.message}`);
+					// 	});
 				});
 			});
 	}
