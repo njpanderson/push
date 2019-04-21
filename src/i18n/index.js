@@ -4,6 +4,11 @@ const config = require('../lib/config');
 const {
 	PUSH_MESSAGE_PREFIX
 } = require('../lib/constants');
+const locales = {
+	en_gb: require('./locales/en_gb'),
+	it: require('./locales/it'),
+	ja: require('./locales/ja')
+};
 
 /**
  * Internationalisation (i18n) class.
@@ -18,7 +23,7 @@ class i18n {
 		this._locale = 'en_gb';
 
 		this.strings = {
-			base: require('./locales/en_gb'),
+			base: locales.en_gb,
 			localised: {}
 		};
 
@@ -32,13 +37,10 @@ class i18n {
 	 * @param {string} locale - The active locale to set.
 	 */
 	setLocale(locale) {
-		let fileName;
-
 		locale = locale || config.get('locale');
-		fileName = `./locales/${locale}`;
 
 		try {
-			this.strings.localised = require(fileName);
+			this.strings.localised = locales[locale];
 			this._locale = locale;
 
 			return;
