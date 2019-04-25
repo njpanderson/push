@@ -10,6 +10,9 @@
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}"
             ],
+            "outFiles":[
+                "${workspaceFolder}/dist/**/*.js"
+            ],
             "stopOnEntry": false,
             "smartStep": true,
             "skipFiles": [
