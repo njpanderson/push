@@ -46,6 +46,14 @@ let vscode = {
 		executeCommand: counter.attach('vscode.commands.executeCommand')
 	},
 
+	extensions: {
+		getExtension: (name) => {
+			return {
+				extensionPath: path.join(__dirname, '..', '..')
+			};
+		}
+	},
+
 	window: {
 		activeTextEditor: null,
 		onDidChangeActiveTextEditor: () => { },
