@@ -1,6 +1,6 @@
 const path = require('path');
 
-const ExtendedStream = require('../../types/ExtendedStream');
+const ExtendedStream = require('../../lib/types/ExtendedStream');
 const List = require('./List');
 const Item = require('./Item');
 const utils = require('../../lib/utils');

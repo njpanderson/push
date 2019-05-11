@@ -5,7 +5,7 @@ const utils = require('./lib/utils');
 const Paths = require('./Paths');
 const channel = require('./lib/channel');
 const Cache = require('./Paths/Cache');
-const PushError = require('./types/PushError');
+const PushError = require('./lib/types/PushError');
 const i18n = require('./i18n');
 
 /**

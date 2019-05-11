@@ -2,17 +2,17 @@ const vscode = require('vscode');
 const semver = require('semver');
 
 const packageJson = require('../package.json');
+const PushError = require('./lib/types/PushError');
+const channel = require('./lib/channel');
+const utils = require('./lib/utils');
 const Service = require('./Service');
-const PushError = require('./types/PushError');
 const PushBase = require('./PushBase');
 const WatchList = require('./explorer/views/WatchList');
 const UploadQueue = require('./explorer/views/UploadQueue');
 const Paths = require('./Paths');
 const Queue = require('./Queue');
 const Watch = require('./Watch');
-const SCM = require('./lib/SCM');
-const channel = require('./lib/channel');
-const utils = require('./lib/utils');
+const SCM = require('./SCM');
 const logger = require('./lib/logger');
 const i18n = require('./i18n');
 

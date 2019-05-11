@@ -1,6 +1,7 @@
 const path = require('path');
 
 const counter = require('../../helpers/counter');
+const config = require('../../helpers/config');
 
 class Uri {
 	constructor(scheme, authority, path) {
@@ -79,6 +80,14 @@ let vscode = {
 		},
 		showErrorMessage: () => {
 			return Promise.resolve('');
+		},
+		createOutputChannel: () => {
+			return {
+				show: () => {},
+				hide: () => {},
+				clear: () => {},
+				appendLine: () => {}
+			};
 		}
 	},
 
@@ -102,7 +111,7 @@ let vscode = {
 			return uri;
 		},
 		getConfiguration: () => {
-			return {};
+			return config;
 		}
 	},
 

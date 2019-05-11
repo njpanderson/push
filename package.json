@@ -610,7 +610,7 @@
     "postinstall": "node ./node_modules/vscode/bin/install",
     "t": "mocha --reporter dot",
     "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
-    "test": "mocha",
+    "test": "./node_modules/mocha/bin/mocha",
     "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
     "publish": "npm run t && vsce publish",
     "vsce": "vsce",
