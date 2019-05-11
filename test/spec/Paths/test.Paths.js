@@ -16,7 +16,10 @@ describe('Paths', function() {
 		useMockery
 			.registerMultiple({
 				'vscode': vscode,
-				'../i18n': require('../../mocks/lib/i18n')
+				'../i18n': require('../../mocks/lib/i18n'),
+				'../lib/channel': require('../../mocks/lib/channel'),
+				'../lib/utils': require('../../mocks/lib/utils'),
+				'../../lib/utils': require('../../mocks/lib/utils')
 			});
 	});
 

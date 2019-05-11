@@ -1,14 +1,12 @@
 const vscode = require('vscode');
 
 const i18n = require('../i18n');
-const Paths = require('../Paths');
-const PushError = require('../types/PushError');
+const PushError = require('./types/PushError');
 const { TRANSFER_TYPES } = require('./constants');
 
 class Channel {
 	constructor(name) {
 		this.channel = vscode.window.createOutputChannel(name);
-		this.paths = new Paths();
 	}
 
 	/**
@@ -27,12 +25,12 @@ class Channel {
 	 */
 	appendTransferResult(result) {
 		let icon = this.getTransferIcon(result.type),
-			srcLabel;
+			srcLabel = '';
 
 		if (result.options.srcLabel) {
 			srcLabel = result.options.srcLabel;
-		} else {
-			srcLabel = this.paths.getNormalPath(result.src);
+		} else if ((result.src instanceof vscode.Uri)) {
+			srcLabel = result.src.path;
 		}
 
 		if (result.error) {

@@ -5,8 +5,8 @@ const path = require('path');
 const ProviderBase = require('../../ProviderBase');
 const TransferResult = require('../TransferResult');
 const utils = require('../../lib/utils');
-const ExtendedStream = require('../../types/ExtendedStream');
-const PushError = require('../../types/PushError');
+const ExtendedStream = require('../../lib/types/ExtendedStream');
+const PushError = require('../../lib/types/PushError');
 const i18n = require('../../i18n');
 const { TRANSFER_TYPES, CACHE_SOURCES } = require('../../lib/constants');
 
@@ -52,8 +52,6 @@ class ProviderFile extends ProviderBase {
 	 * @param {string} remote - Remote path.
 	 */
 	put(local, remote) {
-		utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
-
 		if (!this.paths.fileExists(local)) {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
@@ -81,8 +79,6 @@ class ProviderFile extends ProviderBase {
 	 * of the utils.collisionOpts collision actions.
 	 */
 	get(local, remote, collisionAction) {
-		utils.assertFnArgs('File#get', arguments, [vscode.Uri, 'string']);
-
 		// Convert remote into a Uri
 		remote = vscode.Uri.file(remote);
 
