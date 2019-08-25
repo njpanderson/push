@@ -1,6 +1,9 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.7.21
+ - Fixed icon size.
+
 ## 0.7.2
  - Fixed paths of some icon resources.
 
