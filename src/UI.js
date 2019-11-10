@@ -67,8 +67,29 @@ class UI extends Push {
 	/**
 	 * Uploads a single file or directory by its Uri.
 	 * @param {Uri} uri
+	 * @param {Uri} selectlist
 	 */
-	upload(uri) {
+	upload(uri, selectList) {
+		// According to https://code.visualstudio.com/updates/v1_6, a second parameter if provided, now contains a list of selected items.
+		// The active item still appears as the first item in the list. 
+		// Just to be safe, if there is no selectList, or there is only one uri, previous behavior preserved in the else block.
+		// It will also only add files to the list, will not add directories. No great reason other than I don't know the implications.
+		// Original author may be able to eliminate duplicate handling.
+		if (selectList != null && selectList.length > 1) {
+			let fileList = [];
+			for (var i = 0; i < selectList.length; i++) {
+				let uri = selectList[i];
+				if (uri && uri instanceof vscode.Uri) {
+					if (!this.paths.isDirectory(uri)) {
+						fileList.push(uri);
+					}
+				}
+			} // end for
+		  if (fileList.length > 0) {
+			return this.transfer(fileList, 'put');
+		  } else return Promise.reject();
+		} else {
+
 		if (!(uri = this.getValidUri(uri))) {
 			return Promise.reject();
 		}
@@ -80,8 +101,10 @@ class UI extends Push {
 		}
 
 		return this.transfer(uri, 'put').catch(this.catchError);
+		}
 	}
 
+	
 	/**
 	 * Downloads a single file or directory by its Uri.
 	 * @param {Uri} uri

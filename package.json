@@ -188,7 +188,7 @@
       },
       {
         "command": "push.upload",
-        "title": "Upload File",
+        "title": "Upload File(s)",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/data-transfer-upload.svg",
