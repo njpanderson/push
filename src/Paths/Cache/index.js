@@ -167,24 +167,6 @@ class Cache {
 			resolve();
 		});
 	}
-
-	/**
-	 * Extends a stream with cached data about a file.
-	 * @param {Readable} stream - An existing Readable stream.
-	 * @param {string} filename - The filename to stream to/from.
-	 * TODO: UNUSED? Remove?
-	 */
-	extendStream(stream, filename) {
-		let file = this.getFileByPath(filename);
-
-		if (file !== null) {
-			return new ExtendedStream(
-				{ read: stream },
-				file,
-				filename
-			);
-		}
-	}
 }
 
 module.exports = Cache;
