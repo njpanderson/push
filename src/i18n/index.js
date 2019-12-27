@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const moment = require('moment');
 
 const config = require('../lib/config');
 const {
@@ -51,6 +52,11 @@ class i18n {
 			// Display an error
 			vscode.window.showErrorMessage(PUSH_MESSAGE_PREFIX + this.t('no_locale', locale));
 		}
+	}
+
+	moment(dateTime) {
+		moment.locale(this._locale.replace(/_/, '-'));
+		return moment(dateTime);
 	}
 
 	/**

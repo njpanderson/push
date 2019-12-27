@@ -641,6 +641,7 @@
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "mockery": "^2.1.0",
+    "moment": "^2.24.0",
     "semver": "^5.6.0",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^2.5.0",
