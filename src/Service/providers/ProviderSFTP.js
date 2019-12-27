@@ -683,7 +683,7 @@ class ProviderSFTP extends ProviderBase {
 						local,
 						new PushError(i18n.t(
 							'remote_file_not_found',
-							this.paths.getBaseName(local)
+							this.paths.getBaseName(remoteFilename)
 						)),
 						TRANSFER_TYPES.GET
 					);
