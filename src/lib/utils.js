@@ -304,12 +304,16 @@ const utils = {
 	trace(id) {
 		let args = [...arguments];
 
-		if (this.traceCounter > 100000) {
-			this.traceCounter = 0;
-			console.log('# (Counter reset)');
-		}
-
 		if (DEBUG) {
+			if (DEBUG.trace_allow && !DEBUG.trace_allow.test(id)) {
+				return;
+			}
+
+			if (this.traceCounter > 100000) {
+				this.traceCounter = 0;
+				console.log('# (Counter reset)');
+			}
+
 			args = args.slice(1);
 
 			if (args[args.length - 1] === true) {

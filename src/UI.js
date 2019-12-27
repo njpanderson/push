@@ -11,12 +11,6 @@ class UI {
 		this.push = new Push(context);
 	}
 
-	clearUploadQueue() {
-		if (this.push.clearQueue(Push.queueDefs.upload)) {
-			utils.showLocalisedMessage('upload_queue_cleared');
-		}
-	}
-
 	/**
 	 * Show the current upload queue in the console
 	 */
@@ -34,6 +28,16 @@ class UI {
 		}
 
 		this.push.removeQueuedUri(Push.queueDefs.upload, uri);
+	}
+
+	execUploadQueue() {
+		return this.push.execUploadQueue.apply(this.push, arguments);
+	}
+
+	clearUploadQueue() {
+		if (this.push.clearQueue(Push.queueDefs.upload)) {
+			utils.showLocalisedMessage('upload_queue_cleared');
+		}
 	}
 
 	queueGitChangedFiles() {
@@ -73,7 +77,9 @@ class UI {
 	 * @param {Uri} uri
 	 */
 	upload(uri, uriList) {
-		return this.transfer(uriList || [uri], 'put');
+		return this.push
+			.transfer(this.push.getValidUri(uriList || uri), 'put')
+			.catch(this.push.catchError);
 	}
 
 	/**
@@ -81,32 +87,9 @@ class UI {
 	 * @param {Uri} uri
 	 */
 	download(uri, uriList) {
-		return this.transfer(uriList || [uri], 'get');
-	}
-
-	/**
-	 * Transfers a selection of files or directories by their Uris.
-	 * (Userd by upload/download to reduce code duplication)
-	 * @param {Uri} uri
-	 */
-	transfer(uriList, transferType) {
-		let tasks = [];
-
-		uriList.forEach((uri) => {
-			if (!(uri = this.push.getValidUri(uri))) {
-				return Promise.reject();
-			}
-
-			if (this.push.paths.isDirectory(uri)) {
-				return this.push.ensureSingleService(uri)
-					.then(() => this.push.transferDirectory(uri, transferType))
-					.catch (this.push.catchError);
-			}
-
-			tasks.push(this.push.transfer(uri, transferType).catch(this.push.catchError));
-		});
-
-		return Promise.all(tasks);
+		return this.push
+			.transfer(this.push.getValidUri(uriList || uri), 'get')
+			.catch(this.push.catchError);
 	}
 
 	/**

@@ -21,7 +21,13 @@ class ServiceSettingsSFTP extends ServiceSettings {
 	}
 
 	mergeWithServiceSettings(uri, glob, config) {
-		return Object.assign({}, config, fixtures.services.SFTP.serviceData.data);
+		return Object.assign(
+			{
+				service: fixtures.services.SFTP.serviceData.data[fixtures.services.SFTP.serviceData.data.env].options
+			},
+			config,
+			fixtures.services.SFTP.serviceData.data
+		);
 	}
 }
 
