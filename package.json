@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.7.21",
+  "version": "0.7.3",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.30.0"
@@ -188,7 +188,7 @@
       },
       {
         "command": "push.upload",
-        "title": "Upload File",
+        "title": "Upload File(s)",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/data-transfer-upload.svg",
@@ -197,17 +197,17 @@
       },
       {
         "command": "push.download",
-        "title": "Download File",
+        "title": "Download File(s)",
         "category": "Push"
       },
       {
         "command": "push.uploadFolder",
-        "title": "Upload Folder",
+        "title": "Upload Folder(s)",
         "category": "Push"
       },
       {
         "command": "push.downloadFolder",
-        "title": "Download Folder",
+        "title": "Download Folder(s)",
         "category": "Push"
       },
       {
@@ -610,12 +610,13 @@
     "postinstall": "node ./node_modules/vscode/bin/install",
     "t": "mocha --reporter dot",
     "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
-    "test": "mocha",
+    "test": "./node_modules/mocha/bin/mocha",
     "docs": "jsdoc -c .ide/jsdoc.json && node .ide/package-docs.js",
     "publish": "npm run t && vsce publish",
     "vsce": "vsce",
     "vscode:prepublish": "webpack --mode production",
     "compile": "webpack --mode none",
+    "analyse": "webpack --mode production --config webpack.analyse.config.js",
     "watch": "webpack --mode none --watch"
   },
   "devDependencies": {
@@ -624,21 +625,26 @@
     "chai": "^4.1.2",
     "eslint": "^4.19.1",
     "istanbul": "^0.4.5",
-    "jsdoc": "^3.5.5",
+    "jsdoc": "^3.6.3",
     "mocha": "^5.2.0",
+    "moment-locales-webpack-plugin": "^1.1.2",
     "typescript": "^2.8.3",
     "vsce": "^1.59.0",
-    "vscode": "^1.1.18",
+    "vscode": "^1.1.36",
     "webpack": "^4.30.0",
+    "webpack-bundle-analyzer": "^3.6.0",
     "webpack-cli": "^3.3.0"
   },
   "dependencies": {
     "dateformat": "^3.0.3",
+    "flatmap": "0.0.3",
     "glob": "^7.1.3",
+    "ini": "^1.3.5",
     "jsonc-parser": "^2.0.1",
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "mockery": "^2.1.0",
+    "moment": "^2.24.0",
     "semver": "^5.6.0",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^2.5.0",

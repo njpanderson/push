@@ -1,18 +1,19 @@
 const vscode = require('vscode');
 const semver = require('semver');
+const flatMap = require('flatmap');
 
 const packageJson = require('../package.json');
+const PushError = require('./lib/types/PushError');
+const channel = require('./lib/channel');
+const utils = require('./lib/utils');
 const Service = require('./Service');
-const PushError = require('./types/PushError');
 const PushBase = require('./PushBase');
 const WatchList = require('./explorer/views/WatchList');
 const UploadQueue = require('./explorer/views/UploadQueue');
 const Paths = require('./Paths');
 const Queue = require('./Queue');
 const Watch = require('./Watch');
-const SCM = require('./lib/SCM');
-const channel = require('./lib/channel');
-const utils = require('./lib/utils');
+const SCM = require('./SCM');
 const logger = require('./lib/logger');
 const i18n = require('./i18n');
 
@@ -994,31 +995,17 @@ class Push extends PushBase {
 
 	/**
 	 * Transfers a single file or array of single files.
-	 * @param {Uri[]} uris - Uri or array of Uris of file(s) to transfer.
+	 * @param {Uri|Uri[]} uris - Uri or array of Uris of file(s) to transfer.
 	 * @param {string} method - Either 'get' or 'put'.
 	 * @returns {Promise} A promise, resolving when the file has transferred.
 	 */
 	transfer(uris, method) {
 		let ignoreGlobs = [],
-			tasks = [],
 			action, actionTaken;
-
-		this.service.settings.clear();
 
 		if (typeof uris === 'undefined') {
 			throw new Error('No files defined.');
 		}
-
-		if (!Array.isArray(uris)) {
-			uris = [uris];
-		}
-
-		// Check there are no directories
-		uris.forEach((uri) => {
-			if (this.paths.isDirectory(uri)) {
-				throw new Error(`Path "${uri.path}" is a directory and cannot be transferred with Push#transfer.`);
-			}
-		});
 
 		if (method === 'put') {
 			action = 'upload';
@@ -1033,186 +1020,179 @@ class Push extends PushBase {
 			throw new Error(`Unknown method "${method}"`);
 		}
 
-		uris.forEach((uri, index) => {
-			// Check the source file is a usable scheme
-			if (!this.paths.isValidScheme(uri)) {
-				return;
+		if (!Array.isArray(uris)) uris = [uris];
+
+		return this.getFileLists(uris, method).then((uris) => {
+			let tasks = [];
+
+			this.service.settings.clear();
+
+			if (!Array.isArray(uris)) {
+				uris = [uris];
 			}
 
-			// Check that the source file exists
-			if (method === 'put' && !this.paths.fileExists(uri)) {
-				channel.appendLocalisedError(
-					'file_not_found',
-					this.paths.getNormalPath(uri)
-				);
+			// Add each URI to the queue
+			uris.forEach((uri, index) => {
+				const runQueue = (index === uris.length - 1);
 
-				return;
-			}
-
-			// Filter and add to the queue
-			tasks.push(((uri) => {
-				let config, remotePath;
-
-				if (!(config = this.configWithServiceSettings(uri))) {
-					return false;
+				// Check the source file is a usable scheme
+				if (!this.paths.isValidScheme(uri)) {
+					return;
 				}
 
-				return this.paths.filterUriByGlobs(uri, ignoreGlobs)
-					.then((filteredUri) => {
-						if (filteredUri !== false) {
-							// Uri is not being ignored. Continue...
-							remotePath = this.service.execSync(
-								'convertUriToRemote',
-								config,
-								[filteredUri]
-							);
+				// Check that the source file exists
+				if (method === 'put' && !this.paths.fileExists(uri)) {
+					channel.appendLocalisedError(
+						'file_not_found',
+						this.paths.getNormalPath(uri)
+					);
 
-							if (config) {
-								// Add to queue and return (also start on the last item added)
-								return this.queue([{
-									method,
-									actionTaken,
-									uriContext: filteredUri,
-									args: [
-										filteredUri,
-										remotePath
-									],
-									id: remotePath + this.paths.getNormalPath(filteredUri)
-								}], (index === uris.length - 1));
+					return;
+				}
+
+				// Filter and add to the default queue
+				tasks.push(((uri) => {
+					let config, remotePath;
+
+					if (!(config = this.configWithServiceSettings(uri))) {
+						return false;
+					}
+
+					return this.paths.filterUriByGlobs(uri, ignoreGlobs)
+						.then((filteredUri) => {
+							if (filteredUri !== false) {
+								// Uri is not being ignored. Continue...
+								remotePath = this.service.execSync(
+									'convertUriToRemote',
+									config,
+									[filteredUri]
+								);
+
+								if (config) {
+									// Add to queue and return (also start on the last item added)
+									return this.queue([{
+										method,
+										actionTaken,
+										uriContext: filteredUri,
+										args: [
+											filteredUri,
+											remotePath
+										],
+										id: remotePath + this.paths.getNormalPath(filteredUri)
+									}], runQueue);
+								}
+							} else {
+								// Only one file is being transfered so warn the user it ain't happening
+								channel.appendLocalisedError(
+									'cannot_action_ignored_file',
+									action,
+									this.paths.getBaseName(uri)
+								);
 							}
-						} else {
-							// Only one file is being transfered so warn the user it ain't happening
-							channel.appendLocalisedError(
-								'cannot_action_ignored_file',
-								action,
-								this.paths.getBaseName(uri)
-							);
-						}
-					});
-			})(uri));
+						});
+				})(uri));
+			});
+
+			if (tasks.length) {
+				return Promise.all(tasks);
+			}
 		});
-
-		if (tasks.length) {
-			return Promise.all(tasks);
-		}
-
-		return Promise.resolve();
 	}
 
 	/**
-	 * Transfers a directory of files.
-	 * @param {Uri} uri - Uri of the directory to transfer.
-	 * @param {*} method - Either 'get' or 'put'.
-	 * @returns {Promise} A promise, resolving when the directory has transferred.
+	 * Called by Push#transfer, obtains lists of files within any provided directories.
+	 * @param {Uri[]} uris - List of Uri objects within which to find directories.
+	 * @param {string} method - Either 'get' or 'put'.
+	 * @returns {Promise} A Promise, resolving to a flattened list of files within
+	 * the directores.
 	 */
-	transferDirectory(uri, method) {
-		let ignoreGlobs = [], actionTaken, config, remoteUri;
+	getFileLists(uris, method) {
+		return vscode.window.withProgress({
+			location: vscode.ProgressLocation.Window,
+			title: 'Push'
+		}, (progress) => {
+			progress.report({ message: i18n.t('getting_file_lists') });
 
-		// Check the source directory is a usable scheme
-		if (!this.paths.isValidScheme(uri)) {
-			return false;
-		}
+			return new Promise((resolve, reject) => {
+				let tasks = [];
 
-		if (!this.paths.isDirectory(uri)) {
-			throw new Error(
-				'Path is a single file and cannot be transferred with Push#transferDirectory.'
-			);
-		}
+				// Process directories and add file paths from them
+				uris.forEach((uri) => {
+					if (this.paths.isDirectory(uri)) {
+						if (method === 'put') {
+							tasks.push(this.getLocalDirectoryContents(uri));
+						} else if (method === 'get') {
+							tasks.push(this.getRemoteDirectoryContents(uri));
+						} else {
+							throw new Error(`Invalid method "${method}"`);
+						}
+					} else {
+						tasks.push(uri);
+					}
+				});
+
+				Promise.all(tasks).then((results) => {
+					resolve(flatMap(results, result => result));
+				}).catch(reject);
+			});
+		});
+	}
+
+	getLocalDirectoryContents(uri) {
+		let ignoreGlobs = [], config;
 
 		// Get Uri from file/selection, src from Uri
 		uri = this.paths.getFileSrc(uri);
-
-		if (method === 'put') {
-			actionTaken = 'uploaded';
-		} else {
-			actionTaken = 'downloaded';
-		}
 
 		// Always filter multiple Uris by the ignore globs
 		ignoreGlobs = this.config.ignoreGlobs;
 		config = this.configWithServiceSettings(uri);
 
-		remoteUri = this.service.execSync(
+		return this.paths.getDirectoryContentsAsFiles(
+			uri,
+			ignoreGlobs,
+			config.service.followSymlinks
+		)
+			.then((files) => {
+				utils.trace(
+					'Push#transferDirectory',
+					`Found ${files.length} file(s) on local`
+				);
+
+				return files.map(file => vscode.Uri.file(file));
+			});
+	}
+
+	getRemoteDirectoryContents(uri) {
+		let ignoreGlobs = [],
+			config;
+
+		// Always filter multiple Uris by the ignore globs
+		ignoreGlobs = this.config.ignoreGlobs;
+		config = this.configWithServiceSettings(uri);
+
+		uri = this.service.execSync(
 			'convertUriToRemote',
 			config,
 			[uri]
 		);
 
-		utils.trace('Push#transferDirectory', `Transfering ${uri.fsPath} (${method})`);
+		// Recursively find remote files and return them in an array of local paths
+		return this.service.exec('listRecursiveFiles', config, [uri, ignoreGlobs])
+			.then((files) => {
+				utils.trace(
+					'Push#getRemoteDirectoryContents',
+					'Found ${files.length} file(s) on remote'
+				);
 
-		if (method === 'put') {
-			// Recursively list local files and transfer each one
-			return this.paths.getDirectoryContentsAsFiles(
-				uri,
-				ignoreGlobs,
-				config.service.followSymlinks
-			)
-				.then((files) => {
-					utils.trace(
-						'Push#transferDirectory',
-						`Found ${files.length} file(s) on local`
+				return files.map((file) => {
+					return this.service.execSync(
+						'convertRemoteToUri',
+						config,
+						[file.pathName || file]
 					);
-
-					let tasks = files.map((uri) => {
-						let remotePath;
-
-						uri = vscode.Uri.file(uri);
-
-						remotePath = this.service.execSync(
-							'convertUriToRemote',
-							config,
-							[uri]
-						);
-
-						return {
-							method,
-							actionTaken,
-							uriContext: uri,
-							args: [
-								uri,
-								remotePath
-							],
-							id: remotePath + this.paths.getNormalPath(uri)
-						};
-					});
-
-					// Add to queue and return
-					return this.queue(tasks, true);
 				});
-		} else {
-			// Recursively list remote files and transfer each one
-			return this.service.exec('listRecursiveFiles', config, [remoteUri, ignoreGlobs])
-				.then((files) => {
-					utils.trace(
-						'Push#transferDirectory',
-						'Found ${files.length} file(s) on remote'
-					);
-
-					let tasks = files.map((file) => {
-						let uri;
-
-						file = file.pathName || file;
-						uri = this.service.execSync(
-							'convertRemoteToUri',
-							config,
-							[file]
-						);
-
-						return {
-							method,
-							actionTaken,
-							uriContext: uri,
-							args: [
-								uri,
-								file
-							],
-							id: file + this.paths.getNormalPath(uri)
-						};
-					});
-
-					return this.queue(tasks, true);
-				});
-		}
+			});
 	}
 
 	/**
@@ -1238,31 +1218,46 @@ class Push extends PushBase {
 
 	/**
 	 * @description
-	 * Checks if a Uri passed is usable by Push and returns it. If no Uri is passed,
-	 * Push will attempt to detect one from the current context.
+	 * Checks if a Uri (or array of Uris) passed are usable by Push and returns.
+	 * If no Uri is passed, Push will attempt to detect one from the current context.
 	 * Will produce an error message if the Uri is not valid.
-	 * @param {Uri} uri - Uri to test.
-	 * @returns {Uri} The Uri uri, if. Will throw a PushError otherwise.
+	 * @param {Uri|Uri[]} uri - Uri or Array of Uris to test.
+	 * @returns {Uri|Uri[]} The Uri uri or array of Uri uris, if. Will throw a
+	 * PushError otherwise.
 	 */
 	getValidUri(uri) {
-		uri = this.paths.getFileSrc(uri);
+		let uriTest = Array.isArray(uri) ? uri : [uri],
+			a;
 
-		if (uri === null) {
-			// Uri could not be found *at all*
-			utils.showError(i18n.t('invalid_path_anonymous'));
-			return false;
+		if (uriTest[0] === undefined || !uriTest.length) {
+			// No Uri was sent - get from open file
+			return Array.isArray(uri) ?
+				[this.paths.getFileSrc()] : this.paths.getFileSrc();
 		}
 
-		if (!this.paths.isValidPath(uri)) {
-			utils.showError(i18n.t('invalid_path', uri.scheme));
-			return false;
+		for (a = 0; a < uriTest.length; a += 1) {
+			uriTest[a] = this.paths.getFileSrc(uriTest[a]);
+
+			if (uriTest[a] === null) {
+				// Uri could not be found *at all*
+				utils.showError(i18n.t('invalid_path_anonymous'));
+				return false;
+			}
+
+			if (!this.paths.isValidPath(uriTest[a])) {
+				// Uri was not valid
+				utils.showError(i18n.t('invalid_path', uriTest[a].scheme));
+				return false;
+			}
+
+			if (!this.paths.isValidScheme(uriTest[a])) {
+				// Uri scheme was not valid
+				utils.showError(i18n.t('invalid_uri_scheme', uriTest[a].scheme));
+				return false;
+			}
 		}
 
-		if (!this.paths.isValidScheme(uri)) {
-			utils.showError(i18n.t('invalid_uri_scheme', uri.scheme));
-			return false;
-		}
-
+		// Return original argument, unchanged
 		return uri;
 	}
 }

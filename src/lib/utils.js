@@ -1,11 +1,11 @@
 const vscode = require('vscode');
 const tmp = require('tmp');
 const fs = require('fs');
-const dateFormat = require('dateformat');
 
 const config = require('./config');
-const PushError = require('../types/PushError');
+const PushError = require('./types/PushError');
 const i18n = require('../i18n');
+const channel = require('./channel');
 const {
 	TMP_FILE_PREFIX,
 	PUSH_MESSAGE_PREFIX,
@@ -303,12 +303,16 @@ const utils = {
 	trace(id) {
 		let args = [...arguments];
 
-		if (this.traceCounter > 100000) {
-			this.traceCounter = 0;
-			console.log('# (Counter reset)');
-		}
-
 		if (DEBUG) {
+			if (DEBUG.trace_allow && !DEBUG.trace_allow.test(id)) {
+				return;
+			}
+
+			if (this.traceCounter > 100000) {
+				this.traceCounter = 0;
+				console.log('# (Counter reset)');
+			}
+
 			args = args.slice(1);
 
 			if (args[args.length - 1] === true) {
@@ -318,89 +322,10 @@ const utils = {
 
 			console.log(
 				`#${++this.traceCounter} ` +
-				dateFormat((new Date), 'H:MM:ss.l') +
+				i18n.moment().format('HH:mm:ss.SS') +
 				` [${id}] ${args.join(', ')}`
 			);
 		}
-	},
-
-	/**
-	 * @param {string} fnName - Identifiable name of the Class#function calling this method.
-	 * @param {*} args - The arguments as provided to the function.
-	 * @param {array} asserts - Array of objects to compare to the arguments.
-	 * @description
-	 * Asserts that a function's arguments are of a specific type. Typescript on
-	 * a budget :D Supply an arguments object as the second argument, and an array
-	 * of Objects, Classes or strings as the third. The nth element in the third array
-	 * will be used to compare to the second. In the case that a string is supplied,
-	 * it will be passed to the `typeof` operator. Use `null` to ignore that index
-	 * of argument.
-	 * @example
-	 * utils.assertFnArgs('File#put', arguments, [vscode.Uri, 'string']);
-	 * // Assert File#put has two args of type: vscode.Uri and typeof 'string'.
-	 * @returns {undefined} Returns nothing, but throws on assertion errors.
-	 */
-	assertFnArgs(fnName, args, asserts) {
-		asserts.forEach((assertable, index) => {
-			if (
-				(args.length > index && typeof args[index] !== 'undefined') && (
-					(typeof assertable === 'string' && (typeof args[index] !== assertable)) ||
-					(typeof assertable !== 'string' && (
-						assertable !== null && !(args[index] instanceof assertable)
-					))
-				)
-			) {
-				throw new Error(`${fnName}: Argument ${index} type mismatch.`);
-			}
-		});
-	},
-
-	/**
-	 * @param {Date} date - The date to format.
-	 * @param {string} format - The format. See dateformat docs.
-	 * @param {string} relativeFallback - The fallback format string for when the date
-	 * is outwith the boundaries of being relative. Defaults to the localised
-	 * date_format_short value.
-	 * @description
-	 * Formats a date with an optional relative format for the day. Uses
-	 * dateformat from NPM.
-	 *
-	 * Use the extended `R` key to return a relative day if needed.
-	 * @see https://www.npmjs.com/package/dateformat
-	 * @returns {string} The formatted date.
-	 */
-	dateFormat(date, format, relativeFallback) {
-		const now = new Date();
-
-		if (!format) {
-			format = 'R h:MM tt';
-		}
-
-		if (!relativeFallback) {
-			relativeFallback = i18n.strings.localised.date_format_short;
-		}
-
-		if (dateFormat(now, 'yyyy-dd-mm') === dateFormat(date, 'yyyy-dd-mm')) {
-			// Today
-			return dateFormat(
-				date,
-				format.replace('R', `"${i18n.strings.localised.today}"`)
-			);
-		}
-
-		if (dateFormat(
-			now.setDate(now.getDate() - 1),
-			'yyyy-dd-mm'
-		) === dateFormat(date, 'yyyy-dd-mm')) {
-			// Yesterday
-			return dateFormat(
-				date,
-				format.replace('R', `"${i18n.strings.localised.yesterday}"`)
-			);
-		}
-
-		// Fallback
-		return dateFormat(date, format.replace('R', relativeFallback));
 	},
 
 	/**
@@ -426,6 +351,72 @@ const utils = {
 
 	filePathReplace(filePath, searchFor, replaceWith) {
 		return filePath.replace(this.filePathRegex(searchFor), replaceWith);
+	},
+
+	/**
+	 * Opens a text document and displays it within the editor window.
+	 * @param {string|Uri} file - File to open. Must be local.
+	 */
+	openDoc(file) {
+		let document;
+
+		// Shows the document as an editor tab
+		function show(document) {
+			return vscode.window.showTextDocument(
+				document,
+				{
+					preview: true,
+					preserveFocus: false
+				}
+			);
+		}
+
+		// Convert string into a file Uri
+		if (!(file instanceof vscode.Uri)) {
+			file = vscode.Uri.file(file);
+		}
+
+		// Find and open document
+		document = vscode.workspace.openTextDocument(file);
+
+		if (document instanceof Promise) {
+			// Document is opening, wait and display
+			return document.then(show)
+				.catch((error) => {
+					channel.appendError(error);
+					throw error;
+				});
+		} else {
+			// Display immediately
+			return show(document);
+		}
+	},
+
+	/**
+	 * Will either prompt the user to select a root path, or in the case that
+	 * only one `folders` element exists, will resolve to its path Uri.
+	 * @param {vscode.WorkspaceFolder[]} folders
+	 * @returns {Promise<Uri>} A promise eventually resolving to a single Uri.
+	 */
+	getRootPathPrompt(folders) {
+		return new Promise((resolve) => {
+			if (typeof folders === 'string') {
+				resolve(folders);
+				return;
+			}
+
+			if (folders.length > 1) {
+				// First, select a root path
+				vscode.window.showQuickPick(
+					folders.map((item) => item.uri),
+					{
+						placeHolder: i18n.t('select_workspace_root')
+					}
+				).then(resolve);
+			} else {
+				resolve(folders[0].uri);
+			}
+		});
 	}
 };
 

@@ -269,16 +269,54 @@ describe('Push', function() {
 	describe('#transfer', () => {
 		const tests = [{
 			method: 'put',
-			files: fixtures.mockUriFile
+			files: fixtures.mockUriFile,
+			label: '1 file'
 		}, {
 			method: 'put',
-			files: [fixtures.mockUriFile, fixtures.mockUriFile2]
+			files: [fixtures.mockUriFile, fixtures.mockUriFile2],
+			label: '2 files'
 		}, {
 			method: 'get',
-			files: fixtures.mockUriFile
+			files: fixtures.mockUriFile,
+			label: '1 file'
 		}, {
 			method: 'get',
-			files: [fixtures.mockUriFile, fixtures.mockUriFile2]
+			files: [fixtures.mockUriFile, fixtures.mockUriFile2],
+			label: '2 files'
+		}, {
+			method: 'put',
+			expect: 3,
+			expectDeep: false,
+			files: vscode.Uri.file(fixtures.mockFolder),
+			label: '1 directory'
+		}, {
+			method: 'get',
+			expect: 4,
+			expectDeep: false,
+			files: vscode.Uri.file(fixtures.mockFolder),
+			label: '1 directory'
+		}, {
+			method: 'put',
+			expect: 6,
+			expectDeep: false,
+			files: [
+				vscode.Uri.file(fixtures.mockFolder),
+				vscode.Uri.file(fixtures.mockFolder2),
+				fixtures.mockUriFile,
+				fixtures.mockUriFile2
+			],
+			label: '2 directories and 2 files'
+		}, {
+			method: 'get',
+			expect: 10,
+			expectDeep: false,
+			files: [
+				vscode.Uri.file(fixtures.mockFolder),
+				vscode.Uri.file(fixtures.mockFolder2),
+				fixtures.mockUriFile,
+				fixtures.mockUriFile2
+			],
+			label: '2 directories and 2 files'
 		}];
 
 		beforeEach(() => {
@@ -290,7 +328,7 @@ describe('Push', function() {
 		});
 
 		tests.forEach((test) => {
-			it(`queues a ${test.method} for ${(Array.isArray(test.files) && test.files.length) || '1'} file(s)`, () => {
+			it(`queues a ${test.method} for ${test.label}`, () => {
 				return push.transfer(test.files, test.method)
 					.then(() => {
 						let args;
@@ -298,18 +336,24 @@ describe('Push', function() {
 						if (Array.isArray(test.files)) {
 							let args = counter.getArgs('Push#queue');
 
-							expect(counter.getCount('Push#queue')).to.equal(test.files.length);
+							expect(counter.getCount('Push#queue')).to.equal(test.expect || test.files.length);
 
-							test.files.forEach((file, index) => {
-								expect(args[index][0][0].method).to.equal(test.method);
-								expect(args[index][0][0].uriContext).to.eql(file);
-							});
+							if (test.expectDeep !== false) {
+								// Run deep checks if the list is reliable
+								test.files.forEach((file, index) => {
+									expect(args[index][0][0].method).to.equal(test.method);
+									expect(args[index][0][0].uriContext).to.eql(file);
+								});
+							}
 						} else {
 							args = counter.getArgs('Push#queue', 1, 0);
 
-							expect(counter.getCount('Push#queue')).to.be.equal(1);
-							expect(args[0].method).to.equal(test.method);
-							expect(args[0].uriContext).to.eql(test.files);
+							expect(counter.getCount('Push#queue')).to.be.equal(test.expect || 1);
+
+							if (test.expectDeep !== false) {
+								expect(args[0].method).to.equal(test.method);
+								expect(args[0].uriContext).to.eql(test.files);
+							}
 						}
 					});
 			});
@@ -386,25 +430,5 @@ describe('Push', function() {
 				push.transfer(fixtures.mockUriFile, 'nomethod');
 			}, /Unknown method/);
 		});
-
-		it('throws if a directory is provided', () => {
-			assert.throws(() => {
-				push.transfer(fixtures.mockUriFolder, 'put');
-			}, /is a directory/);
-		});
 	});
-
-	describe('#transferDirectory', () => {
-		it('returns false if the path is not a valid scheme', () => {
-			assert(push.transferDirectory(
-				fixtures.mockForeignSchemeFile
-			) === false);
-		});
-
-		it('throws if the path is not a directory', () => {
-			assert.throws(() => push.transferDirectory(
-				fixtures.mockUriFile
-			), /Path is a single file/);
-		});
-	})
 });

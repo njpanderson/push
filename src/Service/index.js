@@ -4,14 +4,11 @@ const ProviderBase = require('../ProviderBase');
 const ProviderSFTP = require('./providers/ProviderSFTP');
 const ProviderFile = require('./providers/ProviderFile');
 const ServiceSettings = require('./ServiceSettings');
-const ServicePromptResult = require('./ServicePromptResult');
 const ServiceType = require('./ServiceType');
 const PushBase = require('../PushBase');
 const Paths = require('../Paths');
-const PushError = require('../types/PushError');
+const PushError = require('../lib/types/PushError');
 const config = require('../lib/config');
-const channel = require('../lib/channel');
-const constants = require('../lib/constants');
 const utils = require('../lib/utils');
 const logger = require('../lib/logger');
 const i18n = require('../i18n');
@@ -24,76 +21,21 @@ class Service extends PushBase {
 
 		this.setOptions(options);
 
-		// Create ServiceSettings instance for managing the files
-		this.settings = new ServiceSettings({
-			onServiceFileUpdate: this.options.onServiceFileUpdate
-		});
-
-		this.getStateProgress = this.getStateProgress.bind(this);
-
 		this.services = {
 			SFTP: ProviderSFTP,
 			File: ProviderFile
 		};
 
+		// Create ServiceSettings instance for managing the files
+		this.settings = new ServiceSettings({
+			serviceList: this.getList(),
+			onServiceFileUpdate: this.options.onServiceFileUpdate
+		});
+
+		this.getStateProgress = this.getStateProgress.bind(this);
+
 		this.activeService = null;
 		this.paths = new Paths();
-	}
-
-	/**
-	 * Edits (or creates) a server configuration file
-	 * @param {Uri} uri - Uri to start looking for a configuration file.
-	 * @param {boolean} forceCreate - Force servicefile creation. Has no effect
-	 * if the service file is level with the contextual file.
-	 */
-	editServiceConfig(uri, forceCreate) {
-		return new Promise((resolve, reject) => {
-			let dir, settingsFile;
-
-			uri = this.paths.getFileSrc(uri);
-			dir = this.paths.getDirName(uri, true);
-
-			// Find the nearest settings file
-			settingsFile = this.paths.findFileInAncestors(
-				this.config.settingsFileGlob,
-				dir
-			);
-
-			/**
-			 * If a settings file is found but forceCreate is true, then the file name
-			 * prompt path is chosen.
-			 *
-			 * In the case that a service file exists in the _same_ location as the
-			 * contextual file, it will still be edited (due to the logic within
-			 * getFileNamePromp() based on resolving immediately unless `forceDialog`
-			 * is true. This is intended behaviour as two service files should not
-			 * exist within the same folder.
-			 */
-			if (settingsFile && !forceCreate) {
-				// Edit the settings file found
-				this.openDoc(settingsFile)
-					.then(resolve, reject);
-			} else {
-				// Produce a prompt to create a new settings file
-				this.getFileNamePrompt(this.config.settingsFilename, [{
-					uri: dir
-				}], forceCreate)
-					.then((file) => {
-						if (file.exists) {
-							return this.openDoc(file.uri);
-						} else {
-							// Create the file
-							return this.writeAndOpen(
-								this.settings.createServerFileContents(
-									file.serviceType
-								),
-								file.uri
-							);
-						}
-					})
-					.then(resolve, reject);
-			}
-		});
 	}
 
 	/**
@@ -103,149 +45,6 @@ class Service extends PushBase {
 	 */
 	setConfigEnv(uri) {
 		return this.settings.setConfigEnv(uri, this.config.settingsFileGlob);
-	}
-
-	/**
-	 * Imports a configuration file.
-	 * @param {Uri} uri - Uri to start looking for a configuration file
-	 * @param {string} type - Type of config to import. Currently only 'SSFTP'
-	 * is supported.
-	 */
-	importConfig(uri) {
-		let className, basename, instance, settings,
-			settingsFilename = this.config.settingsFilename;
-
-		uri = this.paths.getFileSrc(uri);
-
-		if (!(basename = this.paths.getBaseName(uri))) {
-			channel.appendLocalisedError('no_import_file');
-		}
-
-		// Figure out which config type this is and import
-		for (className in constants.CONFIG_FORMATS) {
-			if (constants.CONFIG_FORMATS[className].test(basename)) {
-				className = require(`./importers/${className}`);
-				instance = new className();
-
-				return instance.import(uri)
-					.then((result) => {
-						settings = result;
-
-						return this.getFileNamePrompt(
-							settingsFilename,
-							[{ uri: this.paths.getDirName(uri) }],
-							true,
-							false
-						);
-					})
-					.then((result) => {
-						if (result.exists) {
-							// Settings file already exists at this location!
-							return vscode.window.showInformationMessage(
-								i18n.t('settings_file_exists'),
-								{
-									title: i18n.t('overwrite')
-								}, {
-									isCloseAffordance: true,
-									title: i18n.t('cancel')
-								}
-							).then((collisionAnswer) => {
-								return ({
-									uri: result.uri,
-									write: (collisionAnswer.title === i18n.t('overwrite'))
-								});
-							});
-						} else {
-							// Just create and open
-							return ({ uri: result.uri, write: true });
-						}
-					})
-					.then((result) => {
-						if (result.write) {
-							// Write the file
-							this.writeAndOpen(
-								'// ' + i18n.t(
-									'comm_settings_imported',
-									this.paths.getNormalPath(uri)
-								) +
-								JSON.stringify(settings, null, '\t'),
-								result.uri
-							);
-						}
-					})
-					.catch((error) => {
-						channel.appendError(error);
-					});
-			}
-		}
-
-		channel.appendLocalisedError('import_file_not_supported');
-	}
-
-	/**
-	 * Produce a settings filename prompt.
-	 * @param {string} exampleFileName - Filename example to start with.
-	 * @param {vscode.WorkspaceFolder[]} folders - A list of workspace folders to
-	 * choose from.
-	 * @param {boolean} forceDialog - Force a name prompt if the file exists already.
-	 * If `false`, will not display a dialog even if the file exists.
-	 * @param {boolean} fromTemplate - Produce a list of service templates with which
-	 * to fill the file.
-	 * @returns {Promise.ServicePromptResult} Resolving to an instance of
-	 * ServicePromptResult with the relevant properties.
-	 */
-	getFileNamePrompt(exampleFileName, folders, forceDialog = false, fromTemplate = true) {
-		return new Promise((resolve, reject) => {
-			// Produce a filename prompt
-			this.getRootPathPrompt(folders)
-				.then((rootUri) => {
-					let uri;
-
-					if (!rootUri) {
-						return reject();
-					}
-
-					uri = this.paths.join(rootUri, exampleFileName);
-
-					// File exists but forceDialog is false - just keep going
-					if (this.paths.fileExists(uri) && !forceDialog) {
-						return resolve(new ServicePromptResult(uri));
-					}
-
-					// Show a prompt, asking the user where the settings file should go
-					vscode.window.showInputBox({
-						prompt: i18n.t('enter_service_settings_filename'),
-						value: uri.fsPath
-					}).then((fileName) => {
-						let uri = vscode.Uri.file(fileName);
-
-						if (!uri) {
-							return reject();
-						}
-
-						// Show a service type picker (unless fromTemplate is false)
-						if (!fromTemplate) {
-							return resolve(new ServicePromptResult(uri));
-						}
-
-						return vscode.window.showQuickPick(
-							[new ServiceType(
-								i18n.t('empty'),
-								i18n.t('empty_template')
-							)].concat(this.getList()),
-							{
-								placeHolder: i18n.t('select_service_type_template')
-							}
-						).then((serviceType) => {
-							resolve(new ServicePromptResult(
-								uri,
-								serviceType
-							));
-						});
-					});
-				})
-				.catch(reject);
-		});
 	}
 
 	/**
@@ -264,7 +63,8 @@ class Service extends PushBase {
 	 * @return {ServiceType[]} List of the services, including default settings payloads.
 	 */
 	getList() {
-		let options = [], service, settingsPayload;
+		let options = [],
+			service, settingsPayload;
 
 		for (service in this.services) {
 			settingsPayload = {
@@ -434,13 +234,13 @@ class Service extends PushBase {
 			return Promise.resolve();
 		} else {
 			// Remind the user
-			age = log.age();
+			age = i18n.moment().subtract(log.age(), 'seconds');
 
 			return vscode.window.showWarningMessage(
 				(
-					(age === 0) ?
+					(log.age() === 0) ?
 						i18n.t('service_inactive', this.config.env) :
-						i18n.t('service_inactive_x_seconds', this.config.env, Math.round(log.age()))
+						i18n.t('service_inactive_x_seconds', this.config.env, age.fromNow())
 				),
 				{
 					modal: true

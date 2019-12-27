@@ -5,7 +5,7 @@ const utils = require('./lib/utils');
 const Paths = require('./Paths');
 const channel = require('./lib/channel');
 const Cache = require('./Paths/Cache');
-const PushError = require('./types/PushError');
+const PushError = require('./lib/types/PushError');
 const i18n = require('./i18n');
 
 /**
@@ -230,6 +230,8 @@ class ServiceBase {
 				throw new PushError(i18n.t('transfer_cancelled'));
 			}
 		}).then(() => {
+			utils.trace('ProviderBase#init', `Setting queue length to ${queueLength}`);
+
 			this.persistCollisionOptions = {};
 			this.queueLength = queueLength;
 		});
@@ -320,6 +322,8 @@ class ServiceBase {
 			(this.config.service.testCollisionTimeDiffs && timediff < 0) ||
 			!this.config.service.testCollisionTimeDiffs
 		);
+
+		utils.trace('ProviderBase#checkCollision', `Collision of "${source.name}": ${hasCollision ? 'yes' : 'no'}, Queue length: ${this.queueLength}`);
 
 		if (dest && hasCollision) {
 			// Destination file exists and difference means source file is older

@@ -1,9 +1,8 @@
 const vscode = require('vscode');
 
-const channel = require('./channel');
+const channel = require('../lib/channel');
 const Paths = require('../Paths');
-const utils = require('./utils');
-
+const i18n = require('../i18n');
 
 class SCM {
 	constructor() {
@@ -131,10 +130,9 @@ class SCM {
 								date = new Date(commit.date);
 
 							return {
-								label: shortCommit +
-									' ' + commit.message,
+								label: shortCommit + ' ' + commit.message,
 								detail: `${commit.author_name} <${commit.author_email}>` +
-									` (${utils.dateFormat(date)})`,
+									` (${i18n.moment().calendar(date)})`,
 								shortCommit,
 								baseOption: commit.hash
 							};

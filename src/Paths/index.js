@@ -5,7 +5,7 @@ const mkdirp = require('mkdirp');
 const glob = require('glob');
 const micromatch = require('micromatch');
 
-const ExtendedStream = require('../types/ExtendedStream');
+const ExtendedStream = require('../lib/types/ExtendedStream');
 const Cache = require('./Cache');
 const utils = require('../lib/utils');
 
@@ -18,7 +18,6 @@ class Paths {
 	 * @param {Uri} uri - Uri to check.
 	 */
 	fileExists(uri) {
-		utils.assertFnArgs('Paths#fileExists', arguments, [vscode.Uri]);
 		return fs.existsSync(this.getNormalPath(uri, 'file'));
 	}
 
@@ -40,8 +39,6 @@ class Paths {
 	 * @param {Uri} rootUri - Uri to find within.
 	 */
 	pathInUri(path, rootUri) {
-		utils.assertFnArgs('Paths#pathInUri', arguments, [vscode.Uri, vscode.Uri]);
-
 		if (!path || !rootUri) {
 			return false;
 		}
@@ -83,8 +80,6 @@ class Paths {
 	 * @param {WorkspaceFolder[]} workspaceFolders
 	 */
 	isWorkspaceFolderRoot(dir, workspaceFolders = []) {
-		utils.assertFnArgs('Paths#isWorkspaceFolderRoot', arguments, [vscode.Uri]);
-
 		dir = this.getNormalPath(dir);
 
 		return (workspaceFolders.findIndex((folder) => {
@@ -99,8 +94,6 @@ class Paths {
 	 * @returns {mixed} Either a Uri or a string path of the workspace root.
 	 */
 	getCurrentWorkspaceRootPath(uri, normalise = false) {
-		utils.assertFnArgs('Paths#getCurrentWorkspaceRootPath', arguments, [vscode.Uri]);
-
 		let workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
 
 		return (
@@ -203,8 +196,6 @@ class Paths {
 	 * @returns {boolean} `true` if the path is a directory, `false` otherwise.
 	 */
 	isDirectory(uri) {
-		utils.assertFnArgs('Paths#isDirectory', arguments, [vscode.Uri]);
-
 		uri = this.getNormalPath(uri, 'file');
 
 		if (uri) {
@@ -365,8 +356,6 @@ class Paths {
 	 * or `false` in the case that one of the `ignoreGlobs` globs matched.
 	 */
 	filterUriByGlobs(uri, ignoreGlobs = []) {
-		utils.assertFnArgs('Paths#filterUriByGlobs', arguments, [vscode.Uri]);
-
 		return new Promise((resolve, reject) => {
 			if (!Array.isArray(ignoreGlobs) || !ignoreGlobs.length) {
 				resolve(uri);
@@ -411,8 +400,6 @@ class Paths {
 				follow: false,
 				nosort: true
 			};
-
-		utils.assertFnArgs('Paths#findFileInAncestors', arguments, ['string', vscode.Uri]);
 
 		start = this.getDirName(start, true);
 
@@ -498,7 +485,6 @@ class Paths {
 	 * @param {Uri} uri - Uri to check.
 	 */
 	isValidScheme(uri) {
-		utils.assertFnArgs('Paths#isValidScheme', arguments, [vscode.Uri]);
 		return (uri.scheme === 'file' || uri.scheme === '' || !uri.scheme);
 	}
 
@@ -514,8 +500,6 @@ class Paths {
 	 * @returns	{boolean} `true` if the path validates, `false` otherwise.
 	 */
 	isValidPath(uri) {
-		utils.assertFnArgs('Paths#isValidPath', arguments, [vscode.Uri]);
-
 		uri = path.parse(this.getNormalPath(uri));
 
 		return !(
@@ -531,7 +515,6 @@ class Paths {
 	 * @returns {string} The basename of the file.
 	 */
 	getBaseName(uri) {
-		utils.assertFnArgs('Paths#getBaseName', arguments, [vscode.Uri]);
 		return path.basename(this.getNormalPath(uri));
 	}
 
@@ -541,7 +524,6 @@ class Paths {
 	 * @returns {string} The extension of the file.
 	 */
 	getExtName(uri) {
-		utils.assertFnArgs('Paths#getExtName', arguments, [vscode.Uri]);
 		return path.extname(this.getNormalPath(uri));
 	}
 
@@ -554,8 +536,6 @@ class Paths {
 	 * already a directory and `returnIfDirectory` is `true`.
 	 */
 	getDirName(uri, returnIfDirectory = false) {
-		utils.assertFnArgs('Paths#getDirName', arguments, [vscode.Uri, 'boolean']);
-
 		if (returnIfDirectory && this.isDirectory(uri)) {
 			return uri;
 		}
@@ -570,8 +550,6 @@ class Paths {
 	 */
 	ensureDirExists(uri) {
 		return new Promise((resolve, reject) => {
-			utils.assertFnArgs('Paths#ensureDirExists', arguments, [vscode.Uri]);
-
 			this.getFileStats(this.getNormalPath(uri))
 				.then(stats => {
 					if (!stats) {
@@ -596,8 +574,6 @@ class Paths {
 	 */
 	writeFile(contents, uri) {
 		return new Promise((resolve, reject) => {
-			utils.assertFnArgs('Paths#writeFile', arguments, [null, vscode.Uri]);
-
 			fs.writeFile(
 				this.getNormalPath(uri),
 				contents,
@@ -620,8 +596,6 @@ class Paths {
 	 * @param {Uri} uri - Uri of the file to read.
 	 */
 	readFile(uri) {
-		utils.assertFnArgs('Paths#readFile', arguments, [vscode.Uri]);
-
 		return new Promise((resolve, reject) => {
 			fs.readFile(this.getNormalPath(uri), (error, data) => {
 				if (error) {
@@ -674,6 +648,27 @@ class Paths {
 					.replace(/\\/g, '/'),
 			''
 		);
+	}
+
+	/**
+	 * Writes content to a file and then opens it for editing.
+	 * @param {string} content - Content to write to the file.
+	 * @param {Uri} uri - Uri of the filename to write to.
+	 */
+	writeAndOpen(content, uri) {
+		// Write the file...
+		return this.writeFile(
+			content,
+			uri
+		)
+			.then((uri) => {
+				// Open it
+				utils.openDoc(uri);
+			})
+			.catch((error) => {
+				// Append the error
+				channel.appendError(error);
+			});
 	}
 }
 

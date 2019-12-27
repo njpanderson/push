@@ -97,6 +97,6 @@ module.exports = {
 	'commit_no_files_with_ignore': 'Il commit selezionato (${1}) non conteneva file caricabili. (${2} file ignorati.)',
 	'server_v_local': 'Server contro locale',
 	'continue': 'Continuare',
-	'service_inactive': 'L\'ambiente "${1}" non è stato ancora trasferito in questa sessione. Push dovrebbe continuare questo trasferimento?',
-	'service_inactive_x_seconds': 'L\'ambiente ${1}" è stato inattivo per ${2} p{2:secondo: secondi}. Push dovrebbe continuare questo trasferimento?'
+	'service_inactive_x_seconds': 'L\'ambiente ${1}" è stato inattivo per ${2} p{2:secondo: secondi}. Push dovrebbe continuare questo trasferimento?',
+	'service_inactive': 'L\'ambiente "${1}" non è stato ancora trasferito in questa sessione. Push dovrebbe continuare questo trasferimento?'
 };

@@ -6,18 +6,16 @@ const utils = require('./lib/utils');
 /**
  * Provides a normalised interface for the command panel and contextual menus.
  */
-class UI extends Push {
-	clearUploadQueue() {
-		if (super.clearQueue(Push.queueDefs.upload)) {
-			utils.showLocalisedMessage('upload_queue_cleared');
-		}
+class UI {
+	constructor(context) {
+		this.push = new Push(context);
 	}
 
 	/**
 	 * Show the current upload queue in the console
 	 */
 	showUploadQueue() {
-		this.listQueueItems(Push.queueDefs.upload);
+		this.push.listQueueItems(Push.queueDefs.upload);
 	}
 
 	removeUploadQueuedItem(context) {
@@ -26,78 +24,72 @@ class UI extends Push {
 		if (context instanceof vscode.TreeItem) {
 			uri = context.resourceUri;
 		} else {
-			uri = this.paths.getFileSrc(context);
+			uri = this.push.paths.getFileSrc(context);
 		}
 
-		super.removeQueuedUri(Push.queueDefs.upload, uri);
+		this.push.removeQueuedUri(Push.queueDefs.upload, uri);
+	}
+
+	execUploadQueue() {
+		return this.push.execUploadQueue.apply(this.push, arguments);
+	}
+
+	clearUploadQueue() {
+		if (this.push.clearQueue(Push.queueDefs.upload)) {
+			utils.showLocalisedMessage('upload_queue_cleared');
+		}
 	}
 
 	queueGitChangedFiles() {
 		let uri;
 
-		if ((uri = this.getValidUri(uri))) {
-			return super.queueGitChangedFiles(uri).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.queueGitChangedFiles(uri).catch(this.push.catchError);
 		}
 	}
 
 	uploadGitChangedFiles() {
 		let uri;
 
-		if ((uri = this.getValidUri(uri))) {
-			return super.queueGitChangedFiles(uri, true).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.queueGitChangedFiles(uri, true).catch(this.push.catchError);
 		}
 	}
 
 	queueGitCommit() {
 		let uri;
 
-		if ((uri = this.getValidUri(uri))) {
-			return this.queueGitCommitChanges(uri).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.queueGitCommitChanges(uri).catch(this.push.catchError);
 		}
 	}
 
 	uploadGitCommit() {
 		let uri;
 
-		if ((uri = this.getValidUri(uri))) {
-			return this.queueGitCommitChanges(uri, true).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.queueGitCommitChanges(uri, true).catch(this.push.catchError);
 		}
 	}
 
 	/**
-	 * Uploads a single file or directory by its Uri.
+	 * Uploads a selection of files or directories by their Uris.
 	 * @param {Uri} uri
 	 */
-	upload(uri) {
-		if (!(uri = this.getValidUri(uri))) {
-			return Promise.reject();
-		}
-
-		if (this.paths.isDirectory(uri)) {
-			return this.ensureSingleService(uri)
-				.then(() => this.transferDirectory(uri, 'put'))
-				.catch (this.catchError);
-		}
-
-		return this.transfer(uri, 'put').catch(this.catchError);
+	upload(uri, uriList) {
+		return this.push
+			.transfer(this.push.getValidUri(uriList || uri), 'put')
+			.catch(this.push.catchError);
 	}
 
 	/**
-	 * Downloads a single file or directory by its Uri.
+	 * Downloads a selection of files or directories by their Uris.
 	 * @param {Uri} uri
 	 */
-	download(uri) {
-		if (!(uri = this.getValidUri(uri))) {
-			return Promise.reject();
-		}
-
-		if (this.paths.isDirectory(uri)) {
-			return this.ensureSingleService(uri)
-				.then(() => this.transferDirectory(uri, 'get'))
-				.catch(this.catchError);
-		}
-
-		return this.transfer(uri, 'get').catch(this.catchError);
+	download(uri, uriList) {
+		return this.push
+			.transfer(this.push.getValidUri(uriList || uri), 'get')
+			.catch(this.push.catchError);
 	}
 
 	/**
@@ -107,8 +99,8 @@ class UI extends Push {
 	 * @param {Uri} uri
 	 */
 	diff(uri) {
-		if ((uri = this.getValidUri(uri))) {
-			return this.diffRemote(uri).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.diffRemote(uri).catch(this.push.catchError);
 		}
 	}
 
@@ -119,11 +111,11 @@ class UI extends Push {
 	 * @param {Uri} uri - Folder/File Uri to watch.
 	 */
 	addWatch(uri) {
-		if (!(uri = this.getValidUri(uri))) {
+		if (!(uri = this.push.getValidUri(uri))) {
 			return false;
 		}
 
-		return this.watch.add(uri).catch(this.catchError);
+		return this.push.watch.add(uri).catch(this.push.catchError);
 	}
 
 	/**
@@ -137,8 +129,8 @@ class UI extends Push {
 			context = context.resourceUri;
 		}
 
-		if ((uri = this.paths.getFileSrc(context))) {
-			this.watch.remove(uri).catch(this.catchError);
+		if ((uri = this.push.paths.getFileSrc(context))) {
+			this.push.watch.remove(uri).catch(this.push.catchError);
 		}
 	}
 
@@ -146,51 +138,53 @@ class UI extends Push {
 	 * Lists active watchers
 	 */
 	listWatchers() {
-		this.watch.list();
+		this.push.watch.list();
 	}
 
 	/**
 	 * Starts the internal watch process and watches the blobs.
 	 */
 	startWatch() {
-		this.watch.toggle(true);
+		this.push.watch.toggle(true);
 	}
 
 	/**
 	 * Stops the internal watch process.
 	 */
 	stopWatch() {
-		this.watch.toggle(false);
+		this.push.watch.toggle(false);
 	}
 
 	/**
 	 * Clear all (active or disabled) watchers
 	 */
 	clearWatchers() {
-		this.watch.clear();
+		this.push.watch.clear();
 	}
 
 	/**
 	 * Purges all stored watchers within the contextual storage
 	 */
 	purgeStoredWatchers() {
-		this.watch.purge();
+		this.push.watch.purge();
 	}
 
 	cancelQueues() {
-		this.stopCancellableQueues();
+		this.push.stopCancellableQueues();
 	}
 
 	stopQueues() {
-		this.stopCancellableQueues(true);
+		this.push.stopCancellableQueues(true);
 	}
 
 	/**
 	 * @see Service#createServiceConfig
 	 */
 	createServiceConfig(uri) {
-		if ((uri = this.getValidUri(uri))) {
-			return this.service.editServiceConfig(uri, true).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.service.settings
+				.editServiceConfig(uri, true)
+				.catch(this.push.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -200,8 +194,10 @@ class UI extends Push {
 	 * @see Service#editServiceConfig
 	 */
 	editServiceConfig(uri) {
-		if ((uri = this.getValidUri(uri))) {
-			return this.service.editServiceConfig(uri).catch(this.catchError);
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.service.settings
+				.editServiceConfig(uri)
+				.catch(this.push.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -214,13 +210,15 @@ class UI extends Push {
 	 * @see Service#setConfigEnv
 	 */
 	setServiceEnv(uri) {
-		if ((uri = this.getValidUri(uri))) {
-			return this.service.setConfigEnv(uri).catch(this.catchError)
+		if ((uri = this.push.getValidUri(uri))) {
+			return this.push.service
+				.setConfigEnv(uri)
 				.then(() => {
-					if (this.config.disableWatchOnEnvChange) {
+					if (this.push.config.disableWatchOnEnvChange) {
 						this.stopWatch();
 					}
-				});
+				})
+				.catch(this.push.catchError);
 		} else {
 			utils.showLocalisedWarning('no_servicefile_context');
 		}
@@ -230,8 +228,8 @@ class UI extends Push {
 	 * @see Service#importConfig
 	 */
 	importConfig(uri) {
-		if (this.getValidUri(uri)) {
-			return this.service.importConfig(uri).catch(this.catchError);
+		if (this.push.getValidUri(uri)) {
+			return this.push.service.settings.importConfig(uri).catch(this.push.catchError);
 		}
 	}
 }

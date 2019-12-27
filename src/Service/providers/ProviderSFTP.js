@@ -9,7 +9,7 @@ const micromatch = require('micromatch');
 const ProviderBase = require('../../ProviderBase');
 const TransferResult = require('../TransferResult');
 const utils = require('../../lib/utils');
-const PushError = require('../../types/PushError');
+const PushError = require('../../lib/types/PushError');
 const channel = require('../../lib/channel');
 const i18n = require('../../i18n');
 const { TRANSFER_TYPES } = require('../../lib/constants');
@@ -651,7 +651,7 @@ class ProviderSFTP extends ProviderBase {
 
 	/**
 	 * Get a single file from the ProviderSFTP server.
-	 * @param {uri} local - Local destination Uri.
+	 * @param {Uri} local - Local destination Uri.
 	 * @param {string} remote - Remote source filename.
 	 * @param {string} [collisionAction] - What to do on file collision. Use one
 	 * of the utils.collisionOpts collision actions.
@@ -683,7 +683,7 @@ class ProviderSFTP extends ProviderBase {
 						local,
 						new PushError(i18n.t(
 							'remote_file_not_found',
-							this.paths.getBaseName(local)
+							this.paths.getBaseName(remoteFilename)
 						)),
 						TRANSFER_TYPES.GET
 					);

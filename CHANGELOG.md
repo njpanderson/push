@@ -1,6 +1,12 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.7.3
+ - Added support for multiple files to be selected within the explorer pane.
+ - Improved handling for transfer collissions (especially when dealing with multiple single files).
+ - Updated various dependencies.
+ - Various optimisations/bug fixes.
+
 ## 0.7.21
  - Fixed icon size.
 
