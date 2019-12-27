@@ -2,7 +2,7 @@
   "name": "push",
   "displayName": "Push",
   "description": "SFTP and File based uploading",
-  "version": "0.7.21",
+  "version": "0.7.3",
   "publisher": "njp-anderson",
   "engines": {
     "vscode": "^1.30.0"
@@ -616,6 +616,7 @@
     "vsce": "vsce",
     "vscode:prepublish": "webpack --mode production",
     "compile": "webpack --mode none",
+    "analyse": "webpack --mode production --config webpack.analyse.config.js",
     "watch": "webpack --mode none --watch"
   },
   "devDependencies": {
@@ -626,10 +627,12 @@
     "istanbul": "^0.4.5",
     "jsdoc": "^3.6.3",
     "mocha": "^5.2.0",
+    "moment-locales-webpack-plugin": "^1.1.2",
     "typescript": "^2.8.3",
     "vsce": "^1.59.0",
     "vscode": "^1.1.36",
     "webpack": "^4.30.0",
+    "webpack-bundle-analyzer": "^3.6.0",
     "webpack-cli": "^3.3.0"
   },
   "dependencies": {
@@ -641,6 +644,7 @@
     "micromatch": "^3.1.10",
     "mkdirp": "^0.5.1",
     "mockery": "^2.1.0",
+    "moment": "^2.24.0",
     "semver": "^5.6.0",
     "simple-git": "^1.92.0",
     "ssh2-sftp-client": "^2.5.0",

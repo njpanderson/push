@@ -110,6 +110,6 @@ module.exports = {
 	'server_v_local': 'Server vs. Local',
 	'continue': 'Continue',
 	'service_inactive': 'The environment "${1}" has not yet transferred in this session. Should Push continue this transfer?',
-	'service_inactive_x_seconds': 'The environment "${1}" has been inactive for ${2} p{2:second:seconds}. Should Push continue this transfer?',
+	'service_inactive_x_seconds': 'The environment "${1}" has been inactive since ${2}. Should Push continue this transfer?',
 	'getting_file_lists': 'Getting file lists...'
 };

@@ -234,13 +234,13 @@ class Service extends PushBase {
 			return Promise.resolve();
 		} else {
 			// Remind the user
-			age = log.age();
+			age = i18n.moment().subtract(log.age(), 'seconds');
 
 			return vscode.window.showWarningMessage(
 				(
-					(age === 0) ?
+					(log.age() === 0) ?
 						i18n.t('service_inactive', this.config.env) :
-						i18n.t('service_inactive_x_seconds', this.config.env, Math.round(log.age()))
+						i18n.t('service_inactive_x_seconds', this.config.env, age.fromNow())
 				),
 				{
 					modal: true
