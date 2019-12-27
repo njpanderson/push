@@ -1,11 +1,28 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
+const ini = require('ini');
 const ROOT = vscode.extensions.getExtension('njp-anderson.push').extensionPath;
+
+function getDebugIni() {
+	let debug;
+
+	if (fs.existsSync(path.join(ROOT, '.debug'))) {
+		debug = ini.parse(fs.readFileSync(path.join(ROOT, '.debug'), 'utf-8'));
+
+		if (debug.trace_allow) {
+			debug.trace_allow = new RegExp(debug.trace_allow);
+		}
+
+		return debug;
+	}
+
+	return false;
+}
 
 module.exports = {
 	ROOT,
-	DEBUG: fs.existsSync(path.join(ROOT, '.debug')),
+	DEBUG: getDebugIni(),
 
 	CONFIG_FORMATS: {
 		'SSFTP': /sftp-config\.json/i
