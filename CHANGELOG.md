@@ -7,6 +7,9 @@ All notable changes to Push will be documented in this file. If this file has ap
  - Updated various dependencies.
  - Various optimisations/bug fixes.
 
+## 0.7.21
+ - Fixed icon size.
+
 ## 0.7.2
  - Fixed paths of some icon resources.
 
