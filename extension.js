@@ -67,12 +67,12 @@ exports.activate = (context) => {
 
 	vscode.window.registerTreeDataProvider(
 		'push.watchListExplorer',
-		ui.explorers.watchList
+		ui.push.explorers.watchList
 	);
 
 	vscode.window.registerTreeDataProvider(
 		'push.uploadQueueExplorer',
-		ui.explorers.uploadQueue
+		ui.push.explorers.uploadQueue
 	);
 };
 
