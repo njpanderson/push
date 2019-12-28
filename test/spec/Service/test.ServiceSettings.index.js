@@ -1,4 +1,3 @@
-/* global suite, test */
 const expect = require('chai').expect;
 
 const useMockery = require('../../helpers/mockery');
@@ -49,7 +48,7 @@ describe('Service/ServiceSettings', function() {
 
 			expect(settings.settingsCache[fixtures.mockFolder]).to.be.empty;
 			expect(settings.settingsCache[fixtures.mockFolder2].keep).to.be.true;
-		})
+		});
 	});
 
 	describe('#getServerJSON', () => {
