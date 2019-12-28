@@ -52,6 +52,8 @@ class ProviderFile extends ProviderBase {
 	 * @param {string} remote - Remote path.
 	 */
 	put(local, remote) {
+		const remoteDir = path.dirname(remote);
+
 		if (!this.paths.fileExists(local)) {
 			// Local file doesn't exist. Immediately resolve with failing TransferResult
 			return Promise.resolve(new TransferResult(
@@ -68,7 +70,10 @@ class ProviderFile extends ProviderBase {
 			vscode.Uri.file(remote),
 			vscode.Uri.file(this.config.service.root),
 			this.config.service.collisionUploadAction
-		);
+		).then((result) => {
+			this.pathCache.remote.clear(remoteDir);
+			return result;
+		});
 	}
 
 	/**
@@ -79,6 +84,8 @@ class ProviderFile extends ProviderBase {
 	 * of the utils.collisionOpts collision actions.
 	 */
 	get(local, remote, collisionAction) {
+		const localDir = path.dirname(this.paths.getNormalPath(local));
+
 		// Convert remote into a Uri
 		remote = vscode.Uri.file(remote);
 
@@ -101,7 +108,10 @@ class ProviderFile extends ProviderBase {
 			local,
 			this.paths.getDirName(this.config.serviceUri),
 			collisionAction
-		);
+		).then((result) => {
+			this.pathCache.local.clear(localDir);
+			return result;
+		});
 	}
 
 	/**

@@ -529,7 +529,7 @@ class Paths {
 
 	/**
 	 *
-	 * @param {Uri} uri - Uri or pathname.
+	 * @param {Uri|string} uri - Uri or pathname.
 	 * @param {boolean} [returnIfDirectory=false] - If the path supplied is already a
 	 * directory, just return it.
 	 * @returns {Uri} the original path's directory name, or the same path if it's

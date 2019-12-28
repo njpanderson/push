@@ -631,6 +631,9 @@ class ProviderSFTP extends ProviderBase {
 				}
 			})
 			.then((result) => {
+				// Clear remote cache
+				this.pathCache.remote.clear(remoteDir);
+
 				if ((result instanceof TransferResult) && !result.error) {
 					// Transfer occured with no errors - set the remote file mode
 					return this.setRemotePathMode(remote, this.config.service.fileMode)
@@ -658,6 +661,7 @@ class ProviderSFTP extends ProviderBase {
 	 */
 	get(local, remote, collisionAction) {
 		let localPath = this.paths.getNormalPath(local),
+			localDir = path.dirname(localPath),
 			remoteDir = path.dirname(remote),
 			remoteFilename = path.basename(remote);
 
@@ -697,7 +701,7 @@ class ProviderSFTP extends ProviderBase {
 			})
 			.then((collision) => {
 				// Figure out what to do based on the collision (if any)
-				let localDir, localFilename;
+				let localFilename;
 
 				if (collision instanceof TransferResult) {
 					return collision;
@@ -717,7 +721,6 @@ class ProviderSFTP extends ProviderBase {
 						return this.clientGetByStream(local, remote);
 
 					case utils.collisionOpts.rename:
-						localDir = path.dirname(localPath);
 						localFilename = path.basename(localPath);
 
 						// Rename (non-colliding) and get
@@ -740,6 +743,11 @@ class ProviderSFTP extends ProviderBase {
 						return new TransferResult(local, false, TRANSFER_TYPES.GET);
 					}
 				}
+			})
+			.then((result) => {
+				this.pathCache.local.clear(localDir);
+
+				return result;
 			})
 			.catch((error) => {
 				this.setProgress(false);
