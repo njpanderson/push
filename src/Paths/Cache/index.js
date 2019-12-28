@@ -1,6 +1,5 @@
 const path = require('path');
 
-const ExtendedStream = require('../../lib/types/ExtendedStream');
 const List = require('./List');
 const Item = require('./Item');
 const utils = require('../../lib/utils');
@@ -9,11 +8,12 @@ const utils = require('../../lib/utils');
  * Controls caching of a source filesystem.
  */
 class Cache {
-	constructor() {
+	constructor(id) {
 		/**
 		 * Main cache.
 		 * @private
 		 */
+		this.id = id;
 		this.cache = {};
 	}
 
@@ -35,7 +35,17 @@ class Cache {
 	addFilePath(pathName, modified = 0, type = 'f', meta = null) {
 		const dir = path.dirname(pathName);
 
+		utils.trace(
+			`Cache#addFilePath(${this.id})`,
+			`Caching file ${pathName}`
+		);
+
 		if (!this.cache[dir]) {
+			utils.trace(
+				`Cache#addFilePath(${this.id})`,
+				`Creating dir ${dir}`
+			);
+
 			// Dir does not exist in the source cache
 			this.createDir(dir);
 		}
@@ -54,7 +64,14 @@ class Cache {
 	 * @returns {boolean} `true` if the directory is cached.
 	 */
 	dirIsCached(dir) {
-		return !!(this.cache[dir]);
+		const cached = !!(this.cache[dir]);
+
+		utils.trace(
+			`Cache#dirIsCached(${this.id})`,
+			`Dir "${dir}" is ${cached ? 'cached' : 'not cached'}`
+		);
+
+		return cached;
 	}
 
 	/**
@@ -147,16 +164,17 @@ class Cache {
 	 */
 	clear(dir) {
 		return new Promise((resolve) => {
-			if (!dir) {
+			if (typeof dir === 'undefined') {
 				// Clear entire cache
-				utils.trace('Cache#clear', 'Clearing all caches');
+				utils.trace(`Cache#clear(${this.id})`, 'Clearing all caches');
 				this.cache = {};
+				return resolve();
 			}
 
 			if (this.cache[dir]) {
 				// Clear one directory
 				utils.trace(
-					'Cache#clear',
+					`Cache#clear(${this.id})`,
 					`Clearing caches for "${dir}"`
 				);
 
@@ -164,7 +182,7 @@ class Cache {
 				delete this.cache[dir];
 			}
 
-			resolve();
+			return resolve();
 		});
 	}
 }

@@ -30,8 +30,8 @@ class ServiceBase {
 		this.paths = new Paths();
 
 		this.pathCache = {
-			local: new Cache(),
-			remote: new Cache()
+			local: new Cache('local'),
+			remote: new Cache('remote')
 		};
 	}
 
