@@ -30,9 +30,9 @@ class ProviderSFTP extends ProviderBase {
 
 		this.options.maxClients = 2;
 		this.options.modeGlob = {
-			basename: true,
 			dot: true,
-			nocase: true
+			nocase: true,
+			strictSlashes: true
 		};
 	}
 
@@ -829,6 +829,10 @@ class ProviderSFTP extends ProviderBase {
 				return this.connect().then((client) => {
 					try {
 						client.sftp.chmod(remote, mode, resolve);
+						utils.trace(
+							'ProviderSFTP#setRemotePathMode',
+							`Setting mode of ${remote} to ${mode}`
+						)
 					} catch(e) {
 						reject(e);
 					}
