@@ -101,7 +101,10 @@ class ProviderSFTP extends ProviderBase {
 			})
 			.catch((error) => {
 				// Catch the native error and throw a better one
-				if (error.code === 'ENOTFOUND' && error.level === 'client-socket') {
+				if (
+					error.code === 'ERR_GENERIC_CLIENT' &&
+					error.message.match(/all.*authentication.*failed/)
+				) {
 					// This is likely the error that means the client couldn't connect
 					throw new PushError(
 						i18n.t(
@@ -236,7 +239,10 @@ class ProviderSFTP extends ProviderBase {
 
 	handleProviderSFTPError(error, client) {
 		return new Promise((resolve, reject) => {
-			if (error.level === 'client-authentication') {
+			if (
+				error.code === 'ERR_GENERIC_CLIENT' &&
+				error.message.match(/authentication.*failed/)
+			) {
 				// Put a note in the log to remind users that a password can be set
 				if (client.options.privateKeyFile !== '') {
 					// If there was a keyfile yet we're at this point, it might have broken
