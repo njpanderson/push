@@ -818,7 +818,6 @@ class ProviderSFTP extends ProviderBase {
 					);
 				} catch(e) { reject(e); }
 
-
 				if (modeMatch.length) {
 					mode = modeMatch[0].mode;
 				}
@@ -832,7 +831,7 @@ class ProviderSFTP extends ProviderBase {
 						utils.trace(
 							'ProviderSFTP#setRemotePathMode',
 							`Setting mode of ${remote} to ${mode}`
-						)
+						);
 					} catch(e) {
 						reject(e);
 					}
