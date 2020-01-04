@@ -106,6 +106,8 @@ class ProviderSFTP extends ProviderBase {
 					error.message.match(/all.*authentication.*failed/)
 				) {
 					// This is likely the error that means the client couldn't connect
+					this.destroyClient(this.clients[hash]);
+
 					throw new PushError(
 						i18n.t(
 							'sftp_could_not_connect_server',
@@ -365,7 +367,11 @@ class ProviderSFTP extends ProviderBase {
 			keys;
 
 		return new Promise((resolve) => {
-			if (this.clients[hash] && this.clients[hash].sftp) {
+			if (
+				this.clients[hash] &&
+				this.clients[hash].sftp &&
+				!this.clients[hash].sftp.endCalled
+			) {
 				// Return the existing client instance
 				this.clients[hash].lastUsed = date.getTime();
 
