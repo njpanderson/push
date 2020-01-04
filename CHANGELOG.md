@@ -1,6 +1,11 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.8.0
+ - Updated many dependencies, including ssh2-sftp-client to version 4.
+ - Fixed a caching issue with remote directories.
+ - Removed `basename` option in underlying glob engine for file modes. If your pattern has no slashes, it will now apply to the whole path, instead of just the filename.
+
 ## 0.7.3
  - Added support for multiple files to be selected within the explorer pane.
  - Improved handling for transfer collissions (especially when dealing with multiple single files).
