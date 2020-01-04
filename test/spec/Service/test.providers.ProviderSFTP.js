@@ -1,12 +1,11 @@
-/* global suite, test */
 const expect = require('chai').expect;
 
-const useMockery = require('../../../helpers/mockery');
-const counter = require('../../../helpers/counter');
-const fixtures = require('../../../fixtures/general');
+const useMockery = require('../../helpers/mockery');
+const counter = require('../../helpers/counter');
+const fixtures = require('../../fixtures/general');
 
 // Mocks
-const vscode = require('../../../mocks/node/vscode');
+const vscode = require('../../mocks/node/vscode');
 
 describe('Service/providers/ProviderSFTP', function () {
 	let SFTP, sftp;
@@ -15,14 +14,14 @@ describe('Service/providers/ProviderSFTP', function () {
 		useMockery
 			.registerMultiple({
 				'vscode': vscode,
-				'../../lib/channel': require('../../../mocks/lib/channel'),
-				'./lib/channel': require('../../../mocks/lib/channel'),
-				'../../i18n': require('../../../mocks/lib/i18n')
+				'../../lib/channel': require('../../mocks/lib/channel'),
+				'./lib/channel': require('../../mocks/lib/channel'),
+				'../../i18n': require('../../mocks/lib/i18n')
 			});
 	});
 
 	before(() => {
-		SFTP = require('../../../../src/Service/providers/ProviderSFTP');
+		SFTP = require('../../../src/Service/providers/ProviderSFTP');
 	});
 
 	beforeEach(() => {

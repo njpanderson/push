@@ -30,9 +30,9 @@ class ProviderSFTP extends ProviderBase {
 
 		this.options.maxClients = 2;
 		this.options.modeGlob = {
-			basename: true,
 			dot: true,
-			nocase: true
+			nocase: true,
+			strictSlashes: true
 		};
 	}
 
@@ -101,8 +101,13 @@ class ProviderSFTP extends ProviderBase {
 			})
 			.catch((error) => {
 				// Catch the native error and throw a better one
-				if (error.code === 'ENOTFOUND' && error.level === 'client-socket') {
+				if (
+					error.code === 'ERR_GENERIC_CLIENT' &&
+					error.message.match(/all.*authentication.*failed/)
+				) {
 					// This is likely the error that means the client couldn't connect
+					this.destroyClient(this.clients[hash]);
+
 					throw new PushError(
 						i18n.t(
 							'sftp_could_not_connect_server',
@@ -236,7 +241,10 @@ class ProviderSFTP extends ProviderBase {
 
 	handleProviderSFTPError(error, client) {
 		return new Promise((resolve, reject) => {
-			if (error.level === 'client-authentication') {
+			if (
+				error.code === 'ERR_GENERIC_CLIENT' &&
+				error.message.match(/authentication.*failed/)
+			) {
 				// Put a note in the log to remind users that a password can be set
 				if (client.options.privateKeyFile !== '') {
 					// If there was a keyfile yet we're at this point, it might have broken
@@ -359,7 +367,11 @@ class ProviderSFTP extends ProviderBase {
 			keys;
 
 		return new Promise((resolve) => {
-			if (this.clients[hash] && this.clients[hash].sftp) {
+			if (
+				this.clients[hash] &&
+				this.clients[hash].sftp &&
+				!this.clients[hash].sftp.endCalled
+			) {
 				// Return the existing client instance
 				this.clients[hash].lastUsed = date.getTime();
 
@@ -631,6 +643,9 @@ class ProviderSFTP extends ProviderBase {
 				}
 			})
 			.then((result) => {
+				// Clear remote cache
+				this.pathCache.remote.clear(remoteDir);
+
 				if ((result instanceof TransferResult) && !result.error) {
 					// Transfer occured with no errors - set the remote file mode
 					return this.setRemotePathMode(remote, this.config.service.fileMode)
@@ -658,6 +673,7 @@ class ProviderSFTP extends ProviderBase {
 	 */
 	get(local, remote, collisionAction) {
 		let localPath = this.paths.getNormalPath(local),
+			localDir = path.dirname(localPath),
 			remoteDir = path.dirname(remote),
 			remoteFilename = path.basename(remote);
 
@@ -697,7 +713,7 @@ class ProviderSFTP extends ProviderBase {
 			})
 			.then((collision) => {
 				// Figure out what to do based on the collision (if any)
-				let localDir, localFilename;
+				let localFilename;
 
 				if (collision instanceof TransferResult) {
 					return collision;
@@ -717,7 +733,6 @@ class ProviderSFTP extends ProviderBase {
 						return this.clientGetByStream(local, remote);
 
 					case utils.collisionOpts.rename:
-						localDir = path.dirname(localPath);
 						localFilename = path.basename(localPath);
 
 						// Rename (non-colliding) and get
@@ -740,6 +755,11 @@ class ProviderSFTP extends ProviderBase {
 						return new TransferResult(local, false, TRANSFER_TYPES.GET);
 					}
 				}
+			})
+			.then((result) => {
+				this.pathCache.local.clear(localDir);
+
+				return result;
 			})
 			.catch((error) => {
 				this.setProgress(false);
@@ -810,7 +830,6 @@ class ProviderSFTP extends ProviderBase {
 					);
 				} catch(e) { reject(e); }
 
-
 				if (modeMatch.length) {
 					mode = modeMatch[0].mode;
 				}
@@ -821,6 +840,10 @@ class ProviderSFTP extends ProviderBase {
 				return this.connect().then((client) => {
 					try {
 						client.sftp.chmod(remote, mode, resolve);
+						utils.trace(
+							'ProviderSFTP#setRemotePathMode',
+							`Setting mode of ${remote} to ${mode}`
+						);
 					} catch(e) {
 						reject(e);
 					}
