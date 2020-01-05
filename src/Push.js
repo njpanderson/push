@@ -1221,13 +1221,24 @@ class Push extends PushBase {
 	 * Checks if a Uri (or array of Uris) passed are usable by Push and returns.
 	 * If no Uri is passed, Push will attempt to detect one from the current context.
 	 * Will produce an error message if the Uri is not valid.
-	 * @param {Uri|Uri[]} uri - Uri or Array of Uris to test.
+	 * @param {Uri|Uri[]...} uri - Uri or Array of Uris to test.
 	 * @returns {Uri|Uri[]} The Uri uri or array of Uri uris, if. Will throw a
 	 * PushError otherwise.
 	 */
-	getValidUri(uri) {
-		let uriTest = Array.isArray(uri) ? uri : [uri],
-			a;
+	getValidUri() {
+		let uri, uriTest, a;
+
+		// First, loop through the arguments to find the first valid Uri or array
+		// of Uris.
+		uri = [...arguments].find((test) => {
+			return (
+				test instanceof vscode.Uri ||
+				Array.isArray(test) && test.every(test => test instanceof vscode.Uri)
+			);
+		});
+
+		// Secondly, convert the uri into an array for testinig
+		uriTest = Array.isArray(uri) ? uri : [uri];
 
 		if (uriTest[0] === undefined || !uriTest.length) {
 			// No Uri was sent - get from open file

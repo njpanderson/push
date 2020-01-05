@@ -1,6 +1,9 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.8.1
+ - Fixed issue with the "Upload File" button in the editor toolbar not working. (#68) (Thanks, @swifft17!)
+
 ## 0.8.0
  - Updated many dependencies, including ssh2-sftp-client to version 4.
  - Fixed a caching issue with remote directories.
