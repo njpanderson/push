@@ -78,7 +78,7 @@ class UI {
 	 */
 	upload(uri, uriList) {
 		return this.push
-			.transfer(this.push.getValidUri(uriList || uri), 'put')
+			.transfer(this.push.getValidUri(uriList, uri), 'put')
 			.catch(this.push.catchError);
 	}
 
@@ -88,7 +88,7 @@ class UI {
 	 */
 	download(uri, uriList) {
 		return this.push
-			.transfer(this.push.getValidUri(uriList || uri), 'get')
+			.transfer(this.push.getValidUri(uriList, uri), 'get')
 			.catch(this.push.catchError);
 	}
 
