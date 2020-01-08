@@ -427,6 +427,10 @@ class ProviderSFTP extends ProviderBase {
 							// .on('keyboard-interactive', (name, instructions, prompts, finish) => {
 							// 	console.log('keyboard-interactive event');
 							// })
+							.on('end', () => {
+								utils.trace('Push#getClient', 'End event');
+								this.onDisconnect(false, hash);
+							})
 							.on('close', (error) => {
 								// Check for local or global error (created by error event)
 								let hadError = (error || this.sftpError);
@@ -454,7 +458,6 @@ class ProviderSFTP extends ProviderBase {
 									this.clients[hash].gateway.end();
 								}
 
-								// Fire onDisconnect event method
 								this.onDisconnect(hadError, hash);
 							})
 							.on('error', (error) => (this.sftpError = error));
@@ -554,9 +557,10 @@ class ProviderSFTP extends ProviderBase {
 				this.globalReject();
 				this.globalReject = null;
 			}
-
-			this.removeClient(hash);
 		}
+
+		// Remove the client regardless of error
+		this.removeClient(hash);
 	}
 
 	/**
