@@ -55,7 +55,10 @@ class i18n {
 	}
 
 	moment(dateTime) {
-		moment.locale(this._locale.replace(/_/, '-'));
+		if (this._locale !== 'en_gb') {
+			moment.locale(this._locale.replace(/_/, '-'));
+		}
+
 		return moment(dateTime);
 	}
 
