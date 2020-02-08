@@ -819,7 +819,7 @@ class Push extends PushBase {
 		if (this.config.queueWatchedFiles) {
 			this.queueForUpload(uri);
 		} else {
-			this.upload(uri);
+			this.transfer(uri, 'put');
 		}
 	}
 
