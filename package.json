@@ -639,7 +639,7 @@
     "dateformat": "^3.0.3",
     "flatmap": "0.0.3",
     "glob": "^7.1.6",
-    "ini": "^1.3.5",
+    "ini": "^1.3.6",
     "jsonc-parser": "^2.2.0",
     "micromatch": "^4.0.2",
     "mkdirp": "^0.5.1",
