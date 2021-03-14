@@ -1,8 +1,11 @@
 # Push Changelog
 All notable changes to Push will be documented in this file. If this file has appeared within Visual Studio Code, it means that Push has had a notable update. You can easily disable this feature by setting the `njpPush.showChangelog` to `false`.
 
+## 0.8.22
+ - Various dependency security updates.
+
 ## 0.8.21
- - Fixed an issue with watched files not uploading
+ - Fixed an issue with watched files not uploading.
  - Fixed a silent error with moment js when en_gb was used.
 
 ## 0.8.2
