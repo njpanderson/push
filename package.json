@@ -607,7 +607,6 @@
     ]
   },
   "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install",
     "t": "mocha --reporter dot",
     "tc": "istanbul cover --root ./src --dir ./coverage _mocha",
     "test": "./node_modules/mocha/bin/mocha",
@@ -622,16 +621,17 @@
   "devDependencies": {
     "@types/mocha": "^5.2.7",
     "@types/node": "^13.1.1",
+    "@types/vscode": "^1.54.0",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
     "istanbul": "^0.4.5",
     "jsdoc": "^3.6.3",
-    "mocha": "^6.2.2",
+    "mocha": "^6.2.3",
     "moment-locales-webpack-plugin": "^1.1.2",
     "typescript": "^3.7.4",
-    "vsce": "^1.71.0",
-    "vscode": "^1.1.36",
-    "webpack": "^4.41.5",
+    "vsce": "^1.87.0",
+    "vscode-test": "^1.5.1",
+    "webpack": "^4.46.0",
     "webpack-bundle-analyzer": "^3.6.0",
     "webpack-cli": "^3.3.10"
   },
@@ -639,7 +639,7 @@
     "dateformat": "^3.0.3",
     "flatmap": "0.0.3",
     "glob": "^7.1.6",
-    "ini": "^1.3.5",
+    "ini": "^1.3.8",
     "jsonc-parser": "^2.2.0",
     "micromatch": "^4.0.2",
     "mkdirp": "^0.5.1",
