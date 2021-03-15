@@ -3,6 +3,7 @@ All notable changes to Push will be documented in this file. If this file has ap
 
 ## 0.8.22
  - Various dependency security updates.
+ - Bump ssh-sftp-client to version 6.
 
 ## 0.8.21
  - Fixed an issue with watched files not uploading.
