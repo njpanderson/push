@@ -649,6 +649,6 @@
     "simple-git": "^1.129.0",
     "ssh2-sftp-client": "^4.3.1",
     "tmp": "^0.1.0",
-    "url-parse": "^1.4.7"
+    "url-parse": "^1.5.0"
   }
 }
