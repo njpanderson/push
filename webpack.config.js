@@ -19,7 +19,7 @@ const config = {
 	},
 	plugins: [
 		new MomentLocalesPlugin({
-			localesToKeep: ['ja', 'it'],
+			localesToKeep: ['ja', 'it', 'zh-cn'],
 		})
 	]
 };
