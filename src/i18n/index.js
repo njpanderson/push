@@ -8,7 +8,8 @@ const {
 const locales = {
 	en_gb: require('./locales/en_gb'),
 	it: require('./locales/it'),
-	ja: require('./locales/ja')
+	ja: require('./locales/ja'),
+	zh_cn: require('./locales/zh_cn')
 };
 
 /**
