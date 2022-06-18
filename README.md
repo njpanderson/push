@@ -403,6 +403,7 @@ Currently, Push supports the following languages which can be selected within th
 | 🇬🇧 English (British) | `en_gb` | High | (Built in) |
 | 🇯🇵 Japanese | `ja` | Poor | (Built in) |
 | 🇮🇹 Italian | `it` | Low-Medum | (Built in) |
+| 🇨🇳 chinese | `zh_cn` | Medium | (Built in) |
 
 If you'd like to help improve the quality of the existing translations, or add your own translation, please let me know and I would be happy to accommodate you. There are around 70 strings currently set into Push, and can be translated in a few hours by a native speaker.
 

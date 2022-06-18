@@ -45,11 +45,11 @@
       "njp-push": [
         {
           "id": "push.watchListExplorer",
-          "name": "Watched Files"
+          "name": "%views.njp-push.push.watchListExplorer%"
         },
         {
           "id": "push.uploadQueueExplorer",
-          "name": "Upload Queue",
+          "name": "%views.njp-push.push.uploadQueueExplorer%",
           "when": "config.njpPush.uploadQueue"
         }
       ]
@@ -61,32 +61,32 @@
         "njpPush.locale": {
           "type": "string",
           "default": "en_gb",
-          "description": "Locale to use (See supported locales in the README)."
+          "description": "%properties.njpPush.locale.description%"
         },
         "njpPush.settingsFilename": {
           "type": "string",
           "default": ".push.settings.jsonc",
-          "description": "Defines the push settings JSON filename."
+          "description": "%properties.njpPush.settingsFilename.description%"
         },
         "njpPush.settingsFileGlob": {
           "type": "string",
           "default": ".push.settings.json*",
-          "description": "Defines the glob used to find push settings JSON files."
+          "description": "%properties.njpPush.settingsFileGlob.description%"
         },
         "njpPush.privateSSHKey": {
           "type": "string",
           "default": "",
-          "description": "Defines the default SSH key file for SFTP."
+          "description": "%properties.njpPush.privateSSHKey.description%"
         },
         "njpPush.privateSSHKeyPassphrase": {
           "type": "string",
           "default": "",
-          "description": "Defines the default SSH key passphrase, if needed."
+          "description": "%properties.njpPush.privateSSHKeyPassphrase.description%"
         },
         "njpPush.uploadQueue": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the upload queue for deferred uploads on save."
+          "description": "%properties.njpPush.uploadQueue.description%"
         },
         "njpPush.ignoreGlobs": {
           "type": "array",
@@ -97,37 +97,37 @@
             "**/.git/*",
             "**/.svn/*"
           ],
-          "description": "An array of regular expressions to match against ignored paths."
+          "description": "%properties.njpPush.ignoreGlobs.description%"
         },
         "njpPush.queueCompleteMessageType": {
           "type": "string",
           "default": "status",
-          "description": "How to notify once a queue is completed. Choose 'status' or popup 'message'."
+          "description": "%properties.njpPush.queueCompleteMessageType.description%"
         },
         "njpPush.statusMessageColor": {
           "type": "string",
           "default": "statusBar.foreground",
-          "description": "Set the colour of a status message (except progress). See https://code.visualstudio.com/docs/getstarted/theme-color-reference"
+          "description": "%properties.njpPush.statusMessageColor.description%"
         },
         "njpPush.queueWatchedFiles": {
           "type": "boolean",
           "default": false,
-          "description": "Set true to queue watched files on change instead of uploading them."
+          "description": "%properties.njpPush.queueWatchedFiles.description%"
         },
         "njpPush.persistWatchers": {
           "type": "boolean",
           "default": false,
-          "description": "Set true to persist watchers across sessions of vscode."
+          "description": "%properties.njpPush.persistWatchers.description%"
         },
         "njpPush.autoUploadQueue": {
           "type": "boolean",
           "default": false,
-          "description": "Set true to automatically upload files that enter the queue. This allows for changes within VS Code to be upload on save, while not uploading changes from outside VS Code (like a watcher would)."
+          "description": "%properties.njpPush.autoUploadQueue.description%"
         },
         "njpPush.useEnvLabel": {
           "type": "boolean",
           "default": true,
-          "description": "Set true to show the currently active environment for the opened editor in the status bar."
+          "description": "%properties.njpPush.useEnvLabel.description%"
         },
         "njpPush.envColours": {
           "type": "object",
@@ -136,59 +136,59 @@
             "stage": "#ffd08a",
             "prod": "#f7ed00"
           },
-          "description": "Defines the colours for specific environment names within the service settings file. The colour names as well as their values can be customised, and matching names will be coloured accordingly."
+          "description": "%properties.njpPush.envColours.description%"
         },
         "njpPush.showChangelog": {
           "type": "boolean",
           "default": true,
-          "description": "Shows a changelog if Push upgrades either its minor or major version."
+          "description": "%properties.njpPush.showChangelog.description%"
         },
         "njpPush.showTitleMenuUpload": {
           "type": "boolean",
           "default": true,
-          "description": "Show an upload button on the title menu."
+          "description": "%properties.njpPush.showTitleMenuUpload.description%"
         },
         "njpPush.limitServiceTraversal": {
           "type": "boolean",
           "default": true,
-          "description": "Limits how far Push will traverse before giving up when looking for a service settings file. If enabled, Push will stop at the workspace root (or a hard limit of 50 ancestors)."
+          "description": "%properties.njpPush.limitServiceTraversal.description%"
         },
         "njpPush.disableWatchOnEnvChange": {
           "type": "boolean",
           "default": true,
-          "description": "Automatically disables any watchers when the active environment is changed."
+          "description": "%properties.njpPush.disableWatchOnEnvChange.description%"
         },
         "njpPush.envReminderTimeout": {
           "type": "number",
           "default": 30,
-          "description": "Defines in seconds how long Push will wait before producing a reminder for the active environment during transfers."
+          "description": "%properties.njpPush.envReminderTimeout.description%"
         }
       }
     },
     "commands": [
       {
         "command": "push.createServiceConfig",
-        "title": "Create Push service configuration",
+        "title": "%command.push.createServiceConfig.title%",
         "category": "Push"
       },
       {
         "command": "push.editServiceConfig",
-        "title": "Edit Push service configuration",
+        "title": "%command.push.editServiceConfig.title%",
         "category": "Push"
       },
       {
         "command": "push.importConfig",
-        "title": "Import Push service configuration",
+        "title": "%command.push.importConfig.title%",
         "category": "Push"
       },
       {
         "command": "push.setServiceEnv",
-        "title": "Set service environment for current file",
+        "title": "%command.push.setServiceEnv.title%",
         "category": "Push"
       },
       {
         "command": "push.upload",
-        "title": "Upload File(s)",
+        "title": "%command.push.upload.title%",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/data-transfer-upload.svg",
@@ -197,27 +197,27 @@
       },
       {
         "command": "push.download",
-        "title": "Download File(s)",
+        "title": "%command.push.download.title%",
         "category": "Push"
       },
       {
         "command": "push.uploadFolder",
-        "title": "Upload Folder(s)",
+        "title": "%command.push.uploadFolder.title%",
         "category": "Push"
       },
       {
         "command": "push.downloadFolder",
-        "title": "Download Folder(s)",
+        "title": "%command.push.downloadFolder.title%",
         "category": "Push"
       },
       {
         "command": "push.diff",
-        "title": "Compare with remote file",
+        "title": "%command.push.diff.title%",
         "category": "Push"
       },
       {
         "command": "push.uploadQueuedItems",
-        "title": "Upload queued files",
+        "title": "%command.push.uploadQueuedItems.title%",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/repo-push.svg",
@@ -226,12 +226,12 @@
       },
       {
         "command": "push.removeQueuedItem",
-        "title": "Remove file from queue",
+        "title": "%command.push.removeQueuedItem.title%",
         "category": "Push"
       },
       {
         "command": "push.clearUploadQueue",
-        "title": "Remove all files from Push queue",
+        "title": "%command.push.clearUploadQueue.title%",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/trashcan.svg",
@@ -240,57 +240,57 @@
       },
       {
         "command": "push.queueGitChangedFiles",
-        "title": "Queue all Git working files",
+        "title": "%command.push.queueGitChangedFiles.title%",
         "category": "Push"
       },
       {
         "command": "push.uploadGitChangedFiles",
-        "title": "Upload all Git working files",
+        "title": "%command.push.uploadGitChangedFiles.title%",
         "category": "Push"
       },
       {
         "command": "push.queueGitCommit",
-        "title": "Queue files from a Git commit",
+        "title": "%command.push.queueGitCommit.title%",
         "category": "Push"
       },
       {
         "command": "push.uploadGitCommit",
-        "title": "Upload files from a Git commit",
+        "title": "%command.push.uploadGitCommit.title%",
         "category": "Push"
       },
       {
         "command": "push.cancelQueues",
-        "title": "Cancel active queue",
+        "title": "%command.push.cancelQueues.title%",
         "category": "Push"
       },
       {
         "command": "push.stopQueues",
-        "title": "Stop active transfer and cancel active queue",
+        "title": "%command.push.stopQueues.title%",
         "category": "Push"
       },
       {
         "command": "push.addWatchFile",
-        "title": "Watch file with Push",
+        "title": "%command.push.addWatchFile.title%",
         "category": "Push"
       },
       {
         "command": "push.removeWatchFile",
-        "title": "Stop watching file with Push",
+        "title": "%command.push.removeWatchFile.title%",
         "category": "Push"
       },
       {
         "command": "push.addWatchFolder",
-        "title": "Watch folder with Push",
+        "title": "%command.push.addWatchFolder.title%",
         "category": "Push"
       },
       {
         "command": "push.removeWatchFolder",
-        "title": "Stop watching folder with Push",
+        "title": "%command.push.removeWatchFolder.title%",
         "category": "Push"
       },
       {
         "command": "push.startWatch",
-        "title": "Start all Push watch lists",
+        "title": "%command.push.startWatch.title%",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/radio-tower.svg",
@@ -299,7 +299,7 @@
       },
       {
         "command": "push.stopWatch",
-        "title": "Stop all Push watch lists",
+        "title": "%command.push.stopWatch.title%",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/x.svg",
@@ -308,12 +308,12 @@
       },
       {
         "command": "push.listWatchers",
-        "title": "List active Push watchers",
+        "title": "%command.push.listWatchers.title%",
         "category": "Push"
       },
       {
         "command": "push.clearWatchers",
-        "title": "Clear all Push watchers",
+        "title": "%command.push.clearWatchers.title%",
         "category": "Push",
         "icon": {
           "dark": "resources/dark/trashcan.svg",
@@ -322,7 +322,7 @@
       },
       {
         "command": "push.purgeStoredWatchers",
-        "title": "Purge all stored watchers (and clear current list)",
+        "title": "%command.push.purgeStoredWatchers.title%",
         "category": "Push"
       }
     ],
