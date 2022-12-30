@@ -626,7 +626,7 @@
     "eslint": "^6.8.0",
     "istanbul": "^0.4.5",
     "jsdoc": "^3.6.3",
-    "mocha": "^6.2.2",
+    "mocha": "^10.2.0",
     "moment-locales-webpack-plugin": "^1.1.2",
     "typescript": "^3.7.4",
     "vsce": "^1.71.0",
